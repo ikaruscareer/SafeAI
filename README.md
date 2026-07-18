@@ -7,6 +7,8 @@
 
 > 🌐 [safeai-analyzer.ikaruscareer.com](https://safeai-analyzer.ikaruscareer.com) — project landing page
 
+<img width="1024" height="1024" alt="SafeAI_Agent_Software_Static_Analyzer" src="https://github.com/user-attachments/assets/de40f40b-14b9-4cd6-bc2c-27e81e8253fe" />
+
 ---
 
 ## Why SafeAI?
@@ -26,6 +28,9 @@ SafeAI analyzes AI applications without executing them, helping developers disco
 Designed to be lightweight, explainable, and community-driven, SafeAI aims to become an open foundation for AI capability and risk analysis.
 
 SafeAI sits before runtime guardrails and red-teaming tools in the security lifecycle. It scans agent source code at commit time — detecting framework-specific capabilities, MCP misconfigurations, and prompt injection patterns — before you ever deploy an agent to staging. It does not replace runtime tools (Microsoft AGT), evaluation frameworks (LangSmith, DeepEval), or red-teaming scanners (Promptfoo, Garak). It complements them: find the risk in code first, then validate at runtime.
+
+<img width="1024" height="1024" alt="SafeAI_Concept" src="https://github.com/user-attachments/assets/c07999b2-79d5-4200-9eec-ce1ab4e63cc8" />
+
 
 ---
 
@@ -71,6 +76,7 @@ Trust Score — deterministic category-weighted scoring from 0–100
     ▼
 Reports — terminal, JSON, SARIF, HTML
 ```
+<img width="1024" height="1024" alt="SafeAI_AI_Capability_Risk_Analyzer" src="https://github.com/user-attachments/assets/618f9ebc-030b-40c9-a98e-b0a5c41e07cc" />
 
 ---
 
@@ -86,6 +92,7 @@ Reports — terminal, JSON, SARIF, HTML
 | Microsoft Agent Framework | ✔ | Partial | Partial | Partial | Early Preview |
 | Azure AI Foundry | ✔ | Minimal | Minimal | Minimal | Early Preview |
 | Bedrock Agent | ✔ | Minimal | Minimal | Minimal | Early Preview |
+
 
 ### Framework Support Details
 
@@ -103,6 +110,8 @@ Reports — terminal, JSON, SARIF, HTML
 ## Supported Capabilities
 
 SafeAI fingerprints capabilities at the framework object level and via fallback regex patterns. Each capability includes evidence, confidence score, resolved definition, and provenance.
+
+<img width="1024" height="1024" alt="SafeAI_Capability_Risk_Report" src="https://github.com/user-attachments/assets/ae924e9d-650f-4480-b5b2-2984e5c57087" />
 
 | Capability | Category | Risk Impact |
 |------------|----------|-------------|
@@ -280,6 +289,8 @@ See [ROADMAP.md](./ROADMAP.md) for the detailed roadmap covering all 5 phases:
 - **Phase 3** — Test Packs
 - **Phase 4** — Enterprise (Commercial)
 - **Phase 5** — Community Intelligence
+
+<img width="1024" height="1024" alt="SafeAI_Roadmap" src="https://github.com/user-attachments/assets/2cdd1a8a-b4ae-4e1f-8f85-0108fdeb3194" />
 
 ---
 

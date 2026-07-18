@@ -133,6 +133,8 @@ chore: update dependency versions
 - Read [ARCHITECTURE_FOR_CONTRIBUTORS.md](./ARCHITECTURE_FOR_CONTRIBUTORS.md) to understand the codebase
 
 ---
+<img width="1024" height="1024" alt="SafeAI_Contribute_Everyone" src="https://github.com/user-attachments/assets/9d0efd4d-c52d-424a-bfaa-941272ce1f63" />
+
 
 ## Code of Conduct
 

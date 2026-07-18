@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Testing
+.coverage*
+.pytest_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+*.swp
+.DS_Store
+Thumbs.db
+
+# Generated outputs
+docs-phase1/
+safeai_reports/
+sample-agents/
+report.sarif
+
+# Environment
+.env
+venv/
+.venv/

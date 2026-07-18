@@ -1,0 +1,64 @@
+- id: PROMPT_INJECTION
+  description: Untrusted input in prompt
+  severity: critical
+  owasp_llm: LLM01
+
+- id: CAP_shell
+  description: Shell execution capability
+  severity: high
+  owasp_llm: LLM06
+
+- id: CAP_code_exec
+  description: Code execution capability
+  severity: high
+  owasp_llm: LLM06
+
+- id: CAP_http
+  description: External HTTP access
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_filesystem
+  description: Filesystem access
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_db
+  description: Database access
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_subprocess_shell
+  description: subprocess with shell=True
+  severity: critical
+  owasp_llm: LLM06
+
+- id: PROMPT_DELIMITER
+  description: Missing delimiter between system and user content
+  severity: high
+  owasp_llm: LLM01
+
+- id: CAP_file_write
+  description: File write capability
+  severity: medium
+  owasp_llm: LLM06
+
+- id: DATA_LEAKAGE
+  description: Potential secret exposure
+  severity: high
+  owasp_llm: LLM02
+
+- id: PROMPT_SYSTEM_LEAK
+  description: System prompt leakage
+  severity: high
+  owasp_llm: LLM01
+
+- id: PROMPT_ROLE_OVERRIDE
+  description: Role override attempt
+  severity: high
+  owasp_llm: LLM01
+
+- id: CAP_AUTONOMY
+  description: Autonomous agent behavior (loops/planning)
+  severity: high
+  owasp_llm: LLM06

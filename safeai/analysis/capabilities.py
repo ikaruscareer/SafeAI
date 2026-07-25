@@ -23,6 +23,8 @@ CAPABILITY_CATEGORIES = {
     "mcp": "MCP",
     "human_approval": "Human Approval",
     "multi_agent": "Multi-Agent",
+    "container": "Container",
+    "collaboration": "Collaboration",
 }
 
 

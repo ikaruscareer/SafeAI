@@ -179,3 +179,45 @@
   description: MCP transport uses insecure protocol
   severity: high
   owasp_llm: LLM06
+
+# --- Capability detection rules ---
+
+- id: CAP_docker
+  description: Docker container management capability detected
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_kubernetes
+  description: Kubernetes orchestration capability detected
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_redis
+  description: Redis data store capability detected
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_s3
+  description: S3 / cloud storage capability detected
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_slack
+  description: Slack integration capability detected
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_jira
+  description: Jira integration capability detected
+  severity: low
+  owasp_llm: LLM06
+
+- id: CAP_browser
+  description: Browser automation capability detected
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CAP_gcp
+  description: Google Cloud Platform capability detected
+  severity: medium
+  owasp_llm: LLM06

@@ -17,6 +17,14 @@ CAP_PATTERNS = {
     "external_apis": re.compile(r"requests|httpx|urllib", re.I),
     "databases": re.compile(r"sqlite3|psycopg2|mysql|postgres|sqlalchemy", re.I),
     "code_exec": re.compile(r"exec\(|eval\(", re.I),
+    "docker": re.compile(r"import docker|from docker|DockerClient|docker\.run|containers\.run", re.I),
+    "kubernetes": re.compile(r"import kubernetes|from kubernetes|kubectl|kube_config|KubeConfig|k8s", re.I),
+    "redis": re.compile(r"import redis|from redis|Redis\(|redis\.StrictRedis|redis\.Redis", re.I),
+    "s3": re.compile(r"import boto3|from boto3|boto3\.client.*s3|boto3\.resource.*s3|S3Client|s3\.put|s3\.get", re.I),
+    "slack": re.compile(r"import slack|from slack|SlackClient|slack_sdk|slack\.WebClient|slack\.SocketModeClient", re.I),
+    "jira": re.compile(r"import jira|from jira|JIRA\(|jira\.Client|jira\.JIRA", re.I),
+    "browser": re.compile(r"import playwright|from playwright|Playwright|selenium|webdriver|puppeteer|from browser_use", re.I),
+    "gcp": re.compile(r"import google\.cloud|from google\.cloud|google\.cloud\.\w+|GCP|gcsfs|BigQuery", re.I),
 }
 
 # Higher-risk variants detected in addition to the base capability patterns.
@@ -29,6 +37,14 @@ RULE_BY_CAP = {
     "external_apis": "CAP_http",
     "databases": "CAP_db",
     "code_exec": "CAP_code_exec",
+    "docker": "CAP_docker",
+    "kubernetes": "CAP_kubernetes",
+    "redis": "CAP_redis",
+    "s3": "CAP_s3",
+    "slack": "CAP_slack",
+    "jira": "CAP_jira",
+    "browser": "CAP_browser",
+    "gcp": "CAP_gcp",
 }
 
 CATEGORY_BY_CAP = {
@@ -37,6 +53,14 @@ CATEGORY_BY_CAP = {
     "external_apis": "External APIs",
     "databases": "Databases",
     "code_exec": "Capability",
+    "docker": "Container",
+    "kubernetes": "Container",
+    "redis": "Databases",
+    "s3": "Cloud",
+    "slack": "Collaboration",
+    "jira": "Collaboration",
+    "browser": "Browser",
+    "gcp": "Cloud",
 }
 
 

@@ -32,6 +32,44 @@ cannot tell you is essential to using its results responsibly.
   heuristic and may include false positives; they carry lower confidence and
   are marked as heuristic in finding provenance.
 
+## The assurance boundary
+
+Every manifest carries an `assurance_boundary` object (see
+`KYA_MANIFEST.md`) that states, in one place, what a given scan verified
+and what it structurally cannot verify. It exists because the rest of this
+document is necessarily general — the boundary is the scan-specific version
+of the same idea.
+
+- **What is verified statically**: declared tools, prompt and instruction
+  files, MCP server configuration, workflow structure, and permission
+  configuration — anything expressed directly in the source or
+  configuration that was scanned.
+- **What is not verifiable statically**: IAM and cloud permissions, runtime
+  identity, deployed network policy, actual runtime behaviour, and
+  dynamically constructed tool bindings. These require observing a running
+  system, which SafeAI deliberately does not do.
+- **Access modes may be inferred, not declared.** Not every framework or
+  configuration format states a capability's access mode explicitly. When
+  SafeAI cannot find a definite signal, it infers a conservative access
+  mode (defaulting to `read`) and marks that capability
+  `access_mode_inferred: true`. Inferred access modes can still trigger an
+  escalation rule, but the rule's severity is capped at `medium` when it
+  fired on an inferred value — a guess must never be presented as a
+  certainty — and the manifest's
+  `assurance_boundary.inferred_value_count` reports exactly how many
+  capabilities in that scan were inferred rather than declared — counted
+  fresh per scan, not accumulated across scans.
+- **A baseline predating v1.4 yields combination-only escalations.** The
+  v1.4 capability diff attributes capabilities to named tools; a baseline
+  captured before this release (a legacy JSON report, or a manifest without
+  `tool_surface`) has no such attribution, so its tool-level status cannot
+  be trusted. In that case, the diff still runs, but only the escalation
+  rules that depend on conditions within the current scan alone (the three
+  `ESC_COMBO_*` combination rules) are evaluated; the rules that depend on
+  comparing a tool's structural status against the baseline are suppressed
+  rather than risk reporting an escalation that the baseline could not
+  actually support.
+
 ## Confidence levels
 
 | Level | Meaning |

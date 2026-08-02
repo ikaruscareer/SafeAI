@@ -9,7 +9,7 @@ this package verifies deployed runtime permissions, live identities,
 executed tool calls, or production behavior.
 """
 
-MANIFEST_SCHEMA_VERSION = "1.1"
+MANIFEST_SCHEMA_VERSION = "1.2"
 MANIFEST_TYPE = "safeai.kya"
 REGISTRY_SCHEMA_VERSION = 2
 

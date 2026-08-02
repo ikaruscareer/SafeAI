@@ -27,6 +27,7 @@ from safeai.analyzers.data_leakage.analyzer import DataLeakageAnalyzer
 from safeai.analyzers.mcp.analyzer import MCPAnalyzer
 from safeai.analyzers.prompt.analyzer import PromptAnalyzer
 from safeai.frameworks import discover_parsers
+from safeai.kya.assurance import build_assurance_boundary
 from safeai.rules.loader import load_rules
 from safeai.scoring.engine import score_report
 
@@ -101,22 +102,41 @@ def _is_own_manifest(path):
     )
 
 
-def collect_files(root):
-    """Collect scannable files, pruning excluded directories and oversized files."""
+def collect_files(root, skipped=None):
+    """Collect scannable files, pruning excluded directories and oversized files.
+
+    ``skipped`` is an optional dict that accumulates ``reason -> count`` for
+    files the walk declined to read. It feeds the assurance boundary, which
+    has to state honestly what the scan did not look at. Passing nothing
+    keeps the historical single-return behaviour.
+    """
     files = []
+    counters = skipped if skipped is not None else {}
+
+    def note(reason):
+        counters[reason] = counters.get(reason, 0) + 1
+
     for d, dirs, fs in os.walk(root):
         dirs[:] = [name for name in dirs if name not in EXCLUDED_DIRS]
         for f in fs:
             full = os.path.join(d, f)
+            # SafeAI's own artifacts are not part of the project's attack
+            # surface, so they are skipped silently. Counting them would
+            # make coverage notes depend on whether a previous scan wrote
+            # its output into the scanned directory.
+            if f.lower() in _EXCLUDED_FILES or _is_own_manifest(full):
+                continue
             if not (_is_scannable_file(f) or _is_claude_config_file(full)):
+                extension = os.path.splitext(f)[1].lower() or "(no extension)"
+                note(f"unsupported file type {extension}")
                 continue
             try:
                 if os.path.getsize(full) > MAX_FILE_BYTES:
                     logger.debug("Skipping oversized file: %s", full)
+                    note("larger than the 2 MiB read limit")
                     continue
             except OSError:
-                continue
-            if _is_own_manifest(full):
+                note("unreadable")
                 continue
             files.append(full)
     return files
@@ -202,7 +222,8 @@ def _relativize(path, root):
 
 def run_scan(directory, rules_dir=None, baseline_report=None):
     directory = os.path.abspath(directory)
-    files = collect_files(directory)
+    skipped_files = {}
+    files = collect_files(directory, skipped=skipped_files)
     logger.info("Collected %d scannable files in %s", len(files), directory)
     rules = load_rules(rules_dir)
     deps = extract_dependencies(collect_dependency_files(directory))
@@ -367,11 +388,15 @@ def run_scan(directory, rules_dir=None, baseline_report=None):
         "mcp_capabilities": mcp_capabilities,
         "components": components,
         "diagnostics": diagnostics,
+        "skipped_files": dict(sorted(skipped_files.items())),
         "trust_score": trust_score,
     }
     # Per-tool capability surface (v1.4): the unit the diff compares and the
     # registry persists. Built from report data only — no extra file access.
     report["tool_surface"] = build_tool_surface(report)
+    # Assurance boundary (v1.4): what this scan did and did not verify.
+    # Derived from the run itself, never a fixed disclaimer string.
+    report["assurance_boundary"] = build_assurance_boundary(report)
     if baseline_report is not None:
         from safeai.analysis.capability_diff import compute_capability_diff
 

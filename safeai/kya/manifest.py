@@ -1,4 +1,4 @@
-"""Canonical KYA manifest: ``safeai-manifest.json`` (schema version 1.0).
+"""Canonical KYA manifest: ``safeai-manifest.json`` (schema version 1.2).
 
 The manifest is the portable public contract for scan-derived KYA
 evidence. The SQLite registry is an implementation detail; integrations
@@ -19,6 +19,7 @@ from safeai.kya import (
     MANIFEST_TYPE,
     STATIC_ANALYSIS_DISCLAIMER,
 )
+from safeai.kya.assurance import build_assurance_boundary
 from safeai.kya.fingerprints import normalize_path
 from safeai.kya.util import confidence_label, redact_secrets, sha256_text
 
@@ -147,6 +148,10 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
             "component_count": len(report.get("components") or []),
             "policy_decision": policy_decision or {"outcome": "warn", "reasons": ["No policy file supplied; default posture."]},
         },
+        # v1.2: the assurance boundary states what this scan verified and
+        # what it structurally cannot. ``limitations`` is kept as the
+        # single-line form rather than duplicated prose.
+        "assurance_boundary": report.get("assurance_boundary") or build_assurance_boundary(report),
         "limitations": limitations or [STATIC_ANALYSIS_DISCLAIMER],
     }
     return manifest

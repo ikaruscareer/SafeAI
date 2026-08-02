@@ -5,6 +5,151 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0-beta] - 2026-08-02
+
+### Added — Tool-Centric Capability Model & Escalation Detection
+
+- **Tool identity** (`safeai/analysis/tool_identity.py`): capabilities are now
+  attributed to a named tool rather than only to an agent. A tool identity
+  carries a `kind` (`agent`, `mcp_server`, `skill`, `tool`, `workflow_node`,
+  or `unknown`), a `name`, and a `framework`, and reduces to a deterministic
+  `tool_key` (for example `mcp_server:invoice-lookup`, `tool:send_email`).
+  The key is stable across scans when a name is available, and falls back to
+  a path-derived hash only when a tool is genuinely unnamed. Capabilities
+  that cannot be attributed to any tool are grouped under a fixed
+  `unknown:unattributed` identity rather than dropped or guessed at.
+- **Access modes**: every capability now carries an `access_mode` on an
+  ascending scale of `none < read < write < mutate < execute`. Where a
+  framework or configuration does not explicitly declare the mode, SafeAI
+  infers it conservatively (defaulting to `read`) and marks the capability
+  `access_mode_inferred: true`. Inferred access can trigger a rule, but its
+  severity is capped below critical, and never on its own claims the same
+  certainty as a declared, evidenced access mode. See `LIMITATIONS.md`.
+- **Capability diff, schema version 2** (`safeai/analysis/capability_diff.py`):
+  the baseline comparison now keys on `(tool_key, capability_name,
+  access_mode)` instead of capability name alone, so the diff can tell you
+  which tool gained or lost which authority, not just that "shell" appeared
+  somewhere in the project. The output adds a `tools` breakdown, `counts`
+  (new/escalated/reduced/removed/unchanged tools, plus escalations by
+  severity), and a `highest_escalation` summary. The pre-2.0 flat
+  added/removed/changed diff is preserved verbatim under a `legacy` key and
+  at the top level for existing consumers.
+- **Thirteen capability escalation rules** (`safeai/analysis/escalation.py`):
+  `ESC_SHELL_ADDED`, `ESC_FILESYSTEM_WRITE_ADDED`,
+  `ESC_EXTERNAL_ACCESS_ADDED`, `ESC_MCP_SERVER_ADDED`,
+  `ESC_MCP_READ_TO_MUTATE`, `ESC_APPROVAL_GATE_REMOVED`,
+  `ESC_MEMORY_SCOPE_EXPANDED`, `ESC_WRITE_TOOL_ADDED`,
+  `ESC_NEW_EXTERNAL_DESTINATION`, `ESC_AUTONOMY_INCREASED`, plus three
+  combination rules that only fire when two conditions are true of the same
+  tool at once — `ESC_COMBO_UNTRUSTED_INPUT_SHELL`,
+  `ESC_COMBO_AUTONOMY_BROAD_DATA`, and
+  `ESC_COMBO_DELEGATION_EXTERNAL_SIDE_EFFECT`. These exist because a single
+  capability rarely tells you whether a change matters: an agent gaining
+  shell access is a different story than one that already had it, and an
+  agent that gains both autonomy and broad data access at once is riskier
+  than the sum of the two changes taken separately.
+- **Tool surface** (`safeai/analysis/tool_surface.py`): a per-tool capability
+  index, built from data the scan already collected (agent models and MCP
+  assets), with no additional file access. It is written into the JSON
+  report, the KYA manifest (`tool_surface`, added at manifest schema 1.1),
+  and the registry. An MCP configuration that does not name its server is
+  recorded under the unattributed tool identity rather than assigned an
+  invented name.
+
+### Added — Deep Claude Code Analysis
+
+- The Claude Code adapter moves from presence detection to structural
+  analysis of `.claude/settings.json` and `.claude/settings.local.json` (in
+  that precedence order), `.mcp.json`, `.claude/commands/*.md` slash
+  commands, `.claude/agents/*.md` subagent definitions, and lifecycle hooks.
+  See `FRAMEWORK_SUPPORT.md` for the full scope boundary.
+- **Ten new rules**, documented with exact severities and OWASP LLM mappings
+  in `RULES_REFERENCE.md`: `CC_WILDCARD_PERMISSION`,
+  `CC_BYPASS_PERMISSIONS`, `CC_DENY_SHADOWED`, `CC_FS_WRITE_OUTSIDE_ROOT`,
+  `CC_SLASH_COMMAND_SHELL`, `CC_SLASH_COMMAND_ARG_INJECTION`,
+  `CC_SUBAGENT_PRIVILEGE_ESCALATION`, `CC_HOOK_SHELL_EXEC`,
+  `CC_MCP_UNCONSTRAINED`, and `CC_SETTINGS_UNPARSEABLE`. Configuration that
+  cannot be parsed is reported as a low-severity finding rather than
+  silently skipped or treated as a crash.
+
+### Added — PR Comment, CI Context, and the Assurance Boundary
+
+- **PR comment renderer** (`safeai/report/pr_comment.py`): produces a short,
+  reviewer-facing Markdown summary of capability escalations, grouped by
+  tool with the worst severity first, capped at 60 lines. With no baseline
+  it summarizes the first scan rather than fabricating a diff; with no
+  changes it prints a single line. SafeAI only ever writes this file to
+  disk or stdout — it never posts it anywhere and makes no network call of
+  any kind. Publishing the comment is left entirely to the CI workflow. See
+  the "Capability escalation in CI" section in `README.md`.
+- **CI context detection** (`safeai/kya/ci_context.py`): reads environment
+  variables (and, on GitHub Actions, the pull request event payload) to
+  identify the provider, branch, base ref, commit, PR number, and
+  repository. It never raises — outside CI it returns an
+  all-`unknown`/`None` result — and supports GitHub Actions, GitLab CI, and
+  Azure Pipelines.
+- **Three new `safeai scan` flags**: `--pr-comment PATH` writes the Markdown
+  summary to a file; `--pr-comment-stdout` prints it to stdout; and
+  `--fail-on-escalation {critical,high,medium}` fails the scan when a
+  capability escalation at or above that severity is found. This is a
+  separate gate from `--fail-on`/`--fail-on-new`, which act on findings, not
+  capability escalations; the two gates only add to the failing set, never
+  subtract from it, and `--fail-on-escalation` requires `--baseline` because
+  an escalation is by definition a change relative to something.
+- **Assurance boundary** (`safeai/kya/assurance.py`): a short, factual
+  statement of what a scan verified statically (declared tools, prompt and
+  instruction files, MCP server configuration, workflow structure,
+  permission configuration) and what it structurally cannot verify (IAM and
+  cloud permissions, runtime identity, deployed network policy, actual
+  runtime behaviour, dynamically constructed tool bindings). It is computed
+  from real scan data — files actually skipped, configuration that actually
+  failed to parse, and the count of access modes that were actually
+  inferred rather than declared — never from a fixed template. Written into
+  the manifest as `assurance_boundary` (manifest schema 1.2). See
+  `KYA_MANIFEST.md` and `LIMITATIONS.md`.
+
+### Added — Registry Schema v2
+
+- **`agent_tool_snapshots` table**: one row per tool per scan, storing the
+  tool's identity, kind, framework, its capability list, and a summarized
+  access level. `agent_id` is nullable by design — a tool is attributed to
+  an agent only when the tool's evidence paths overlap the agent's source
+  locations, and a tool with no such overlap is stored unattributed rather
+  than assigned a guessed owner or dropped. Uniqueness is enforced by an
+  expression index (`IFNULL(agent_id, ''), scan_id, tool_key`) because
+  SQLite treats `NULL` as distinct for ordinary `UNIQUE` constraints. See
+  `REGISTRY.md`.
+- **Automatic migration from schema v1**: existing registries gain the new
+  table and indexes in place on the next scan. Migrations are additive and
+  forward-only; no existing row in any table is dropped, rewritten, or
+  renumbered.
+
+### Changed
+
+- `MANIFEST_SCHEMA_VERSION` is now `1.2`. The `tool_surface` array
+  (introduced at 1.1, alongside this release) and the `assurance_boundary`
+  object (new at 1.2) are both present in every manifest written by this
+  version. `KYA_MANIFEST.md` has been brought up to date to document both.
+- Baseline loading accepts a legacy JSON report or a KYA manifest of schema
+  1.1 or later as the `--baseline` input, matching the existing baseline
+  contract.
+- Version bumped to `1.4.0b0` (`pyproject.toml`).
+
+### Compatibility
+
+- **Registries** created under schema v1 migrate automatically on the next
+  scan and retain every existing row; nothing is deleted or renumbered by
+  the migration.
+- **Baselines** captured before v1.4 (no `tool_surface` in the manifest, or
+  a legacy JSON report) still work with `--baseline` and
+  `--fail-on-escalation`, but because they predate per-tool attribution,
+  the diff cannot trust their structural tool status. In that case,
+  individual per-tool escalation rules are suppressed and only the three
+  combination rules are evaluated, since those depend on conditions within
+  a single scan rather than on trusting the baseline's tool structure.
+- No new runtime dependency was introduced. PyYAML remains the only
+  third-party dependency.
+
 ## [1.3.0-beta] - 2026-07-31
 
 ### Added — KYA Baseline & Local Registry

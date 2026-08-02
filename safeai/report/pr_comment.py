@@ -21,6 +21,7 @@ Design constraints, all enforced by tests:
 """
 
 from safeai.analysis.tool_identity import display_name
+from safeai.kya.assurance import BOUNDARY_SENTENCE
 
 #: CI keys on this to find its own previous comment.
 MARKER = "<!-- safeai:pr-comment:v1 -->"
@@ -42,10 +43,7 @@ _SEVERITY_MARK = {
     "low": "low",
 }
 
-_FOOTER = (
-    "_Static analysis of repository configuration and source. SafeAI cannot "
-    "verify deployed IAM permissions, runtime identity, or network policy._"
-)
+_FOOTER = f"_{BOUNDARY_SENTENCE}_"
 
 #: Escalations below this severity are not worth a reviewer's attention
 #: in the summary block; they remain in the full report.
@@ -205,6 +203,23 @@ def _details_line(report, diff, shown):
     return [f"<sub>{' · '.join(bits)} · {shown} shown</sub>", ""]
 
 
+def _footer(report):
+    """One-line assurance boundary, with the scan's real inference count.
+
+    The generic sentence alone is easy to skim past. Naming how many
+    values in *this* scan were inferred keeps the caveat specific.
+    """
+    boundary = report.get("assurance_boundary") or {}
+    sentence = str(boundary.get("summary") or BOUNDARY_SENTENCE)
+    inferred = boundary.get("inferred_value_count") or 0
+    if inferred:
+        sentence += (
+            f" {inferred} access mode{'' if inferred == 1 else 's'} in this scan "
+            "were inferred rather than declared."
+        )
+    return f"_{sentence}_"
+
+
 def _truncate(lines, total_blocks, shown_blocks):
     """Enforce the hard line cap, leaving room for the notice and footer."""
     remaining = total_blocks - shown_blocks
@@ -234,13 +249,13 @@ def render_pr_comment(report, ci_context=None):
 
     if not diff or not diff.get("baseline_available", False):
         lines.extend(_first_scan_summary(report))
-        lines.extend(["", _FOOTER])
+        lines.extend(["", _footer(report)])
         return "\n".join(lines) + "\n"
 
     blocks = _tool_blocks(diff)
     if not blocks:
         lines.append("### SafeAI — no capability escalations in this change")
-        lines.extend(["", _FOOTER])
+        lines.extend(["", _footer(report)])
         return "\n".join(lines) + "\n"
 
     total = sum(len(block["escalations"]) for block in blocks)
@@ -267,7 +282,7 @@ def render_pr_comment(report, ci_context=None):
 
     while lines and lines[-1] == "":
         lines.pop()
-    lines.extend(["", _FOOTER])
+    lines.extend(["", _footer(report)])
     return "\n".join(lines) + "\n"
 
 

@@ -358,6 +358,165 @@ Every rule currently declared in `rules/base_rules.yaml` has active detection lo
 
 ---
 
+## Claude Code Rules
+
+These rules cover deep analysis of Claude Code project configuration:
+`.claude/settings.json` and `.claude/settings.local.json`, `.mcp.json`,
+`.claude/commands/*.md` slash commands, `.claude/agents/*` subagent
+definitions, and lifecycle hooks. Only configuration committed inside the
+scanned repository is read; see `FRAMEWORK_SUPPORT.md` for the exact scope
+boundary.
+
+### CC_WILDCARD_PERMISSION
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_WILDCARD_PERMISSION` |
+| **Description** | Claude Code permission granted with no argument constraint (e.g. `Bash(*)`, bare `Bash`) |
+| **Severity** | High |
+| **OWASP LLM** | LLM06 (Excessive Agency) |
+
+**Why it matters:** A permission entry without an argument constraint grants the tool unconditionally, regardless of what argument or command is passed at invocation time.
+
+**Recommendation:** Scope permissions with explicit argument patterns (e.g. `Bash(npm run test:*)`) instead of a bare tool name or wildcard.
+
+---
+
+### CC_BYPASS_PERMISSIONS
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_BYPASS_PERMISSIONS` |
+| **Description** | Claude Code approval gate disabled or weakened (`bypassPermissions`, `dangerously-skip-permissions`, permissive default mode) |
+| **Severity** | Critical |
+| **OWASP LLM** | LLM06 |
+
+**Why it matters:** Disabling the permission gate removes the human-in-the-loop check that would otherwise stop an unreviewed tool call.
+
+**Recommendation:** Remove bypass settings from committed configuration; if a permissive mode is required for local development, keep it out of files that ship with the repository.
+
+---
+
+### CC_DENY_SHADOWED
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_DENY_SHADOWED` |
+| **Description** | Claude Code deny entry contradicted by a broader allow entry, so it cannot take effect |
+| **Severity** | High |
+| **OWASP LLM** | LLM06 |
+
+**Why it matters:** A deny rule that is shadowed by a broader allow rule gives a false sense of restriction — the tool remains permitted in practice.
+
+**Recommendation:** Order and scope allow/deny entries so that intended restrictions are not overridden by a broader grant.
+
+---
+
+### CC_FS_WRITE_OUTSIDE_ROOT
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_FS_WRITE_OUTSIDE_ROOT` |
+| **Description** | Claude Code write permission targets a path outside the project root |
+| **Severity** | High |
+| **OWASP LLM** | LLM06 |
+
+**Why it matters:** A write grant that reaches outside the project root can modify files unrelated to the project, including shared or system paths.
+
+**Recommendation:** Constrain write permissions to paths inside the project root.
+
+---
+
+### CC_SLASH_COMMAND_SHELL
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_SLASH_COMMAND_SHELL` |
+| **Description** | Custom slash command embeds a shell invocation or inlines external file content |
+| **Severity** | Medium |
+| **OWASP LLM** | LLM01 (Prompt Injection) |
+
+**Why it matters:** Slash commands are an instruction surface that can be invoked with caller-supplied context; embedding a shell invocation or inlining file content widens what that instruction can do or see.
+
+**Recommendation:** Keep shell invocations and file inlining out of slash command bodies where possible, or ensure the command does not accept untrusted arguments.
+
+---
+
+### CC_SLASH_COMMAND_ARG_INJECTION
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_SLASH_COMMAND_ARG_INJECTION` |
+| **Description** | Custom slash command interpolates caller-supplied `$ARGUMENTS` into a shell invocation |
+| **Severity** | Critical |
+| **OWASP LLM** | LLM01 |
+
+**Why it matters:** Interpolating `$ARGUMENTS` (or `$1`–`$9`) directly into a shell command means whoever invokes the slash command controls part of the shell command executed. This is the concrete pattern that feeds the `ESC_COMBO_UNTRUSTED_INPUT_SHELL` escalation rule.
+
+**Recommendation:** Validate or quote argument interpolation before it reaches a shell context, or avoid passing raw arguments to shell commands.
+
+---
+
+### CC_SUBAGENT_PRIVILEGE_ESCALATION
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_SUBAGENT_PRIVILEGE_ESCALATION` |
+| **Description** | Claude Code subagent granted tools beyond its parent permission scope |
+| **Severity** | High |
+| **OWASP LLM** | LLM08 (Excessive Agency via multi-agent systems) |
+
+**Why it matters:** A subagent that can use tools its parent was not granted effectively bypasses the parent's permission scope. This rule only fires when the parent's tool scope is itself explicitly declared, so it never infers a violation from an undeclared parent scope.
+
+**Recommendation:** Keep subagent tool grants within, or narrower than, the parent's declared tool scope.
+
+---
+
+### CC_HOOK_SHELL_EXEC
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_HOOK_SHELL_EXEC` |
+| **Description** | Claude Code lifecycle hook executes a shell command, or fetches unpinned remote content |
+| **Severity** | High |
+| **OWASP LLM** | LLM05 (Supply Chain Vulnerabilities) |
+
+**Why it matters:** Hooks run automatically on lifecycle events without an explicit per-invocation approval step. An unpinned remote fetch inside a hook (curl/wget/npx -y/pip install without a pinned requirement/pipe-to-shell) means the exact code that runs can change without a corresponding change to the repository.
+
+**Recommendation:** Pin hook dependencies to specific versions or hashes, and avoid piping remote content directly into a shell.
+
+---
+
+### CC_MCP_UNCONSTRAINED
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_MCP_UNCONSTRAINED` |
+| **Description** | MCP server enabled without a corresponding permission constraint |
+| **Severity** | Medium |
+| **OWASP LLM** | LLM06 |
+
+**Why it matters:** An MCP server without a matching permission entry is reachable without the explicit scoping that the permission system is meant to provide.
+
+**Recommendation:** Add an explicit permission entry (`mcp__server__tool` grant) for each enabled MCP server.
+
+---
+
+### CC_SETTINGS_UNPARSEABLE
+
+| Field | Value |
+|-------|-------|
+| **Rule ID** | `CC_SETTINGS_UNPARSEABLE` |
+| **Description** | Claude Code configuration file could not be parsed and cannot be reviewed or enforced |
+| **Severity** | Low |
+| **OWASP LLM** | LLM09 (Overreliance) |
+
+**Why it matters:** A configuration file that cannot be parsed cannot be checked for any of the other Claude Code rules — it is a gap in coverage, not a clean bill of health. SafeAI tolerates JSON comments and trailing commas before falling back to this rule, so it only fires on genuinely malformed files.
+
+**Recommendation:** Fix the configuration file's syntax so its permissions and settings can be reviewed. This finding also feeds the `assurance_boundary` coverage notes in the KYA manifest.
+
+---
+
 ## MCP-Specific Rules
 
 MCP-related rules are generated dynamically by the MCP analyzer and are documented in [MCP_SECURITY.md](MCP_SECURITY.md). The following MCP rule IDs are used:

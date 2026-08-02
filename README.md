@@ -239,6 +239,9 @@ python -m safeai registry <subcommand> [options]
 | `--registry` | `.safeai/registry.db` | Registry database path |
 | `--no-registry` | off | Skip registry persistence |
 | `--strict-registry` | off | Fail the scan if registry persistence fails |
+| `--pr-comment` | — | Write a reviewer-facing Markdown summary of capability escalations to this path (never posted anywhere) |
+| `--pr-comment-stdout` | off | Print the PR comment Markdown to stdout |
+| `--fail-on-escalation` | — | Fail if a capability escalation at or above `critical`, `high`, or `medium` is detected (requires `--baseline`) |
 | `--rules` | built-in | Custom rules directory |
 | `--fail-on` | `critical` | Exit code threshold: `critical`, `high`, `medium` |
 | `--verbose` | — | Enable verbose output |
@@ -363,6 +366,75 @@ safeai-scan:
       subprocess.run(["pip", "install", "-e", "."])
       subprocess.run(["python", "-m", "safeai", "scan", ".", "--sarif", "$(Build.ArtifactStagingDirectory)/results.sarif", "--no-registry"])
 ```
+
+### Capability escalation in CI
+
+A capability *escalation* is a change between two scans where a tool gains
+more authority than it had before — a new shell capability, a filesystem
+access widening from read to write, a new MCP server, an approval gate
+being removed, and so on (see `RULES_REFERENCE.md` and `KYA_MANIFEST.md`
+for the full rule list). Reviewing these on every pull request is more
+targeted than reviewing every finding, because most findings on a mature
+codebase are pre-existing and already accepted; an escalation is new by
+definition.
+
+`--fail-on-escalation` gates the scan on escalation severity, and
+`--pr-comment` writes a short Markdown summary you can post as a PR
+comment. SafeAI itself never posts anything anywhere and makes no network
+calls of any kind — generating the comment and publishing it are two
+separate steps, and the second one is entirely up to your CI workflow.
+
+```yaml
+name: safeai-escalation-check
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  safeai-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install SafeAI
+        run: pip install -e .
+
+      - name: Fetch baseline manifest from the base branch
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          git show "origin/${{ github.event.pull_request.base.ref }}:safeai-manifest.json" \
+            > safeai-manifest.json || echo '{}' > safeai-manifest.json
+
+      - name: Run scan
+        run: |
+          safeai scan . \
+            --baseline safeai-manifest.json \
+            --pr-comment comment.md \
+            --fail-on-escalation high
+
+      - name: Post or update PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --edit-last --body-file comment.md \
+            || gh pr comment "${{ github.event.pull_request.number }}" \
+            --body-file comment.md
+```
+
+The `gh pr comment --edit-last` call updates SafeAI's own previous comment
+in place on repeat pushes, rather than adding a new one each time; it fails
+when there is no previous comment to edit (for example, on the first push),
+so the fallback plain `gh pr comment` handles that case. The `--fail-on-escalation`
+step runs before the comment step so the workflow's exit code still reflects
+the scan outcome; `if: always()` on the comment step makes sure the comment
+is posted even when the scan step fails the job.
 
 ### SARIF Integration
 

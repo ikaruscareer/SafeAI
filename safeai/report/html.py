@@ -92,6 +92,38 @@ def _kya_section(report):
     <p class='muted'>SafeAI results are static analysis evidence and do not verify deployed runtime permissions, identities, or behavior.</p>"""
 
 
+def _assurance_section(report):
+    """Render the assurance boundary: what this scan did and did not verify.
+
+    Placed after the findings so it reads as a qualifier on them rather
+    than as boilerplate nobody scrolls past.
+    """
+    boundary = report.get("assurance_boundary")
+    if not isinstance(boundary, dict) or not boundary:
+        return ""
+
+    def items(values):
+        return "".join(f"<li>{escape(str(value))}</li>" for value in values or [])
+
+    inferred = boundary.get("inferred_value_count") or 0
+    return f"""
+    <h2>Assurance boundary</h2>
+    <p class='muted'>{escape(str(boundary.get("summary", "")))}</p>
+    <div class='grid'>
+      <div>
+        <h3>Verified statically</h3>
+        <ul>{items(boundary.get("verified_statically"))}</ul>
+      </div>
+      <div>
+        <h3>Not verifiable statically</h3>
+        <ul>{items(boundary.get("not_verifiable_statically"))}</ul>
+      </div>
+    </div>
+    <h3>Coverage notes</h3>
+    <ul>{items(boundary.get("coverage_notes"))}</ul>
+    <p class='muted'>Inferred values in this scan: {escape(str(inferred))}</p>"""
+
+
 def write_html(report, path):
     trust = report.get("trust_score", {})
     categories = trust.get("categories", {})
@@ -186,6 +218,8 @@ def write_html(report, path):
     </table>
 
     {_kya_section(report)}
+
+    {_assurance_section(report)}
   </div>
 </body>
 </html>"""

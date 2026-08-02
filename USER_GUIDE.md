@@ -14,10 +14,11 @@
 8. [Reports](#reports)
 9. [KYA Registry](#kya-registry)
 10. [Baseline Workflow](#baseline-workflow)
-11. [Suppressions & Exceptions](#suppressions--exceptions)
-12. [Policy-as-Code](#policy-as-code)
-13. [Troubleshooting](#troubleshooting)
-14. [FAQ](#faq)
+11. [PR Comments & Capability Escalation](#pr-comments--capability-escalation)
+12. [Suppressions & Exceptions](#suppressions--exceptions)
+13. [Policy-as-Code](#policy-as-code)
+14. [Troubleshooting](#troubleshooting)
+15. [FAQ](#faq)
 
 ---
 
@@ -61,6 +62,8 @@ usage: safeai scan [-h] [--sarif SARIF] [--json JSON_PATH] [--html HTML_PATH]
                    [--fail-on {critical,high,medium}] [--verbose]
                    [--baseline BASELINE] [--fail-on-new]
                    [--registry REGISTRY] [--no-registry] [--strict-registry]
+                   [--pr-comment PR_COMMENT_PATH] [--pr-comment-stdout]
+                   [--fail-on-escalation {critical,high,medium}]
                    [--policy POLICY] [--suppressions SUPPRESSIONS]
                    directory
 ```
@@ -135,6 +138,8 @@ usage: safeai scan [-h] [--sarif SARIF] [--json JSON_PATH]
                    [--rules RULES] [--fail-on {critical,high,medium}]
                    [--verbose] [--baseline BASELINE] [--fail-on-new]
                    [--registry REGISTRY] [--no-registry] [--strict-registry]
+                   [--pr-comment PR_COMMENT_PATH] [--pr-comment-stdout]
+                   [--fail-on-escalation {critical,high,medium}]
                    [--policy POLICY] [--suppressions SUPPRESSIONS]
                    directory
 ```
@@ -153,6 +158,9 @@ usage: safeai scan [-h] [--sarif SARIF] [--json JSON_PATH]
 | `--registry` | string | `.safeai/registry.db` | Override registry database path |
 | `--no-registry` | flag | off | Do not persist scan state to local registry |
 | `--strict-registry` | flag | off | Fail scan on registry persistence errors |
+| `--pr-comment` | string | — | Write a reviewer-facing Markdown summary of capability escalations to this path. SafeAI never posts it anywhere. |
+| `--pr-comment-stdout` | flag | off | Print the PR comment Markdown to stdout, in addition to or instead of writing it to a file |
+| `--fail-on-escalation` | choice | — | Fail the scan when a capability escalation at or above `critical`, `high`, or `medium` is detected. Requires `--baseline`; this is a separate axis from `--fail-on`/`--fail-on-new`, which gate on findings rather than capability escalations. |
 | `--policy` | string | `.safeai/policy.yml` | Policy-as-code file path |
 | `--suppressions` | string | `.safeai/suppressions.yml` | Suppression file path |
 | `--verbose` | flag | off | Enable verbose scanner output |
@@ -402,6 +410,75 @@ manifest, and registry history.
   registry history when available.
 
 Do not commit baseline files blindly: review them like lockfiles.
+
+---
+
+## PR Comments & Capability Escalation
+
+A capability *escalation* is a tool gaining more authority than it had in
+the baseline scan — a new shell capability, a filesystem access widening
+from read to write, a new MCP server, a removed approval gate, and so on.
+Escalations are computed per tool (see `KYA_MANIFEST.md` for the
+`tool_surface` and diff schema), which is why they require `--baseline`:
+an escalation is defined relative to a prior scan, not to anything in the
+current scan alone.
+
+```bash
+safeai scan . \
+  --baseline safeai-manifest.json \
+  --pr-comment comment.md \
+  --fail-on-escalation high
+```
+
+This fails the scan (exit 1) if any tool escalated at `high` or `critical`
+severity, and writes `comment.md`. A typical comment looks like:
+
+```markdown
+<!-- safeai:pr-comment:v1 -->
+### SafeAI capability escalation summary
+
+**mcp_server:invoice-lookup** — high
+- mcp: read → mutate (`ESC_MCP_READ_TO_MUTATE`)
+
+**tool:send_email** — high
+- external_apis: none → write (`ESC_EXTERNAL_ACCESS_ADDED`)
+
+_1 more tool changed — see full report_
+
+---
+0 access modes were inferred rather than declared in this scan.
+```
+
+Read it the same way you would read a diff: each heading is a tool
+identity (`kind:name`), sorted worst severity first; each bullet is one
+capability's access-mode change and the rule that fired. The `<!--
+safeai:pr-comment:v1 -->` marker on the first line lets a CI script find
+and replace SafeAI's own previous comment on a PR rather than posting a
+new one on every push. SafeAI writes this file (or prints it to stdout with
+`--pr-comment-stdout`); it never posts it to GitHub, GitLab, or anywhere
+else, and makes no network call while doing so — posting is the CI
+workflow's job. See the "Capability escalation in CI" section in
+`README.md` for a complete GitHub Actions example.
+
+If a tool's access summary shows no change (for example, an MCP server
+already at its highest observed access mode), but an individual capability
+on that tool still changed, the comment falls back to reporting the
+capability-level change instead of a misleadingly flat summary.
+
+### Assurance boundary
+
+Every manifest includes an `assurance_boundary` object that states, in
+plain language, what this specific scan verified and what it structurally
+cannot verify — declared tools and permission configuration are checked;
+deployed IAM permissions, runtime identity, and network policy are not.
+The terminal summary and HTML report surface the same statement. When a
+scan skipped files, failed to parse a configuration file, or had to infer
+an access mode rather than read a declared one, the boundary's
+`coverage_notes` say so specifically, with a count; when none of that
+happened, it says so as well, rather than omitting the field. Treat this
+as an instrument-accuracy statement, not a pass/fail judgment — it tells you
+how much to trust the rest of the report, not whether the scanned project
+is safe. See `KYA_MANIFEST.md` and `LIMITATIONS.md`.
 
 ---
 

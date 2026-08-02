@@ -68,6 +68,8 @@ findings (`--include-suppressed`, excluded by default).
 - Scan metadata (IDs, timestamps, tool/ruleset/config versions, commit)
 - Full canonical manifest + its SHA-256 hash
 - Agent snapshots, capabilities, tools
+- Per-tool capability snapshots (`agent_tool_snapshots`, schema v2), including
+  unattributed tools that could not be linked to a specific agent
 - Findings with fingerprints, statuses, redacted evidence
 - Policy decisions and matched policies
 
@@ -81,13 +83,71 @@ findings (`--include-suppressed`, excluded by default).
 ## Schema & migrations
 
 The schema is versioned via the `schema_migrations` table. Migrations are
-additive and applied automatically on open. Current version: **1**.
+additive, forward-only, and applied automatically on open — no existing
+table or row is ever dropped or rewritten by a migration. Current
+version: **2**.
 
-Tables: `schema_migrations`, `projects`, `scans`, `agents`,
-`agent_snapshots`, `findings`, `scan_findings`, `policy_decisions`,
-`policy_matches`, `metadata`. Indexes cover project, agent ID, scan ID,
-finding fingerprint, and scan timestamp. WAL journal mode is enabled for
-safe local CLI concurrency.
+Tables through schema v1: `schema_migrations`, `projects`, `scans`,
+`agents`, `agent_snapshots`, `findings`, `scan_findings`,
+`policy_decisions`, `policy_matches`, `metadata`. Indexes cover project,
+agent ID, scan ID, finding fingerprint, and scan timestamp. WAL journal
+mode is enabled for safe local CLI concurrency.
+
+### Schema v2: `agent_tool_snapshots`
+
+Migration 2 adds one table, capturing the per-tool capability surface
+(`tool_surface` in the KYA manifest, see `KYA_MANIFEST.md`) for every scan:
+
+```sql
+CREATE TABLE IF NOT EXISTS agent_tool_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id TEXT REFERENCES agents(agent_id),
+    scan_id  TEXT NOT NULL REFERENCES scans(scan_id),
+    tool_key TEXT NOT NULL,
+    tool_kind TEXT,
+    tool_name TEXT,
+    framework TEXT,
+    capabilities_json TEXT NOT NULL,
+    access_summary TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tool_snapshots_unique
+    ON agent_tool_snapshots(IFNULL(agent_id, ''), scan_id, tool_key);
+CREATE INDEX IF NOT EXISTS idx_tool_snapshots_agent ON agent_tool_snapshots(agent_id);
+CREATE INDEX IF NOT EXISTS idx_tool_snapshots_key   ON agent_tool_snapshots(tool_key);
+```
+
+One row is inserted per tool per scan (`INSERT OR REPLACE`), with the
+tool's capabilities stored as sorted JSON and `access_summary` set to the
+highest access mode across the tool's capabilities.
+
+**`agent_id` is nullable, and this is deliberate.** A tool surface is
+attributed to an agent only when the tool's capability evidence paths
+overlap the agent's declared `source_locations` — if a scan finds an MCP
+server or tool whose evidence doesn't point back to any known agent's
+source files, inventing an owner for it would be a fabricated attribution,
+which this release explicitly avoids making. Such tools are retained in
+`agent_tool_snapshots` with `agent_id = NULL` rather than dropped, so the
+tool surface still shows up in registry queries; it is simply not claimed
+to belong to anyone. When more than one agent's source locations overlap
+a tool's evidence, the lowest agent ID (alphabetically) is used, to keep
+attribution deterministic.
+
+Because SQLite's ordinary `UNIQUE` constraint treats every `NULL` as
+distinct from every other `NULL` (so two unattributed rows for the same
+tool in the same scan would not violate a naive constraint), uniqueness
+is enforced instead by an expression index over
+`IFNULL(agent_id, ''), scan_id, tool_key`, which normalizes `NULL` to an
+empty string before comparing.
+
+### Migrating from schema v1
+
+An existing v1 registry gains the `agent_tool_snapshots` table and its
+indexes automatically the next time `safeai scan` opens it — no manual
+migration step, flag, or separate command is required. All pre-existing
+tables and rows (`agents`, `agent_snapshots`, `findings`, and so on) are
+left exactly as they were; the migration is additive only. The registry's
+`metadata` table records the applied `registry_version` so re-opening an
+already-migrated database is a no-op.
 
 ## Backup
 

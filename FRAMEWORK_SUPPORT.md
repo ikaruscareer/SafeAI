@@ -29,7 +29,7 @@ we deliberately do not overclaim coverage.
 | Microsoft Agent Framework | AST + config + deps + regex | Agents, workflows, tools, memory, models | Cloud, memory | Minimal | Experimental |
 | Azure AI Foundry | Configuration | Tools, models from YAML | Cloud | Minimal | Experimental |
 | Bedrock Agent | Configuration | Tools from JSON | (minimal) | Minimal | Experimental |
-| Claude Code | CLAUDE.md + .claude config | Agents, tools, models, MCP references | Shell, filesystem, MCP | Minimal | Experimental |
+| Claude Code | CLAUDE.md + .claude config (deep) | Settings, permissions, MCP config, slash commands, subagents, hooks | Shell, filesystem, MCP, delegation | Partial | Partial |
 | Google ADK | AST + imports | Agents, workflows, tools, models | External APIs | Minimal | Experimental |
 | Mastra | AST + imports | Agents, workflows, tools, models | Multi-agent, RAG, external APIs | Minimal | Experimental |
 | Haystack | AST + imports | Pipelines, agents, tools, generators | RAG, external APIs, browser | Minimal | Experimental |
@@ -313,6 +313,78 @@ SafeAI detects:
 - Framework: `microsoft_agent_framework`
 - Agent: `AgentClient` with endpoint and credential
 - Workflow: run operations
+
+---
+
+## Claude Code
+
+### Detection Approach
+
+**Priority:** repository-committed configuration only — structural analysis, not just presence detection
+
+As of this release, the Claude Code adapter reads and structurally analyzes:
+
+- **`.claude/settings.json` and `.claude/settings.local.json`** — read in
+  that precedence order, tolerant of JSON comments and trailing commas. A
+  file that still fails to parse produces a low-severity
+  `CC_SETTINGS_UNPARSEABLE` finding rather than a crash or a silent skip.
+- **`.mcp.json`** — MCP server configuration. A configuration that declares
+  tools without naming its server is recorded under the unattributed tool
+  identity rather than given an invented server name.
+- **`.claude/commands/*.md`** — custom slash commands, treated as an
+  untrusted-instruction surface. SafeAI looks for inline shell
+  (`` !`command` ``, bang-line shell), `$ARGUMENTS`/`$1`–`$9` interpolation
+  into a shell context, `@file` references, frontmatter `allowed-tools`, and
+  unpinned remote-fetch patterns (`curl`, `wget`, `npx -y`, unpinned
+  `pip install`, pipe-to-shell).
+- **`.claude/agents/*.md`** — subagent definitions, checked for tool grants
+  that exceed the parent's declared tool scope.
+- **Lifecycle hooks** — shell commands bound to lifecycle events, flagged
+  at a higher severity when they fetch unpinned remote content.
+- **`CLAUDE.md`** — project instructions, as in earlier releases.
+
+Permission entries are parsed in `Tool(argument)` form (for example
+`Bash(npm run test:*)`, `Write(*)`, or a bare `Bash`) and MCP grants in
+`mcp__server__tool` form. A bare tool name or a wildcard argument (`*`,
+`**`, `*:*`, `//*`) counts as unconstrained and is flagged by
+`CC_WILDCARD_PERMISSION`. See `RULES_REFERENCE.md` for the full list of ten
+new `CC_*` rules this analysis produces.
+
+### Scope boundary
+
+**Only configuration committed inside the scanned repository is read.**
+The adapter never opens `~/.claude`, `~/.claude.json`, or any other
+user-level or machine-global Claude Code configuration — it reads only
+from the scan's own file cache, which is built from the target directory.
+This is a deliberate boundary for this release: user-level and
+machine-global configuration can affect a real Claude Code session but is
+not something a repository-scoped static scan can see or should claim to
+see. A repository that relies on permissions or hooks defined only at the
+user level will not have that configuration reflected in SafeAI's
+findings; review it separately.
+
+### Capabilities Discovered
+
+- **Shell** — `Bash`, hook shell commands, slash-command shell invocations
+- **Filesystem** — `Write`, `Edit`, `MultiEdit`, `NotebookEdit`, `Read`, `Glob`, `Grep`, `Ls`
+- **External APIs** — `WebFetch`, `WebSearch`
+- **Delegation** — `Task`, `Agent`, subagent definitions
+- **Memory** — `TodoWrite`
+- **MCP** — servers and tools declared in `.mcp.json`
+
+### Detection Example
+
+```json
+{
+  "permissions": {
+    "allow": ["Bash(npm run test:*)", "Write(*)"]
+  }
+}
+```
+
+SafeAI detects:
+- `Bash` constrained to a `npm run test:*` argument pattern (not flagged)
+- `Write(*)` as an unconstrained wildcard permission (`CC_WILDCARD_PERMISSION`)
 
 ---
 

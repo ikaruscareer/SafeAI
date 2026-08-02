@@ -98,3 +98,12 @@ def print_summary(report):
         print()
         print("Note: SafeAI results are static analysis evidence and do not verify")
         print("deployed runtime permissions, identities, or behavior.")
+
+    # Assurance boundary: what this particular scan could not see. Printed
+    # last so it qualifies the findings above rather than prefacing them.
+    boundary = report.get("assurance_boundary")
+    if isinstance(boundary, dict) and boundary.get("coverage_notes"):
+        print()
+        print("Coverage:")
+        for note in boundary["coverage_notes"]:
+            print(f"  - {note}")

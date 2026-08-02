@@ -1,4 +1,4 @@
-# SafeAI KYA Manifest — `safeai-manifest.json` (Schema v1.0)
+# SafeAI KYA Manifest — `safeai-manifest.json` (Schema v1.2)
 
 The KYA manifest is SafeAI's **canonical portable artifact** for scan-derived
 "Know Your Agent" evidence. It is the public contract consumed by the local
@@ -18,15 +18,26 @@ registry, JSON output, capability/agent comparison, and future integrations.
   contract. `1.x` consumers can read any `1.y` manifest; unknown optional
   fields must be ignored.
 
+## Schema history
+
+| Version | Added |
+|---|---|
+| 1.0 | Initial manifest: `agents`, `components`, `findings`, `summary`, `limitations` |
+| 1.1 | `tool_surface` — the per-tool capability index described below |
+| 1.2 | `assurance_boundary` — the verified/not-verifiable statement described below |
+
+Both 1.1 and 1.2 are purely additive: a 1.0 consumer that ignores unknown
+fields reads a 1.2 manifest without error.
+
 ## Top-Level Structure
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.2",
   "manifest_type": "safeai.kya",
-  "generated_at": "2026-07-31T12:00:00Z",
+  "generated_at": "2026-08-02T12:00:00Z",
   "safeai": {
-    "version": "1.3.0b0",
+    "version": "1.4.0b0",
     "ruleset_version": "sha256:abc123...",
     "config_hash": "sha256-of-normalized-effective-config"
   },
@@ -53,6 +64,7 @@ registry, JSON output, capability/agent comparison, and future integrations.
     }
   },
   "agents": [],
+  "tool_surface": [],
   "components": [],
   "findings": [],
   "summary": {
@@ -63,11 +75,23 @@ registry, JSON output, capability/agent comparison, and future integrations.
     "component_count": 0,
     "policy_decision": {"outcome": "warn", "reasons": ["..."], "matches": []}
   },
+  "assurance_boundary": {
+    "schema_version": 1,
+    "verified_statically": ["declared tools", "prompt and instruction files", "MCP server configuration", "workflow structure", "permission configuration"],
+    "not_verifiable_statically": ["IAM and cloud permissions", "runtime identity", "deployed network policy", "actual runtime behaviour", "dynamically constructed tool bindings"],
+    "coverage_notes": ["..."],
+    "inferred_value_count": 0,
+    "summary": "Static analysis of repository configuration and source. SafeAI cannot verify deployed IAM permissions, runtime identity, or network policy."
+  },
   "limitations": [
     "SafeAI results are static analysis evidence and do not verify deployed runtime permissions, identities, or behavior."
   ]
 }
 ```
+
+Field order in `build_manifest()` places `tool_surface` after `agents` and
+`assurance_boundary` after `summary`, immediately before `limitations`.
+Both are described in detail below.
 
 ## Agent Records
 
@@ -89,6 +113,63 @@ Each agent/workflow discovered in source or configuration:
 
 Renaming or moving the primary source file creates a **new** agent identity.
 Aliasing/migration is deferred to a future release.
+
+## Tool Surface (added in schema 1.1)
+
+`tool_surface` is a flat, sorted list of every named tool the scan
+identified, with its capabilities and access modes attached directly to the
+tool rather than only to the agent that happens to hold it. It is built
+from data the scan already collected — agent models and MCP assets — so it
+costs no additional file access. This is the granularity the v1.4
+capability diff and PR comment operate on: "which tool gained what" rather
+than "did any tool anywhere gain something."
+
+| Field | Description |
+|---|---|
+| `tool_key` | Deterministic identity string, e.g. `mcp_server:invoice-lookup`, `tool:send_email`, or `unknown:<hash>` for an unnamed tool |
+| `kind` | `agent` \| `mcp_server` \| `skill` \| `tool` \| `workflow_node` \| `unknown` |
+| `name` | Discovered tool name, or `"unattributed"` if none could be determined |
+| `framework` | Framework that produced this tool, if known |
+| `capabilities` | `[{name, category, access_mode, access_mode_inferred, confidence, ...}]` |
+| `access_summary` | The highest access mode across the tool's capabilities |
+
+Access modes follow an ascending scale: `none < read < write < mutate <
+execute`. When a framework or configuration file does not explicitly
+declare a capability's access mode, SafeAI infers one conservatively
+(defaulting to `read`) and sets `access_mode_inferred: true` on that
+capability; inferred access modes are counted in the manifest's
+`assurance_boundary.inferred_value_count` below, precisely because an
+inferred value carries less certainty than a declared one.
+
+A tool identity is deterministic and path-independent whenever a name is
+available, so the same MCP server or tool keeps the same `tool_key` across
+scans even if its defining file moves. Only genuinely unnamed tools fall
+back to a path-derived hash. An MCP configuration that does not name its
+server is recorded under a fixed `unknown:unattributed` identity rather
+than given an invented name.
+
+## Assurance Boundary (added in schema 1.2)
+
+`assurance_boundary` is a short, factual statement of what a specific scan
+verified and what it structurally cannot verify, computed from the scan's
+own data rather than a fixed template.
+
+| Field | Description |
+|---|---|
+| `schema_version` | Integer, currently `1` |
+| `verified_statically` | Fixed list: declared tools, prompt and instruction files, MCP server configuration, workflow structure, permission configuration |
+| `not_verifiable_statically` | Fixed list: IAM and cloud permissions, runtime identity, deployed network policy, actual runtime behaviour, dynamically constructed tool bindings |
+| `coverage_notes` | Scan-specific notes: files actually skipped, configuration that actually failed to parse (e.g. `CC_SETTINGS_UNPARSEABLE`), the count of access modes actually inferred, and baseline attribution status when a baseline was supplied. If none of these applied, a note says so explicitly rather than omitting the field. |
+| `inferred_value_count` | Number of capabilities in this scan whose `access_mode` was inferred rather than declared |
+| `summary` | One fixed sentence: "Static analysis of repository configuration and source. SafeAI cannot verify deployed IAM permissions, runtime identity, or network policy." |
+
+The two fixed lists (`verified_statically` and `not_verifiable_statically`)
+are deliberately not scan-specific — they describe what static analysis of
+this kind can and cannot ever establish, independent of what any one
+repository happens to contain. `coverage_notes` and `inferred_value_count`
+are the scan-specific parts, and are what make the boundary an honest
+reflection of this run rather than boilerplate. Read this alongside
+`LIMITATIONS.md`, which explains the same boundary in narrative form.
 
 ## Finding Records
 
@@ -131,19 +212,19 @@ evidence does.
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.2",
   "manifest_type": "safeai.kya",
-  "generated_at": "2026-07-31T12:00:00Z",
-  "safeai": {"version": "1.3.0b0", "ruleset_version": "sha256:1111", "config_hash": "2222"},
+  "generated_at": "2026-08-02T12:00:00Z",
+  "safeai": {"version": "1.4.0b0", "ruleset_version": "sha256:1111", "config_hash": "2222"},
   "project": {"project_id": "local-00000000-0000-4000-8000-000000000000", "name": "demo", "source_root": ".", "repository": {}},
-  "scan": {"scan_id": "33333333-3333-4333-8333-333333333333", "started_at": "2026-07-31T11:59:59Z", "completed_at": "2026-07-31T12:00:00Z", "files_scanned": 1, "analysis_coverage": {"languages": ["python"], "frameworks_detected": ["langgraph"], "limitations": []}},
+  "scan": {"scan_id": "33333333-3333-4333-8333-333333333333", "started_at": "2026-08-02T11:59:59Z", "completed_at": "2026-08-02T12:00:00Z", "files_scanned": 1, "analysis_coverage": {"languages": ["python"], "frameworks_detected": ["langgraph"], "limitations": []}},
   "agents": [{
     "agent_id": "researcher-0123456789ab",
     "name": "researcher",
     "agent_type": "agent",
     "framework": "langgraph",
     "source_locations": [{"path": "agent.py", "line_start": 1, "line_end": 1}],
-    "first_seen": "2026-07-31T12:00:00Z",
+    "first_seen": "2026-08-02T12:00:00Z",
     "capabilities": [{"name": "shell_execution", "category": "Shell"}],
     "tools": [],
     "resources": [],
@@ -153,6 +234,14 @@ evidence does.
     "authority_evidence": [],
     "confidence": "high",
     "provenance": [{"framework": "langgraph", "discovery_method": "ast", "note": "detected in source/configuration (static evidence)"}]
+  }],
+  "tool_surface": [{
+    "tool_key": "agent:researcher",
+    "kind": "agent",
+    "name": "researcher",
+    "framework": "langgraph",
+    "capabilities": [{"name": "shell_execution", "category": "Shell", "access_mode": "execute", "access_mode_inferred": false, "confidence": 0.85}],
+    "access_summary": "execute"
   }],
   "components": [],
   "findings": [{
@@ -175,6 +264,14 @@ evidence does.
     "agent_count": 1,
     "component_count": 0,
     "policy_decision": {"outcome": "warn", "reasons": ["No policy file supplied; default posture 'warn'."], "matches": []}
+  },
+  "assurance_boundary": {
+    "schema_version": 1,
+    "verified_statically": ["declared tools", "prompt and instruction files", "MCP server configuration", "workflow structure", "permission configuration"],
+    "not_verifiable_statically": ["IAM and cloud permissions", "runtime identity", "deployed network policy", "actual runtime behaviour", "dynamically constructed tool bindings"],
+    "coverage_notes": ["No files were skipped, no configuration failed to parse, and no access mode was inferred in this scan."],
+    "inferred_value_count": 0,
+    "summary": "Static analysis of repository configuration and source. SafeAI cannot verify deployed IAM permissions, runtime identity, or network policy."
   },
   "limitations": ["SafeAI results are static analysis evidence and do not verify deployed runtime permissions, identities, or behavior."]
 }

@@ -1,0 +1,6 @@
+{
+  // a comment, and a trailing comma
+  "permissions": {
+    "allow": ["Bash(npm test:*)",],
+  },
+}

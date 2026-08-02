@@ -1,8 +1,17 @@
 """Claude Code framework adapter.
 
-Detects Claude Code agent files via ``CLAUDE.md``, ``.claude/`` config
-files, and ``claude-code`` references in source. Extracts agent
-definitions, tool calls, model references, and MCP integrations.
+Detects Claude Code projects via ``CLAUDE.md``, ``.claude/`` configuration,
+and ``claude-code`` references in source, and extracts the authority those
+files actually confer.
+
+Since v1.4 this adapter is a thin coordinator: settings discovery lives in
+``settings.py``, the permission model in ``permissions.py``, and slash
+commands and subagents in ``commands.py``. Every extracted capability
+carries a tool identity and an access mode, so a change can be attributed
+to a named tool rather than to the project as a whole.
+
+Scope boundary: only files inside the scanned repository are read. This
+module never opens a file itself — it receives content from the scanner.
 """
 
 import json
@@ -11,7 +20,20 @@ import re
 import yaml
 
 from safeai.analysis.capabilities import make_capability
+from safeai.analysis.tool_identity import make_tool_identity
 from safeai.frameworks import register_parser
+from safeai.frameworks.claude_code import commands as cc_commands
+from safeai.frameworks.claude_code import permissions as cc_permissions
+from safeai.frameworks.claude_code import settings as cc_settings
+
+
+def _rel(path):
+    normalized = str(path).replace("\\", "/")
+    marker = "/.claude/"
+    if marker in normalized:
+        return ".claude/" + normalized.split(marker, 1)[1]
+    basename = normalized.rsplit("/", 1)[-1]
+    return basename
 
 
 @register_parser
@@ -42,9 +64,15 @@ class ClaudeCodeParser:
 
         fname = path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].lower()
         result["detection_evidence"].append(fname)
+        rel = _rel(path)
 
-        # CLAUDE.md — extract agent/tool/model info from markdown
-        if fname == "claude.md":
+        if rel.startswith(cc_commands.COMMANDS_PREFIX) and rel.endswith(".md"):
+            self._parse_slash_command(rel, content, result)
+        elif rel.startswith(cc_commands.AGENTS_PREFIX) and rel.endswith((".md", ".yaml", ".yml")):
+            self._parse_subagent(rel, content, result)
+        elif rel.endswith(".json") and cc_settings.is_claude_config(rel):
+            self._parse_settings_file(rel, content, result)
+        elif fname == "claude.md":
             self._parse_claude_md(content, result)
         elif path.endswith((".yaml", ".yml")):
             self._parse_yaml_config(content, result)
@@ -53,29 +81,148 @@ class ClaudeCodeParser:
         elif path.endswith(".py"):
             self._parse_python(content, result)
 
+        result["capabilities"].sort(key=lambda c: (str(c.get("name")), str(c.get("evidence"))))
+        result["tools"] = sorted(set(result["tools"]))
         return result
+
+    # --- settings and permissions ---------------------------------------
+
+    def _parse_settings_file(self, rel, content, result):
+        """Extract permission grants, MCP servers, and hooks."""
+        data, error = cc_settings.loads_lenient(content)
+        if error is not None:
+            # The analyzer raises the unparseable-configuration finding; the
+            # parser simply contributes no unfounded capability.
+            result["parser_confidence"] = 0.4
+            return
+        data = data if isinstance(data, dict) else {}
+
+        for decision, entry in cc_settings.extract_permission_entries(data):
+            line = cc_settings.line_of(content, entry)
+            record = cc_permissions.classify_entry(entry, decision, rel, line)
+            if record["tool"]:
+                result["tools"].append(record["tool"])
+            capability = cc_permissions.capability_for(record)
+            if capability:
+                result["capabilities"].append(capability)
+
+        for server in cc_settings.extract_mcp_servers(data):
+            result["mcp_assets"].append({"type": "server", "name": server, "source": rel})
+            result["capabilities"].append(make_capability(
+                "mcp", "MCP", "claude_code",
+                f"claude code MCP server: {server}",
+                confidence=0.85, source="config",
+                tool_identity=make_tool_identity("mcp_server", server, "claude_code", source_path=rel),
+                access_mode="mutate",
+                line=cc_settings.line_of(content, server),
+            ))
+
+        for event, command in cc_settings.extract_hooks(data):
+            identity = make_tool_identity("tool", f"hook:{event}", "claude_code", source_path=rel)
+            result["capabilities"].append(make_capability(
+                "shell", "Shell", "claude_code",
+                f"claude code hook on {event}",
+                confidence=0.9, source="config",
+                tool_identity=identity,
+                access_mode="execute",
+                line=cc_settings.line_of(content, command),
+            ))
+
+    # --- slash commands ---------------------------------------------------
+
+    def _parse_slash_command(self, rel, content, result):
+        """A stored instruction that runs with the agent's full authority."""
+        command = cc_commands.parse_command(rel, content)
+        identity = make_tool_identity(
+            "tool", f"command:{command['name']}", "claude_code", source_path=rel
+        )
+        result["tools"].append(f"/{command['name']}")
+
+        for entry in command["allowed_tools"]:
+            record = cc_permissions.classify_entry(entry, "allow", rel, 1)
+            capability = cc_permissions.capability_for(
+                record, evidence_prefix=f"/{command['name']} allowed-tools"
+            )
+            if capability:
+                result["capabilities"].append(capability)
+
+        for shell in command["shell_invocations"]:
+            result["capabilities"].append(make_capability(
+                "shell", "Shell", "claude_code",
+                f"/{command['name']} shell invocation",
+                confidence=0.9, source="config",
+                tool_identity=identity,
+                access_mode="execute",
+                line=shell["line"],
+            ))
+
+        # $ARGUMENTS is caller-supplied text. Recording it as an untrusted
+        # input capability on the same tool identity is what lets the
+        # escalation layer combine it with shell authority.
+        if command["argument_uses"]:
+            result["capabilities"].append(make_capability(
+                "untrusted_input", "Untrusted Input", "claude_code",
+                f"/{command['name']} interpolates caller arguments",
+                confidence=0.9, source="config",
+                tool_identity=identity,
+                access_mode="read",
+                line=command["argument_uses"][0]["line"],
+            ))
+
+        if command["file_references"]:
+            result["capabilities"].append(make_capability(
+                "filesystem", "Filesystem", "claude_code",
+                f"/{command['name']} inlines referenced files",
+                confidence=0.8, source="config",
+                tool_identity=identity,
+                access_mode="read",
+                line=command["file_references"][0]["line"],
+            ))
+
+    def _parse_subagent(self, rel, content, result):
+        subagent = cc_commands.parse_subagent(rel, content)
+        result["agents"].append(subagent["name"])
+        identity = make_tool_identity(
+            "agent", subagent["name"], "claude_code", source_path=rel
+        )
+        for entry in subagent["tools"]:
+            record = cc_permissions.classify_entry(entry, "allow", rel, 1)
+            record["identity"] = identity
+            capability = cc_permissions.capability_for(
+                record, evidence_prefix=f"subagent {subagent['name']} tool"
+            )
+            if capability:
+                result["capabilities"].append(capability)
+            if record["tool"]:
+                result["tools"].append(record["tool"])
+        if subagent["tools"]:
+            result["capabilities"].append(make_capability(
+                "delegation", "Delegation", "claude_code",
+                f"subagent {subagent['name']} delegation target",
+                confidence=0.85, source="config",
+                tool_identity=identity,
+                access_mode="execute",
+                line=1,
+            ))
+
+    # --- legacy surfaces (unchanged behaviour) ---------------------------
 
     def _parse_claude_md(self, content, result):
         """Extract agent, tool, and model references from CLAUDE.md."""
-        # Tool references: @tool-name or tool: name
         for m in re.finditer(r"@([a-z][a-z0-9_-]+)", content):
             result["tools"].append(m.group(1))
         for m in re.finditer(r"tool:\s*([a-z][a-z0-9_-]+)", content, re.IGNORECASE):
             result["tools"].append(m.group(1))
 
-        # Model references
         for m in re.finditer(r"claude-(sonnet|opus|haiku)-[\d-]+", content, re.IGNORECASE):
             result["models"].append(m.group(0))
 
-        # Agent/workflow references
         for m in re.finditer(r"agent:\s*(.+)", content, re.IGNORECASE):
             result["agents"].append(m.group(1).strip())
 
-        # MCP references
         if re.search(r"\bmcp\b", content, re.IGNORECASE):
             result["mcp_assets"].append({"type": "reference", "source": "claude.md"})
 
-        # Capabilities
         low = content.lower()
         if re.search(r"shell|exec|command|subprocess", low):
             result["capabilities"].append(

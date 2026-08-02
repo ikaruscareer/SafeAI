@@ -191,12 +191,16 @@ def _collect_from_mcp_assets(report, accumulators):
         path = asset.get("file")
         servers = list(_server_entries(asset))
         if not servers:
-            # A config with no named server still declares MCP authority;
-            # attribute it to a server named after the config file.
-            fallback = str(path or "mcp").replace("\\", "/").rsplit("/", 1)[-1]
-            servers = [(fallback, {})]
+            # A config that declares no named server tells us nothing about
+            # which server holds the authority. Naming one after the file
+            # would invent a server that does not exist, so the capability
+            # is recorded as unattributed instead.
+            servers = [(None, {})]
         for name, payload in servers:
-            identity = make_tool_identity("mcp_server", name, "mcp", source_path=path)
+            identity = (
+                make_tool_identity("mcp_server", name, "mcp", source_path=path)
+                if name else UNATTRIBUTED
+            )
             key = tool_key(identity)
             acc = accumulators.get(key)
             if acc is None:

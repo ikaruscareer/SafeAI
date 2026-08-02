@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["Read(src/**)", "Grep(src/**)"],
+    "deny": ["Bash(rm -rf *)"]
+  }
+}

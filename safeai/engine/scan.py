@@ -22,6 +22,7 @@ from safeai.analysis.project_graph import build_project_graph
 from safeai.analysis.semantic import build_semantic_document
 from safeai.analysis.tool_surface import build_tool_surface
 from safeai.analyzers.capability.analyzer import CapabilityAnalyzer
+from safeai.analyzers.claude_code.analyzer import ClaudeCodeAnalyzer
 from safeai.analyzers.data_leakage.analyzer import DataLeakageAnalyzer
 from safeai.analyzers.mcp.analyzer import MCPAnalyzer
 from safeai.analyzers.prompt.analyzer import PromptAnalyzer
@@ -62,6 +63,25 @@ def _is_scannable_file(filename):
     return lower in {"claude.md", "prompt.md", "system_prompt.md"} or lower.endswith((".prompt.md", ".prompt.txt"))
 
 
+#: Additional extensions read inside a ``.claude/`` directory. Claude Code
+#: keeps real agent authority in markdown (slash commands, subagents) and
+#: shell hooks, which the generic source allowlist above does not cover.
+_CLAUDE_CONFIG_EXTS = (".md", ".markdown", ".sh", ".bash", ".toml")
+
+
+def _is_claude_config_file(full_path):
+    """True for Claude Code configuration inside the scanned repository.
+
+    Only paths under a repository-local ``.claude/`` directory qualify.
+    User-level configuration is never reached: this predicate is applied
+    to files already discovered by walking the scan root.
+    """
+    normalized = str(full_path).replace("\\", "/")
+    if "/.claude/" not in normalized:
+        return False
+    return normalized.lower().endswith(_CLAUDE_CONFIG_EXTS)
+
+
 def _is_own_manifest(path):
     """Return True when a JSON file is a SafeAI-generated artifact.
 
@@ -87,9 +107,9 @@ def collect_files(root):
     for d, dirs, fs in os.walk(root):
         dirs[:] = [name for name in dirs if name not in EXCLUDED_DIRS]
         for f in fs:
-            if not _is_scannable_file(f):
-                continue
             full = os.path.join(d, f)
+            if not (_is_scannable_file(f) or _is_claude_config_file(full)):
+                continue
             try:
                 if os.path.getsize(full) > MAX_FILE_BYTES:
                     logger.debug("Skipping oversized file: %s", full)
@@ -263,7 +283,13 @@ def run_scan(directory, rules_dir=None, baseline_report=None):
         capabilities.extend(model.get("data", {}).get("capabilities") or [])
     normalized_capabilities = aggregate_capabilities(capabilities)
 
-    analyzers = [CapabilityAnalyzer(), PromptAnalyzer(), DataLeakageAnalyzer(), MCPAnalyzer()]
+    analyzers = [
+        CapabilityAnalyzer(),
+        PromptAnalyzer(),
+        DataLeakageAnalyzer(),
+        MCPAnalyzer(),
+        ClaudeCodeAnalyzer(),
+    ]
     for analyzer in analyzers:
         findings.extend(analyzer.run(file_cache, rules, agent_models))
 

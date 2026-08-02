@@ -221,3 +221,57 @@
   description: Google Cloud Platform capability detected
   severity: medium
   owasp_llm: LLM06
+
+# --- Claude Code project configuration (v1.4) ---
+# These rules read only configuration committed inside the scanned
+# repository. User-level configuration (~/.claude) is out of scope.
+
+- id: CC_WILDCARD_PERMISSION
+  description: Claude Code permission granted with no argument constraint (e.g. Bash(*), bare Bash)
+  severity: high
+  owasp_llm: LLM06
+
+- id: CC_BYPASS_PERMISSIONS
+  description: Claude Code approval gate disabled or weakened (bypassPermissions, dangerously-skip-permissions, permissive defaultMode)
+  severity: critical
+  owasp_llm: LLM06
+
+- id: CC_DENY_SHADOWED
+  description: Claude Code deny entry contradicted by a broader allow entry, so it cannot take effect
+  severity: high
+  owasp_llm: LLM06
+
+- id: CC_FS_WRITE_OUTSIDE_ROOT
+  description: Claude Code write permission targets a path outside the project root
+  severity: high
+  owasp_llm: LLM06
+
+- id: CC_SLASH_COMMAND_SHELL
+  description: Custom slash command embeds a shell invocation or inlines external file content
+  severity: medium
+  owasp_llm: LLM01
+
+- id: CC_SLASH_COMMAND_ARG_INJECTION
+  description: Custom slash command interpolates caller-supplied $ARGUMENTS into a shell invocation
+  severity: critical
+  owasp_llm: LLM01
+
+- id: CC_SUBAGENT_PRIVILEGE_ESCALATION
+  description: Claude Code subagent granted tools beyond its parent permission scope
+  severity: high
+  owasp_llm: LLM08
+
+- id: CC_HOOK_SHELL_EXEC
+  description: Claude Code lifecycle hook executes a shell command, or fetches unpinned remote content
+  severity: high
+  owasp_llm: LLM05
+
+- id: CC_MCP_UNCONSTRAINED
+  description: MCP server enabled without a corresponding permission constraint
+  severity: medium
+  owasp_llm: LLM06
+
+- id: CC_SETTINGS_UNPARSEABLE
+  description: Claude Code configuration file could not be parsed and cannot be reviewed or enforced
+  severity: low
+  owasp_llm: LLM09

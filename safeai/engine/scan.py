@@ -20,6 +20,7 @@ from safeai.analysis.components import extract_components
 from safeai.analysis.import_graph import build_import_graph, module_name_from_path
 from safeai.analysis.project_graph import build_project_graph
 from safeai.analysis.semantic import build_semantic_document
+from safeai.analysis.tool_surface import build_tool_surface
 from safeai.analyzers.capability.analyzer import CapabilityAnalyzer
 from safeai.analyzers.data_leakage.analyzer import DataLeakageAnalyzer
 from safeai.analyzers.mcp.analyzer import MCPAnalyzer
@@ -342,6 +343,9 @@ def run_scan(directory, rules_dir=None, baseline_report=None):
         "diagnostics": diagnostics,
         "trust_score": trust_score,
     }
+    # Per-tool capability surface (v1.4): the unit the diff compares and the
+    # registry persists. Built from report data only — no extra file access.
+    report["tool_surface"] = build_tool_surface(report)
     if baseline_report is not None:
         from safeai.analysis.capability_diff import compute_capability_diff
 

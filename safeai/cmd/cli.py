@@ -138,8 +138,12 @@ def _run_scan_command(args, parser):
             baseline_fps, baseline_doc = kya_baseline.load_baseline(args.baseline)
         except (TypeError, ValueError) as exc:
             parser.error(str(exc))
-        if isinstance(baseline_doc, dict) and "normalized_capabilities" in baseline_doc:
-            baseline_report = baseline_doc  # legacy report: keep capability diff behavior
+        # A legacy JSON report supplies ``normalized_capabilities``; a KYA
+        # manifest (v1.1+) supplies ``tool_surface``. Either enables a diff.
+        if isinstance(baseline_doc, dict) and (
+            "normalized_capabilities" in baseline_doc or "tool_surface" in baseline_doc
+        ):
+            baseline_report = baseline_doc
 
     report = run_scan(args.directory, args.rules, baseline_report=baseline_report)
     completed_at = utc_now_iso()

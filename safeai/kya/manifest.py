@@ -124,6 +124,12 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
             },
         },
         "agents": sorted(agents, key=lambda a: a["agent_id"]),
+        # v1.1: per-tool capability surface. Which named tool holds which
+        # capability, at which access mode — the unit the v1.4 diff compares.
+        "tool_surface": sorted(
+            report.get("tool_surface") or [],
+            key=lambda t: str(t.get("tool_key")),
+        ),
         "components": [
             {
                 "type": c.get("type", "unknown"),

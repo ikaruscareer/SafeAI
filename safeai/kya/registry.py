@@ -124,6 +124,39 @@ CREATE INDEX IF NOT EXISTS idx_scan_findings_fp ON scan_findings(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_findings_rule ON findings(rule_id);
 """
 
+# --- Migration 2 (v1.4): per-tool capability snapshots ------------------
+#
+# Deviation from the release note's draft DDL, made deliberately:
+# ``agent_id`` is nullable. A tool surface is attributed to an agent only
+# when static evidence supports it; inventing an owner for an
+# unattributed MCP server would fabricate attribution, which the release
+# explicitly forbids. Because SQLite treats NULLs as distinct in UNIQUE
+# constraints, uniqueness is enforced by an expression index instead.
+_SCHEMA_V2 = """
+CREATE TABLE IF NOT EXISTS agent_tool_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id TEXT REFERENCES agents(agent_id),
+    scan_id  TEXT NOT NULL REFERENCES scans(scan_id),
+    tool_key TEXT NOT NULL,
+    tool_kind TEXT,
+    tool_name TEXT,
+    framework TEXT,
+    capabilities_json TEXT NOT NULL,
+    access_summary TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tool_snapshots_unique
+    ON agent_tool_snapshots(IFNULL(agent_id, ''), scan_id, tool_key);
+CREATE INDEX IF NOT EXISTS idx_tool_snapshots_agent ON agent_tool_snapshots(agent_id);
+CREATE INDEX IF NOT EXISTS idx_tool_snapshots_key   ON agent_tool_snapshots(tool_key);
+"""
+
+#: Forward-only migrations, applied in ascending order. Migrations are
+#: additive: no migration drops, rewrites, or reorders an existing row.
+_MIGRATIONS = {
+    1: _SCHEMA,
+    2: _SCHEMA_V2,
+}
+
 
 class RegistryError(Exception):
     """Raised for registry open, migration, or persistence failures."""
@@ -160,16 +193,23 @@ def _current_version(conn):
 
 
 def migrate(conn):
-    """Apply pending schema migrations. Currently a single baseline schema."""
+    """Apply pending schema migrations in ascending order.
+
+    Migrations are additive and forward-only: an existing v1.3 database
+    opens, gains the new tables, and keeps every prior row untouched.
+    """
     version = _current_version(conn)
     if version >= REGISTRY_SCHEMA_VERSION:
         return version
     with conn:
-        conn.executescript(_SCHEMA)
-        conn.execute(
-            "INSERT OR REPLACE INTO schema_migrations(version, applied_at) VALUES (?, ?)",
-            (REGISTRY_SCHEMA_VERSION, utc_now_iso()),
-        )
+        for target in sorted(_MIGRATIONS):
+            if target <= version:
+                continue
+            conn.executescript(_MIGRATIONS[target])
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                (target, utc_now_iso()),
+            )
         conn.execute(
             "INSERT OR REPLACE INTO metadata(key, value) VALUES ('registry_version', ?)",
             (str(REGISTRY_SCHEMA_VERSION),),
@@ -212,6 +252,98 @@ def _previous_scan_fingerprints(conn, project_id, exclude_scan_id):
         "SELECT fingerprint FROM scan_findings WHERE scan_id = ?", (scan_id,)
     ).fetchall()
     return scan_id, {r["fingerprint"] for r in rows}
+
+
+def _agent_id_for_tool(manifest, tool_entry):
+    """Attribute a tool to an agent by shared evidence path, or return None.
+
+    Attribution is evidence-based only. When no agent declares a source
+    location matching the tool's evidence the tool is stored unattributed
+    rather than assigned to an arbitrary owner.
+    """
+    paths = set()
+    for capability in tool_entry.get("capabilities") or []:
+        for item in capability.get("evidence") or []:
+            path = item.get("path")
+            if path:
+                paths.add(str(path).replace("\\", "/"))
+    if not paths:
+        return None
+    candidates = []
+    for agent in manifest.get("agents") or []:
+        agent_paths = {
+            str(loc.get("path")).replace("\\", "/")
+            for loc in (agent.get("source_locations") or [])
+            if loc.get("path")
+        }
+        if agent_paths & paths:
+            candidates.append(agent["agent_id"])
+    return min(candidates) if candidates else None
+
+
+def _persist_tool_surface(conn, manifest, scan_id, stats):
+    """Store the per-tool capability surface for this scan (schema v2)."""
+    surface = manifest.get("tool_surface") or []
+    stored = 0
+    for tool_entry in sorted(surface, key=lambda t: str(t.get("tool_key"))):
+        tool = tool_entry.get("tool") or {}
+        capabilities = sorted(
+            (
+                {
+                    "name": c.get("name"),
+                    "access_mode": c.get("access_mode"),
+                    "confidence": c.get("confidence"),
+                    "inferred": bool(c.get("inferred")),
+                }
+                for c in tool_entry.get("capabilities") or []
+            ),
+            key=lambda c: (str(c["name"]), str(c["access_mode"])),
+        )
+        conn.execute(
+            "INSERT OR REPLACE INTO agent_tool_snapshots("
+            "agent_id, scan_id, tool_key, tool_kind, tool_name, framework, "
+            "capabilities_json, access_summary"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                _agent_id_for_tool(manifest, tool_entry),
+                scan_id,
+                tool_entry.get("tool_key"),
+                tool.get("kind"),
+                tool.get("name"),
+                tool.get("framework"),
+                json.dumps(capabilities, sort_keys=True, separators=(",", ":"), default=str),
+                tool_entry.get("access_summary"),
+            ),
+        )
+        stored += 1
+    stats["tool_snapshots"] = stored
+    return stored
+
+
+def get_tool_snapshots(conn, scan_id):
+    """Return the stored per-tool surface for a scan, sorted by tool key."""
+    rows = conn.execute(
+        "SELECT tool_key, tool_kind, tool_name, framework, capabilities_json, access_summary "
+        "FROM agent_tool_snapshots WHERE scan_id = ? ORDER BY tool_key",
+        (scan_id,),
+    ).fetchall()
+    surface = []
+    for row in rows:
+        try:
+            capabilities = json.loads(row["capabilities_json"])
+        except (TypeError, ValueError):
+            capabilities = []
+        surface.append({
+            "tool_key": row["tool_key"],
+            "tool": {
+                "kind": row["tool_kind"],
+                "name": row["tool_name"],
+                "framework": row["framework"],
+            },
+            "capabilities": capabilities,
+            "access_summary": row["access_summary"],
+        })
+    return surface
 
 
 def persist_scan(conn, manifest):
@@ -422,6 +554,8 @@ def persist_scan(conn, manifest):
                         json.dumps(finding, sort_keys=True, default=str),
                     ),
                 )
+
+            _persist_tool_surface(conn, manifest, scan_id, stats)
 
             conn.execute(
                 "INSERT OR REPLACE INTO policy_decisions(scan_id, outcome, reasons_json) VALUES (?, ?, ?)",

@@ -9,9 +9,9 @@ this package verifies deployed runtime permissions, live identities,
 executed tool calls, or production behavior.
 """
 
-MANIFEST_SCHEMA_VERSION = "1.0"
+MANIFEST_SCHEMA_VERSION = "1.1"
 MANIFEST_TYPE = "safeai.kya"
-REGISTRY_SCHEMA_VERSION = 1
+REGISTRY_SCHEMA_VERSION = 2
 
 STATIC_ANALYSIS_DISCLAIMER = (
     "SafeAI results are static analysis evidence and do not verify "

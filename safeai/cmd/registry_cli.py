@@ -19,6 +19,7 @@ from safeai.kya.registry import (
     get_agent,
     get_agent_scan_findings,
     get_snapshot,
+    get_tool_snapshots,
     list_agents,
     registry_exists,
     resolve_scan_ref,
@@ -162,6 +163,34 @@ def _index_capabilities(snapshot):
     }
 
 
+def _tool_diff(surface_from, surface_to):
+    """Tool-centric view over two persisted tool surfaces."""
+    from safeai.analysis.capability_diff import compute_capability_diff
+
+    return compute_capability_diff(
+        {"tool_surface": surface_to, "normalized_capabilities": []},
+        {"tool_surface": surface_from, "normalized_capabilities": []},
+    )
+
+
+def _print_tool_diff(tool_diff):
+    tools = [t for t in tool_diff.get("tools") or [] if t.get("status") != "unchanged"]
+    if not tool_diff.get("baseline_tool_attribution"):
+        print("  Tools: baseline predates tool-level tracking; showing capability-level diff only.")
+        return
+    if not tools:
+        print("  Tools: no tool-level authority changes")
+        return
+    print(f"  Tools changed: {len(tools)}")
+    for tool in tools:
+        summary = tool.get("access_summary") or {}
+        before, after = summary.get("before") or "-", summary.get("after") or "-"
+        print(f"    {tool['tool_key']} [{tool['status']}] {before} -> {after}")
+        for escalation in tool.get("escalations") or []:
+            flag = " (inferred)" if escalation.get("inferred") else ""
+            print(f"      ! [{escalation['severity']}] {escalation['id']}: {escalation['summary']}{flag}")
+
+
 def cmd_diff(args):
     conn = _open_registry(args.registry_path)
     try:
@@ -173,6 +202,8 @@ def cmd_diff(args):
             return 2
         snap_from = get_snapshot(conn, args.agent_id, from_id)
         snap_to = get_snapshot(conn, args.agent_id, to_id)
+        surface_from = get_tool_snapshots(conn, from_id)
+        surface_to = get_tool_snapshots(conn, to_id)
         findings_from = {f.get("fingerprint"): f for f in get_agent_scan_findings(conn, args.agent_id, from_id)}
         findings_to = {f.get("fingerprint"): f for f in get_agent_scan_findings(conn, args.agent_id, to_id)}
     finally:
@@ -214,6 +245,13 @@ def cmd_diff(args):
         "confidence": {"from": snap_from.get("confidence"), "to": snap_to.get("confidence")},
     }
 
+    # v1.4: tool-centric authority view. A pre-1.4 scan has no persisted
+    # tool surface; say so instead of rendering a misleading tool diff.
+    tool_diff = _tool_diff(surface_from, surface_to)
+    if not surface_from:
+        tool_diff["baseline_tool_attribution"] = False
+    diff["tool_diff"] = tool_diff
+
     if args.format == "json":
         _print_json(diff)
     else:
@@ -225,6 +263,7 @@ def cmd_diff(args):
         for name in diff["capabilities"]["removed"]:
             print(f"    - {name}")
         print(f"  Tools: +{len(diff['tools']['added'])} / -{len(diff['tools']['removed'])}")
+        _print_tool_diff(tool_diff)
         print(f"  Findings: {len(new_findings)} new / {len(resolved_findings)} resolved / {len(regressed)} regressed")
         for f in new_findings:
             print(f"    + [{f.get('severity')}] {f.get('rule_id')}")
@@ -233,7 +272,10 @@ def cmd_diff(args):
 
     # Documented exit contract: 1 when risk-relevant changes exist.
     changed = bool(
-        diff["capabilities"]["added"] or new_findings or regressed
+        diff["capabilities"]["added"]
+        or new_findings
+        or regressed
+        or (tool_diff.get("highest_escalation") is not None)
     )
     return 1 if changed else 0
 

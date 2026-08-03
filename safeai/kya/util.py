@@ -21,6 +21,13 @@ _SECRET_VALUE_RE = re.compile(
 # Long opaque tokens commonly seen in keys (e.g. sk-..., ghp_..., xoxb-...).
 _OPAQUE_TOKEN_RE = re.compile(r"\b(sk-[A-Za-z0-9_-]{8,}|ghp_[A-Za-z0-9]{8,}|xox[baprs]-[A-Za-z0-9-]{8,}|AKIA[0-9A-Z]{12,})\b")
 
+# URL userinfo credentials, e.g. ``https://user:pass@example.com``.
+_URL_USERINFO_RE = re.compile(r"\b([a-z][a-z0-9+.-]*://)([^\s/@:]+):([^\s/@]+)@", re.IGNORECASE)
+
+# CLI credential pair patterns such as ``-u user:pass`` or
+# ``--user user:pass``.
+_CLI_USERPASS_RE = re.compile(r"(\s(?:-u|--user)\s+)([^\s:]+):([^\s]+)", re.IGNORECASE)
+
 
 def sha256_text(text):
     """Return the hex SHA-256 digest of ``text`` (UTF-8)."""
@@ -64,8 +71,22 @@ def redact_secrets(text, full_mask=False):
         kept = "" if full_mask else token[:4]
         return f"{kept}***MASKED***"
 
+    def _url_userinfo_repl(match):
+        scheme = match.group(1)
+        user = match.group(2)
+        user_kept = "" if full_mask else user[:2]
+        return f"{scheme}{user_kept}***MASKED***:***MASKED***@"
+
+    def _cli_userpass_repl(match):
+        prefix = match.group(1)
+        user = match.group(2)
+        user_kept = "" if full_mask else user[:2]
+        return f"{prefix}{user_kept}***MASKED***:***MASKED***"
+
     redacted = _SECRET_VALUE_RE.sub(_assignment_repl, text)
-    return _OPAQUE_TOKEN_RE.sub(_opaque_repl, redacted)
+    redacted = _OPAQUE_TOKEN_RE.sub(_opaque_repl, redacted)
+    redacted = _URL_USERINFO_RE.sub(_url_userinfo_repl, redacted)
+    return _CLI_USERPASS_RE.sub(_cli_userpass_repl, redacted)
 
 
 def normalize_evidence(text):

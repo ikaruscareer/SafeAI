@@ -121,12 +121,19 @@ class ClaudeCodeAnalyzer:
 
     def run(self, file_cache, rules, agent_models=None, components=None):
         rule_map = {r.get("id"): r for r in (rules or [])}
-        rel_cache = {relative_path(path): content for path, content in sorted(file_cache.items())}
-
-        claude_files = {
-            rel: content for rel, content in rel_cache.items()
-            if cc_settings.is_claude_config(rel) or rel == "CLAUDE.md"
-        }
+        files = [
+            {
+                "abs_path": str(path).replace("\\", "/"),
+                "rel_path": relative_path(path),
+                "content": content,
+            }
+            for path, content in sorted(file_cache.items())
+        ]
+        claude_files = [
+            entry
+            for entry in files
+            if cc_settings.is_claude_config(entry["rel_path"]) or entry["rel_path"] == "CLAUDE.md"
+        ]
         if not claude_files:
             return []
 
@@ -154,21 +161,24 @@ class ClaudeCodeAnalyzer:
         documents = []
         findings = []
         ordered = sorted(
-            (rel for rel in claude_files if rel.endswith(".json")),
-            key=lambda rel: (
-                cc_settings.SETTINGS_PRECEDENCE.index(rel)
-                if rel in cc_settings.SETTINGS_PRECEDENCE else 99,
-                rel,
+            (entry for entry in claude_files if entry["rel_path"].endswith(".json")),
+            key=lambda entry: (
+                cc_settings.SETTINGS_PRECEDENCE.index(entry["rel_path"])
+                if entry["rel_path"] in cc_settings.SETTINGS_PRECEDENCE else 99,
+                entry["rel_path"],
+                entry["abs_path"],
             ),
         )
-        for rel in ordered:
-            content = claude_files[rel]
+        for entry in ordered:
+            rel = entry["rel_path"]
+            path = entry["abs_path"]
+            content = entry["content"]
             data, error = cc_settings.loads_lenient(content)
             if error is not None:
                 findings.append(_finding(
                     "CC_SETTINGS_UNPARSEABLE", rule_map,
                     f"Claude Code configuration could not be parsed: {rel}",
-                    rel, 1,
+                    path, 1,
                     evidence=f"parse error: {error}",
                     reason="Unparseable configuration cannot be reviewed or enforced, "
                            "and its declared permissions are unknown to this scan.",
@@ -176,7 +186,7 @@ class ClaudeCodeAnalyzer:
                 ))
                 continue
             documents.append({
-                "path": rel,
+                "path": path,
                 "content": content,
                 "data": data if isinstance(data, dict) else {},
                 "kind": "mcp" if rel == cc_settings.MCP_CONFIG else "settings",
@@ -276,13 +286,16 @@ class ClaudeCodeAnalyzer:
             for event, command in cc_settings.extract_hooks(doc["data"]):
                 hooks.append((doc["path"], cc_settings.line_of(doc["content"], command), event, command))
 
-        for rel, content in sorted(claude_files.items()):
+        for entry in claude_files:
+            rel = entry["rel_path"]
+            content = entry["content"]
+            path = entry["abs_path"]
             if not rel.startswith(cc_commands.HOOKS_PREFIX):
                 continue
             for index, line in enumerate(content.splitlines(), 1):
                 stripped = line.strip()
                 if stripped and not stripped.startswith("#") and cc_commands.is_unpinned(stripped):
-                    hooks.append((rel, index, "hook script", stripped))
+                    hooks.append((path, index, "hook script", stripped))
 
         for path, line, event, command in hooks:
             unpinned = cc_commands.is_unpinned(command)
@@ -303,7 +316,10 @@ class ClaudeCodeAnalyzer:
 
     def _command_findings(self, claude_files, rule_map):
         findings = []
-        for rel, content in sorted(claude_files.items()):
+        for entry in sorted(claude_files, key=lambda item: (item["rel_path"], item["abs_path"])):
+            rel = entry["rel_path"]
+            path = entry["abs_path"]
+            content = entry["content"]
             if not (rel.startswith(cc_commands.COMMANDS_PREFIX) and rel.endswith(".md")):
                 continue
             command = cc_commands.parse_command(rel, content)
@@ -312,7 +328,7 @@ class ClaudeCodeAnalyzer:
                 findings.append(_finding(
                     "CC_SLASH_COMMAND_ARG_INJECTION", rule_map,
                     f"Slash command /{command['name']} interpolates caller arguments into a shell command",
-                    rel, shell["line"],
+                    path, shell["line"],
                     evidence=shell["command"][:120],
                     reason="Caller-supplied text reaches command execution unvalidated: untrusted "
                            "input combined with shell authority.",
@@ -324,7 +340,7 @@ class ClaudeCodeAnalyzer:
                 findings.append(_finding(
                     "CC_SLASH_COMMAND_SHELL", rule_map,
                     f"Slash command /{command['name']} embeds a shell invocation",
-                    rel, shell["line"],
+                    path, shell["line"],
                     evidence=shell["command"][:120],
                     reason="Stored instructions execute with the agent's full authority when the "
                            "command is invoked."
@@ -338,7 +354,7 @@ class ClaudeCodeAnalyzer:
                 findings.append(_finding(
                     "CC_SLASH_COMMAND_SHELL", rule_map,
                     f"Slash command /{command['name']} pulls in external file content",
-                    rel, reference["line"],
+                    path, reference["line"],
                     evidence=f"@{reference['target']}",
                     reason="Referenced file content is inlined into the prompt and is not "
                            "reviewed at invocation time.",
@@ -349,7 +365,7 @@ class ClaudeCodeAnalyzer:
             # Instruction-override phrasing is detected by the existing prompt
             # analyzer so both surfaces share one implementation.
             findings.extend(
-                analyze_prompt_text(rel, content, rule_map, framework="claude_code")
+                analyze_prompt_text(path, content, rule_map, framework="claude_code")
             )
         return findings
 
@@ -364,7 +380,10 @@ class ClaudeCodeAnalyzer:
         parent_declared = bool(parent_tools)
 
         findings = []
-        for rel, content in sorted(claude_files.items()):
+        for entry in sorted(claude_files, key=lambda item: (item["rel_path"], item["abs_path"])):
+            rel = entry["rel_path"]
+            path = entry["abs_path"]
+            content = entry["content"]
             if not (rel.startswith(cc_commands.AGENTS_PREFIX) and rel.endswith((".md", ".yaml", ".yml"))):
                 continue
             subagent = cc_commands.parse_subagent(rel, content)
@@ -382,7 +401,7 @@ class ClaudeCodeAnalyzer:
                     "CC_SUBAGENT_PRIVILEGE_ESCALATION", rule_map,
                     f"Subagent {subagent['name']} grants tools beyond the parent scope: "
                     f"{', '.join(broader)}",
-                    rel, 1,
+                    path, 1,
                     evidence=", ".join(broader)[:120],
                     reason="A delegated subagent can act with authority the parent configuration "
                            "never granted, bypassing the project's permission boundary.",

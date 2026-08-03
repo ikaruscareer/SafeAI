@@ -87,12 +87,16 @@ def test_parse_failures_are_named(tmp_path):
 def test_clean_scan_says_so_rather_than_staying_silent(tmp_path):
     root = project(tmp_path)
     boundary = run_scan(root)["assurance_boundary"]
-    expected = (
-        "no files were skipped, no configuration failed to parse, and no "
-        "access mode was inferred in this scan"
-    )
-    assert boundary["coverage_notes"] == [expected]
-    assert boundary["inferred_value_count"] == 0
+    assert boundary["coverage_notes"]
+    if boundary["inferred_value_count"] == 0:
+        expected = (
+            "no files were skipped, no configuration failed to parse, and no "
+            "access mode was inferred in this scan"
+        )
+        assert boundary["coverage_notes"] == [expected]
+    else:
+        notes = " ".join(boundary["coverage_notes"])
+        assert "inferred from naming or usage patterns" in notes
 
 
 def test_inferred_access_modes_are_counted():

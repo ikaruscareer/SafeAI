@@ -45,6 +45,10 @@ def fired(before, after, status="escalated", combos=True):
 # NEGATIVE case that is deliberately close to the positive one.
 
 BASE_CASES = {
+    "ESC_ACCESS_MODE_INCREASED": (
+        (state([cap("databases", "read")]), state([cap("databases", "write")]), "escalated"),
+        (state([cap("databases", "read")]), state([cap("databases", "read")]), "unchanged"),
+    ),
     "ESC_SHELL_ADDED": (
         (state([cap("network")]), state([cap("network"), cap("shell", "execute")]), "escalated"),
         (state([cap("network")]), state([cap("network"), cap("logging")]), "escalated"),
@@ -175,6 +179,29 @@ def test_inferred_access_mode_caps_severity_at_medium():
     fs = [e for e in escalations if e["id"] == "ESC_FILESYSTEM_WRITE_ADDED"]
     assert fs and fs[0]["severity"] == "medium"
     assert fs[0]["inferred"] is True
+
+
+@pytest.mark.parametrize(
+    "capability",
+    [
+        "shell",
+        "databases",
+        "github",
+        "slack",
+        "cloud",
+        "external_apis",
+        "email",
+        "tool_grant",
+        "mcp",
+        "filesystem",
+        "memory",
+    ],
+)
+def test_access_mode_escalation_covers_all_capability_names(capability):
+    before = state([cap(capability, "read")])
+    after = state([cap(capability, "write")])
+    ids = fired(before, after, "escalated")
+    assert "ESC_ACCESS_MODE_INCREASED" in ids
 
 
 def test_removed_tool_raises_no_escalation():

@@ -113,18 +113,30 @@ def _h_capability_removed(rule, ctx):
 
 
 def _h_access_increase(rule, ctx):
-    names = rule["names"]
+    names = rule.get("names")
     floor = access_mode_rank(rule.get("min_after", "write"))
-    matched = [
-        change for change in ctx["access_changes"]
-        if _matches({"name": change["capability"], "category": change.get("category")}, names)
-        and access_mode_rank(change["after"]) >= floor
-    ]
+    if names:
+        matched = [
+            change for change in ctx["access_changes"]
+            if _matches({"name": change["capability"], "category": change.get("category")}, names)
+            and access_mode_rank(change["after"]) >= floor
+        ]
+        new_at_level = [
+            c for c in ctx["added"]
+            if _matches(c, names) and access_mode_rank(c.get("access_mode")) >= floor
+        ]
+        caps = [c for c in ctx["after"].get("capabilities") or [] if _matches(c, names)]
+    else:
+        matched = [
+            change for change in ctx["access_changes"]
+            if access_mode_rank(change["after"]) >= floor
+        ]
+        new_at_level = [
+            c for c in ctx["added"]
+            if access_mode_rank(c.get("access_mode")) >= floor
+        ]
+        caps = list(ctx["after"].get("capabilities") or [])
     # A capability that is newly present at write+ is also an increase.
-    new_at_level = [
-        c for c in ctx["added"]
-        if _matches(c, names) and access_mode_rank(c.get("access_mode")) >= floor
-    ]
     if not matched and not new_at_level:
         return []
     before = ", ".join(sorted({c["before"] for c in matched})) or "absent"
@@ -133,7 +145,6 @@ def _h_access_increase(rule, ctx):
     ))
     contributors = list(matched) + list(new_at_level)
     inferred = bool(contributors) and all(bool(c.get("inferred")) for c in contributors)
-    caps = [c for c in ctx["after"].get("capabilities") or [] if _matches(c, names)]
     label = ", ".join(sorted({c["capability"] for c in matched} | set(_names(new_at_level))))
     return [{
         "summary": rule["summary"].format(names=label),
@@ -173,19 +184,30 @@ def _h_tool_new(rule, ctx):
 
 
 def _h_combination(rule, ctx):
-    state = ctx["after"]
-    matched_groups = []
-    for group in rule["groups"]:
-        caps = _caps_matching(state, group["names"])
-        floor = access_mode_rank(group.get("min_access", "none"))
-        caps = [c for c in caps if access_mode_rank(c.get("access_mode")) >= floor]
-        if not caps:
-            return []
-        matched_groups.append(caps)
-    flat = [c for group in matched_groups for c in group]
+    before_state = ctx.get("before") or {}
+    after_state = ctx["after"]
+
+    def _groups_for(state):
+        matched_groups = []
+        for group in rule["groups"]:
+            caps = _caps_matching(state, group["names"])
+            floor = access_mode_rank(group.get("min_access", "none"))
+            caps = [c for c in caps if access_mode_rank(c.get("access_mode")) >= floor]
+            if not caps:
+                return []
+            matched_groups.append(caps)
+        return matched_groups
+
+    matched_groups_after = _groups_for(after_state)
+    if not matched_groups_after:
+        return []
+    if _groups_for(before_state):
+        return []
+
+    flat = [c for group in matched_groups_after for c in group]
     return [{
         "summary": rule["summary"].format(names=", ".join(_names(flat))),
-        "before": "n/a (evaluated on post-change state)",
+        "before": "absent",
         "after": ", ".join(f"{c['name']} ({c.get('access_mode')})" for c in flat),
         "evidence": _evidence_for(flat),
         "inferred": all(bool(c.get("inferred")) for c in flat),
@@ -211,6 +233,13 @@ ESCALATION_RULES = [
         "trigger": "capability_added",
         "names": SHELL_CATEGORIES | SHELL_NAMES,
         "summary": "Gained shell/code-execution capability ({names})",
+    },
+    {
+        "id": "ESC_ACCESS_MODE_INCREASED",
+        "severity": "high",
+        "trigger": "access_increase",
+        "min_after": "write",
+        "summary": "Access mode widened to write/mutate/execute ({names})",
     },
     {
         "id": "ESC_FILESYSTEM_WRITE_ADDED",

@@ -16,6 +16,7 @@ import re
 
 from safeai.analysis.capabilities import make_capability
 from safeai.analysis.tool_identity import make_tool_identity
+from safeai.kya.util import redact_secrets
 
 #: ``Tool(argument)`` or a bare ``Tool``.
 _ENTRY_RE = re.compile(r"^\s*(?P<tool>[A-Za-z_][A-Za-z0-9_]*)\s*(?:\((?P<arg>.*)\)\s*)?$", re.DOTALL)
@@ -124,12 +125,13 @@ def classify_entry(entry, decision, path, line=0):
     access mode the grant confers.
     """
     text = str(entry or "").strip()
+    redacted_text = redact_secrets(text, full_mask=True)
     mcp_match = split_mcp_entry(text)
     if mcp_match:
         server, mcp_tool = mcp_match
         identity = make_tool_identity("mcp_server", server, "claude_code", source_path=path)
         return {
-            "entry": text,
+            "entry": redacted_text,
             "decision": decision,
             "tool": f"mcp__{server}",
             "argument": mcp_tool,
@@ -147,7 +149,7 @@ def classify_entry(entry, decision, path, line=0):
     tool, argument = parse_entry(text)
     if not tool:
         return {
-            "entry": text,
+            "entry": redacted_text,
             "decision": decision,
             "tool": None,
             "argument": None,
@@ -166,7 +168,7 @@ def classify_entry(entry, decision, path, line=0):
         tool.lower(), ("tool_grant", "Collaboration", "read")
     )
     return {
-        "entry": text,
+        "entry": redacted_text,
         "decision": decision,
         "tool": tool,
         "argument": argument,

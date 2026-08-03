@@ -176,6 +176,7 @@ def infer_access_mode(capability):
     name = str(capability.get("name") or "").strip().lower()
     text = _capability_text(capability)
 
+    capability["access_mode_inferred"] = True
     if category in _NONE_CATEGORIES or name in _NONE_CATEGORIES:
         return "none"
     if category in _EXECUTE_CATEGORIES or name in _EXECUTE_CATEGORIES:
@@ -188,8 +189,6 @@ def infer_access_mode(capability):
         return "write"
     if any(term in text for term in _READONLY_TERMS):
         return "read"
-
-    capability["access_mode_inferred"] = True
     return "read"
 
 

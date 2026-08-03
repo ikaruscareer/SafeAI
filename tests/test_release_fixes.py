@@ -1,8 +1,13 @@
 """Regression tests for release-blocking fixes: secret masking, path
 relativization, directory exclusions, and CLI exit codes."""
 
+import json
 import os
 
+import pytest
+
+import safeai.engine.scan as scan_engine
+from safeai.analysis.capabilities import resolve_access_mode
 from safeai.analyzers.data_leakage.analyzer import (
     DataLeakageAnalyzer,
     mask_secret_evidence,
@@ -83,3 +88,103 @@ def test_cli_returns_zero_on_clean_project(tmp_path, capsys):
     (tmp_path / "app.py").write_text("print('hello')\n")
     code = main(["scan", str(tmp_path), "--sarif", "", "--fail-on", "critical"])
     assert code == 0
+
+
+def test_claude_settings_with_safeai_markers_is_still_scanned(tmp_path):
+    (tmp_path / "agent.py").write_text("print('ok')\n", encoding="utf-8")
+    claude_dir = tmp_path / ".claude"
+    claude_dir.mkdir()
+    (claude_dir / "settings.json").write_text(
+        json.dumps(
+            {
+                "manifest_type": "safeai.kya",
+                "permissions": {"allow": ["Bash(*)"]},
+                "permissionMode": "bypassPermissions",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = run_scan(str(tmp_path))
+    ids = {f["rule_id"] for f in report["findings"]}
+    assert "CC_WILDCARD_PERMISSION" in ids
+    assert "CC_BYPASS_PERMISSIONS" in ids
+
+
+def test_collect_files_excludes_only_explicit_output_paths(tmp_path):
+    (tmp_path / "agent.py").write_text("print('ok')\n", encoding="utf-8")
+    kept = tmp_path / "kept.json"
+    kept.write_text('{"manifest_type": "safeai.kya"}', encoding="utf-8")
+    excluded = tmp_path / "scan-report.json"
+    excluded.write_text('{"report_type": "safeai.scan"}', encoding="utf-8")
+
+    files = collect_files(
+        str(tmp_path),
+        excluded_paths=[str(excluded)],
+    )
+    names = {os.path.basename(path) for path in files}
+    assert "scan-report.json" not in names
+    assert "kept.json" in names
+
+
+def test_collect_files_rejects_symlink_escape_outside_root(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    outside = tmp_path / "outside.json"
+    outside.write_text('{"permissions": {"allow": ["Bash(*)"]}}', encoding="utf-8")
+    claude_dir = root / ".claude"
+    claude_dir.mkdir()
+    link = claude_dir / "settings.json"
+    try:
+        os.symlink(str(outside), str(link))
+    except (AttributeError, NotImplementedError, OSError):
+        pytest.skip("symlink creation not supported in this environment")
+    (root / "agent.py").write_text("print('ok')\n", encoding="utf-8")
+
+    report = run_scan(str(root))
+    notes = report.get("skipped_files") or {}
+    assert notes.get("outside scan root (symlink or path traversal)", 0) >= 1
+    assert not any(f["rule_id"].startswith("CC_") for f in report["findings"])
+
+
+def test_access_mode_inference_marks_heuristic_modes():
+    capability = {
+        "name": "external_apis",
+        "category": "External APIs",
+        "evidence": "post webhook payload",
+    }
+    mode = resolve_access_mode(capability)
+    assert mode == "write"
+    assert capability["access_mode_inferred"] is True
+
+
+def test_collect_files_sorts_walk_order_deterministically(tmp_path, monkeypatch):
+    (tmp_path / "b.py").write_text("print('b')\n", encoding="utf-8")
+    (tmp_path / "a.py").write_text("print('a')\n", encoding="utf-8")
+
+    real_walk = scan_engine.os.walk
+
+    def reversed_walk(root):
+        for directory, dirs, files in real_walk(root):
+            yield directory, list(reversed(dirs)), list(reversed(files))
+
+    monkeypatch.setattr(scan_engine.os, "walk", reversed_walk)
+    files = collect_files(str(tmp_path))
+    assert [os.path.basename(path) for path in files] == ["a.py", "b.py"]
+
+
+def test_claude_permission_secret_is_redacted_in_json_report(tmp_path):
+    secret = "supersecretvalue123"
+    (tmp_path / "agent.py").write_text("print('ok')\n", encoding="utf-8")
+    claude_dir = tmp_path / ".claude"
+    claude_dir.mkdir()
+    (claude_dir / "settings.json").write_text(
+        json.dumps({"permissions": {"allow": [f"Bash(API_KEY={secret})"]}}),
+        encoding="utf-8",
+    )
+    output = tmp_path / "report.json"
+    rc = main(["scan", str(tmp_path), "--json", str(output), "--sarif", "", "--no-registry"])
+    assert rc in (0, 1)
+    raw = output.read_text(encoding="utf-8")
+    assert secret not in raw
+    assert "***MASKED***" in raw

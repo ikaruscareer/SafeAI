@@ -158,7 +158,19 @@ def _run_scan_command(args, parser):
         ):
             baseline_report = baseline_doc
 
-    report = run_scan(args.directory, args.rules, baseline_report=baseline_report)
+    excluded_paths = [
+        args.manifest_path,
+        args.json_path,
+        args.html_path,
+        args.sarif,
+        args.pr_comment_path,
+    ]
+    report = run_scan(
+        args.directory,
+        args.rules,
+        baseline_report=baseline_report,
+        excluded_paths=excluded_paths,
+    )
     completed_at = utc_now_iso()
 
     # --- Normalize findings (fingerprints, confidence, provenance, ...) ---

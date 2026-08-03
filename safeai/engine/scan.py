@@ -57,8 +57,6 @@ MAX_FILE_BYTES = 2 * 1024 * 1024
 def _is_scannable_file(filename):
     """Return whether a file is source, configuration, or AI instructions."""
     lower = filename.lower()
-    if lower in _EXCLUDED_FILES:
-        return False
     if lower.endswith((".py", ".json", ".yaml", ".yml", ".prompt")):
         return True
     return lower in {"claude.md", "prompt.md", "system_prompt.md"} or lower.endswith((".prompt.md", ".prompt.txt"))
@@ -83,26 +81,26 @@ def _is_claude_config_file(full_path):
     return normalized.lower().endswith(_CLAUDE_CONFIG_EXTS)
 
 
-def _is_own_manifest(path):
-    """Return True when a JSON file is a SafeAI-generated artifact.
-
-    Scanning a previously generated manifest or JSON report would create
-    a findings feedback loop, so files declaring ``safeai.kya`` or
-    ``safeai.scan`` type markers are skipped regardless of filename.
-    """
-    if not path.lower().endswith(".json"):
-        return False
+def _is_within_root(root, path):
+    """True when ``path`` resolves inside ``root`` after symlink expansion."""
+    root_real = os.path.normcase(os.path.realpath(root))
+    path_real = os.path.normcase(os.path.realpath(path))
     try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
-            content = fh.read()
-    except OSError:
+        return os.path.commonpath([root_real, path_real]) == root_real
+    except ValueError:
         return False
-    return ('"manifest_type"' in content and '"safeai.kya"' in content) or (
-        '"report_type"' in content and '"safeai.scan"' in content
-    )
 
 
-def collect_files(root, skipped=None):
+def _is_canonical_manifest_path(path, root):
+    """True for the canonical root-level manifest filename only."""
+    try:
+        rel = os.path.relpath(path, root)
+    except ValueError:
+        return False
+    return rel.replace("\\", "/") in _EXCLUDED_FILES
+
+
+def collect_files(root, skipped=None, excluded_paths=None):
     """Collect scannable files, pruning excluded directories and oversized files.
 
     ``skipped`` is an optional dict that accumulates ``reason -> count`` for
@@ -116,16 +114,28 @@ def collect_files(root, skipped=None):
     def note(reason):
         counters[reason] = counters.get(reason, 0) + 1
 
+    excluded = {
+        os.path.normcase(os.path.realpath(os.path.abspath(path)))
+        for path in (excluded_paths or [])
+        if path
+    }
+
     for d, dirs, fs in os.walk(root):
-        dirs[:] = [name for name in dirs if name not in EXCLUDED_DIRS]
-        for f in fs:
+        dirs[:] = sorted(name for name in dirs if name not in EXCLUDED_DIRS)
+        for f in sorted(fs):
             full = os.path.join(d, f)
-            # SafeAI's own artifacts are not part of the project's attack
-            # surface, so they are skipped silently. Counting them would
-            # make coverage notes depend on whether a previous scan wrote
-            # its output into the scanned directory.
-            if f.lower() in _EXCLUDED_FILES or _is_own_manifest(full):
+
+            full_real = os.path.normcase(os.path.realpath(full))
+            if full_real in excluded:
                 continue
+
+            if _is_canonical_manifest_path(full, root):
+                continue
+
+            if not _is_within_root(root, full):
+                note("outside scan root (symlink or path traversal)")
+                continue
+
             if not (_is_scannable_file(f) or _is_claude_config_file(full)):
                 extension = os.path.splitext(f)[1].lower() or "(no extension)"
                 note(f"unsupported file type {extension}")
@@ -139,7 +149,7 @@ def collect_files(root, skipped=None):
                 note("unreadable")
                 continue
             files.append(full)
-    return files
+    return sorted(files)
 
 
 def collect_dependency_files(root):
@@ -220,10 +230,10 @@ def _relativize(path, root):
     return rel.replace("\\", "/")
 
 
-def run_scan(directory, rules_dir=None, baseline_report=None):
+def run_scan(directory, rules_dir=None, baseline_report=None, excluded_paths=None):
     directory = os.path.abspath(directory)
     skipped_files = {}
-    files = collect_files(directory, skipped=skipped_files)
+    files = collect_files(directory, skipped=skipped_files, excluded_paths=excluded_paths)
     logger.info("Collected %d scannable files in %s", len(files), directory)
     rules = load_rules(rules_dir)
     deps = extract_dependencies(collect_dependency_files(directory))
@@ -330,6 +340,13 @@ def run_scan(directory, rules_dir=None, baseline_report=None):
     ]
     for analyzer in component_analyzers:
         findings.extend(analyzer.run(file_cache, rules, agent_models, components=components))
+    findings.sort(key=lambda f: (
+        str(f.get("file") or ""),
+        int(f.get("line") or 0),
+        str(f.get("rule_id") or ""),
+        str(f.get("severity") or ""),
+        str(f.get("message") or ""),
+    ))
     logger.info("Analysis produced %d findings", len(findings))
 
     mcp_assets = []
@@ -373,7 +390,7 @@ def run_scan(directory, rules_dir=None, baseline_report=None):
         "counts": counts,
         "files_scanned": len(files),
         "agent_models": agent_models,
-        "detected_frameworks": detected_frameworks,
+        "detected_frameworks": sorted(detected_frameworks),
         "framework_discovery_methods": {k: sorted(v) for k, v in framework_methods.items()},
         "parser_provenance": parse_provenance,
         "unified_models": unified_models,

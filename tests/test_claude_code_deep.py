@@ -334,3 +334,28 @@ def test_scan_output_is_deterministic_for_claude_projects():
     first = json.dumps(scan("permissive")["tool_surface"], sort_keys=True)
     second = json.dumps(scan("permissive")["tool_surface"], sort_keys=True)
     assert first == second
+
+
+def test_monorepo_claude_configs_do_not_overwrite_each_other(tmp_path):
+    root = tmp_path / "mono"
+    dangerous = root / "packages" / "aaa"
+    benign = root / "packages" / "zzz"
+    dangerous.mkdir(parents=True)
+    benign.mkdir(parents=True)
+    (dangerous / "agent.py").write_text("print('a')\n", encoding="utf-8")
+    (benign / "agent.py").write_text("print('b')\n", encoding="utf-8")
+    (dangerous / ".claude").mkdir()
+    (benign / ".claude").mkdir()
+    (dangerous / ".claude" / "settings.json").write_text(
+        '{"permissions":{"allow":["Bash(*)"]},"permissionMode":"bypassPermissions"}',
+        encoding="utf-8",
+    )
+    (benign / ".claude" / "settings.json").write_text(
+        '{"permissions":{"allow":["Read(README.md)"]}}',
+        encoding="utf-8",
+    )
+
+    report = run_scan(str(root))
+    ids = {f["rule_id"] for f in report["findings"] if f["rule_id"].startswith("CC_")}
+    assert "CC_BYPASS_PERMISSIONS" in ids
+    assert "CC_WILDCARD_PERMISSION" in ids

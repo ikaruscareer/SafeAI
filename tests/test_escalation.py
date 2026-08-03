@@ -45,6 +45,10 @@ def fired(before, after, status="escalated", combos=True):
 # NEGATIVE case that is deliberately close to the positive one.
 
 BASE_CASES = {
+    "ESC_ACCESS_MODE_INCREASED": (
+        (state([cap("databases", "read")]), state([cap("databases", "write")]), "escalated"),
+        (state([cap("databases", "read")]), state([cap("databases", "read")]), "unchanged"),
+    ),
     "ESC_SHELL_ADDED": (
         (state([cap("network")]), state([cap("network"), cap("shell", "execute")]), "escalated"),
         (state([cap("network")]), state([cap("network"), cap("logging")]), "escalated"),

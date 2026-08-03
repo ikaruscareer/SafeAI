@@ -10,8 +10,9 @@ not an ``if/elif`` chain. That keeps every rule independently testable
 and lets the table move to YAML in a later release without touching the
 evaluator.
 
-Determinism contract: rules are evaluated in table order, evidence is
-sorted, and no rule reads anything outside the two states it is given.
+Determinism contract: rules are evaluated in table order (generic
+``access_increase`` rules last, so specific rules subsume them), evidence
+is sorted, and no rule reads anything outside the two states it is given.
 """
 
 from safeai.analysis.capabilities import (
@@ -19,9 +20,10 @@ from safeai.analysis.capabilities import (
     is_escalation,
     max_access_mode,
 )
+from safeai.severity import ESCALATION_SEVERITIES
+from safeai.severity import rank as severity_rank
 
-SEVERITY_ORDER = ["critical", "high", "medium", "low"]
-_SEVERITY_RANK = {sev: i for i, sev in enumerate(SEVERITY_ORDER)}
+_ESCALATION_SEVERITY_SET = frozenset(ESCALATION_SEVERITIES)
 
 #: Severity ceiling applied when a rule fired on an *inferred* access mode.
 #: Static inference must never produce a "critical" verdict on its own.
@@ -112,7 +114,15 @@ def _h_capability_removed(rule, ctx):
     }]
 
 
-def _h_access_increase(rule, ctx):
+def _access_increase_matches(rule, ctx):
+    """Match an ``access_increase`` rule against the change context.
+
+    Returns ``(matched_changes, new_at_level, evidence_caps)`` where
+    ``evidence_caps`` holds only the capabilities the rule actually
+    speaks for: filtered by name for specific rules, and restricted to
+    the capabilities that increased for the nameless generic rule (so its
+    evidence and confidence never borrow from unrelated capabilities).
+    """
     names = rule.get("names")
     floor = access_mode_rank(rule.get("min_after", "write"))
     if names:
@@ -135,7 +145,16 @@ def _h_access_increase(rule, ctx):
             c for c in ctx["added"]
             if access_mode_rank(c.get("access_mode")) >= floor
         ]
-        caps = list(ctx["after"].get("capabilities") or [])
+        changed_names = {c["capability"] for c in matched} | {str(c.get("name")) for c in new_at_level}
+        caps = [
+            c for c in ctx["after"].get("capabilities") or []
+            if str(c.get("name")) in changed_names
+        ]
+    return matched, new_at_level, caps
+
+
+def _h_access_increase(rule, ctx):
+    matched, new_at_level, caps = _access_increase_matches(rule, ctx)
     # A capability that is newly present at write+ is also an increase.
     if not matched and not new_at_level:
         return []
@@ -365,7 +384,7 @@ def cap_severity(severity, inferred):
     """Apply the inference ceiling to a rule's default severity."""
     if not inferred:
         return severity
-    if _SEVERITY_RANK.get(severity, 99) < _SEVERITY_RANK[INFERRED_SEVERITY_CAP]:
+    if severity_rank(severity) > severity_rank(INFERRED_SEVERITY_CAP):
         return INFERRED_SEVERITY_CAP
     return severity
 
@@ -382,6 +401,11 @@ def classify_escalations(before_state, after_state, status, evaluate_combination
 
     ``before_state`` is ``None`` for a newly-seen tool. ``after_state`` is
     ``None`` for a removed tool (no escalation can be raised in that case).
+
+    Nameless (generic) ``access_increase`` rules are evaluated **after**
+    every specific rule, against only the increases no specific rule
+    claimed. One underlying change therefore raises exactly one
+    escalation: the most specific applicable rule.
     """
     if after_state is None:
         return []
@@ -414,6 +438,9 @@ def classify_escalations(before_state, after_state, status, evaluate_combination
 
     kind = (after_state.get("tool") or {}).get("kind")
     escalations = []
+    generic_rules = []
+    covered_changes = set()
+    covered_added = set()
     for rule in ESCALATION_RULES:
         if rule["trigger"] == "combination" and not evaluate_combinations:
             continue
@@ -423,6 +450,15 @@ def classify_escalations(before_state, after_state, status, evaluate_combination
             continue
         if rule.get("requires_side_effect") and not _side_effect_present(after_state):
             continue
+        if rule["trigger"] == "access_increase" and not rule.get("names"):
+            # Generic rule: defer until specific rules have claimed their
+            # capabilities, then evaluate only the unclaimed remainder.
+            generic_rules.append(rule)
+            continue
+        if rule["trigger"] == "access_increase":
+            matched, new_at_level, _ = _access_increase_matches(rule, ctx)
+            covered_changes.update(c["capability"] for c in matched)
+            covered_added.update(str(c.get("name")) for c in new_at_level)
         handler = TRIGGER_HANDLERS[rule["trigger"]]
         for match in handler(rule, ctx):
             severity = cap_severity(rule["severity"], match["inferred"])
@@ -437,7 +473,28 @@ def classify_escalations(before_state, after_state, status, evaluate_combination
                 "inferred": bool(match["inferred"]),
             })
 
-    escalations.sort(key=lambda e: (_SEVERITY_RANK.get(e["severity"], 99), e["id"]))
+    for rule in generic_rules:
+        remaining_ctx = dict(ctx)
+        remaining_ctx["access_changes"] = [
+            c for c in ctx["access_changes"] if c["capability"] not in covered_changes
+        ]
+        remaining_ctx["added"] = [
+            c for c in ctx["added"] if str(c.get("name")) not in covered_added
+        ]
+        for match in _h_access_increase(rule, remaining_ctx):
+            severity = cap_severity(rule["severity"], match["inferred"])
+            escalations.append({
+                "id": rule["id"],
+                "severity": severity,
+                "summary": match["summary"],
+                "before": match["before"],
+                "after": match["after"],
+                "evidence": match["evidence"],
+                "confidence": match["confidence"],
+                "inferred": bool(match["inferred"]),
+            })
+
+    escalations.sort(key=lambda e: (-severity_rank(e["severity"]), e["id"]))
     return escalations
 
 
@@ -445,10 +502,10 @@ def highest_severity(escalations):
     """Return the most severe level present, or ``None``."""
     best = None
     for escalation in escalations or []:
-        severity = escalation.get("severity")
-        if severity not in _SEVERITY_RANK:
+        severity = str(escalation.get("severity") or "").lower()
+        if severity not in _ESCALATION_SEVERITY_SET:
             continue
-        if best is None or _SEVERITY_RANK[severity] < _SEVERITY_RANK[best]:
+        if best is None or severity_rank(severity) > severity_rank(best):
             best = severity
     return best
 

@@ -22,8 +22,9 @@ from safeai.kya import (
 from safeai.kya.assurance import build_assurance_boundary
 from safeai.kya.fingerprints import normalize_path
 from safeai.kya.util import confidence_label, redact_secrets, sha256_text
+from safeai.severity import SEVERITIES
 
-SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"]
+SEVERITY_ORDER = list(reversed(SEVERITIES))
 
 
 def config_hash(effective_config):

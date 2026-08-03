@@ -7,13 +7,7 @@ The result is deterministic: identical findings always produce the
 same score.
 """
 
-SEVERITY_POINTS = {
-    "critical": 25,
-    "high": 15,
-    "medium": 8,
-    "low": 4,
-    "info": 1,
-}
+from safeai.severity import SEVERITY_POINTS
 
 CATEGORY_WEIGHTS = {
     "Capability": 1.0,

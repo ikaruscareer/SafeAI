@@ -22,6 +22,7 @@ Design constraints, all enforced by tests:
 
 from safeai.analysis.tool_identity import display_name
 from safeai.kya.assurance import BOUNDARY_SENTENCE
+from safeai.severity import ESCALATION_SEVERITIES
 
 #: CI keys on this to find its own previous comment.
 MARKER = "<!-- safeai:pr-comment:v1 -->"
@@ -33,7 +34,7 @@ MAX_LINES = 60
 #: so that a two-escalation report lands well inside it.
 TARGET_LINES = 20
 
-_SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+_SEVERITY_ORDER = {sev: i for i, sev in enumerate(reversed(ESCALATION_SEVERITIES))}
 
 #: Severity marks. Text, not colour: PR comments render on many themes.
 _SEVERITY_MARK = {

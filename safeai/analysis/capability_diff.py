@@ -21,10 +21,11 @@ from safeai.analysis.escalation import (
 )
 from safeai.analysis.tool_identity import UNATTRIBUTED_KEY
 from safeai.analysis.tool_surface import build_tool_surface, surface_index
+from safeai.severity import ESCALATION_SEVERITIES
 
 CAPABILITY_DIFF_SCHEMA_VERSION = 2
 
-_SEVERITIES = ("critical", "high", "medium", "low")
+_SEVERITIES = tuple(reversed(ESCALATION_SEVERITIES))
 
 
 def _key(capability):

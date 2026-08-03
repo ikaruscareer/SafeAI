@@ -30,8 +30,9 @@ import os
 import sys
 
 from safeai.engine.scan import run_scan
+from safeai.severity import SEVERITIES
 
-LEVELS = ["info", "low", "medium", "high", "critical"]
+LEVELS = list(SEVERITIES)
 
 
 def _safeai_version():

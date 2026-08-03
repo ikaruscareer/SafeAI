@@ -726,7 +726,9 @@ def get_scan_findings(conn, scan_id):
 
 
 def _severity_counts(findings):
-    counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+    from safeai.severity import SEVERITIES
+
+    counts = {severity: 0 for severity in reversed(SEVERITIES)}
     for finding in findings:
         severity = str(finding.get("severity") or "medium").lower()
         counts[severity] = counts.get(severity, 0) + 1

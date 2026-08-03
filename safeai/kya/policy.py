@@ -18,13 +18,12 @@ import os
 
 import yaml
 
+from safeai.severity import rank as _severity_rank
+
 DEFAULT_POLICY_PATH = os.path.join(".safeai", "policy.yml")
 
 ACTIONS = ("allow", "warn", "require_review", "deny")
 _ACTION_RANK = {action: index for index, action in enumerate(ACTIONS)}
-
-_SEVERITIES = ("info", "low", "medium", "high", "critical")
-_SEVERITY_RANK = {sev: index for index, sev in enumerate(_SEVERITIES)}
 
 
 class PolicyError(Exception):
@@ -113,8 +112,7 @@ def _matches_when(when, finding, report):
 
     min_severity = when.get("min_severity")
     if min_severity:
-        sev_rank = _SEVERITY_RANK.get(str(finding.get("severity", "")).lower(), 0)
-        if sev_rank < _SEVERITY_RANK.get(str(min_severity).lower(), 0):
+        if _severity_rank(finding.get("severity")) < _severity_rank(min_severity):
             return []
         reasons.append(f"severity>={min_severity}")
 

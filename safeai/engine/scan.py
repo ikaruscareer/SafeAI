@@ -30,6 +30,7 @@ from safeai.frameworks import discover_parsers
 from safeai.kya.assurance import build_assurance_boundary
 from safeai.rules.loader import load_rules
 from safeai.scoring.engine import score_report
+from safeai.severity import SEVERITIES
 
 logger = logging.getLogger("safeai")
 
@@ -356,7 +357,7 @@ def run_scan(directory, rules_dir=None, baseline_report=None, excluded_paths=Non
             mcp_assets.extend(finding.get("mcp_assets") or [])
             mcp_capabilities.extend(finding.get("mcp_capabilities") or [])
 
-    counts = {k: 0 for k in ["critical", "high", "medium", "low", "info"]}
+    counts = {severity: 0 for severity in reversed(SEVERITIES)}
     for finding in findings:
         sev = finding.get("severity", "medium")
         if sev not in counts:

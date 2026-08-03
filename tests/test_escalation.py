@@ -181,6 +181,15 @@ def test_inferred_access_mode_caps_severity_at_medium():
     assert fs[0]["inferred"] is True
 
 
+# Capability names claimed by a specific access_increase rule. The generic
+# ESC_ACCESS_MODE_INCREASED rule must yield to these so one underlying
+# change raises exactly one escalation.
+SPECIFIC_ACCESS_RULE = {
+    "filesystem": "ESC_FILESYSTEM_WRITE_ADDED",
+    "memory": "ESC_MEMORY_SCOPE_EXPANDED",
+}
+
+
 @pytest.mark.parametrize(
     "capability",
     [
@@ -198,10 +207,66 @@ def test_inferred_access_mode_caps_severity_at_medium():
     ],
 )
 def test_access_mode_escalation_covers_all_capability_names(capability):
+    """Every read->write widening raises an access_increase escalation.
+
+    Capabilities with a specific rule get that rule only; everything else
+    is covered by the generic rule. ("mcp" here sits on a plain tool, so
+    the mcp_server-gated specific rule does not apply.)
+    """
     before = state([cap(capability, "read")])
     after = state([cap(capability, "write")])
     ids = fired(before, after, "escalated")
+    specific = SPECIFIC_ACCESS_RULE.get(capability)
+    if specific:
+        assert specific in ids
+        assert "ESC_ACCESS_MODE_INCREASED" not in ids
+    else:
+        assert "ESC_ACCESS_MODE_INCREASED" in ids
+
+
+def test_generic_rule_yields_to_specific_rule():
+    """One underlying change must not be reported twice."""
+    before = state([cap("filesystem", "read")])
+    after = state([cap("filesystem", "write")])
+    escalations = classify_escalations(before, after, "escalated")
+    ids = [e["id"] for e in escalations]
+    assert ids == ["ESC_FILESYSTEM_WRITE_ADDED"]
+
+
+def test_generic_rule_covers_only_unclaimed_capabilities():
+    """A mixed change: specific rule claims filesystem, generic takes the rest."""
+    fs = {**cap("filesystem", "read"), "evidence": [{"path": "fs.py", "line": 1}]}
+    db = {**cap("databases", "read"), "evidence": [{"path": "db.py", "line": 2}]}
+    fs_after = {**fs, "access_mode": "write"}
+    db_after = {**db, "access_mode": "mutate"}
+    before = state([fs, db])
+    after = state([fs_after, db_after])
+    escalations = classify_escalations(before, after, "escalated")
+    by_id = {e["id"]: e for e in escalations}
+    assert set(by_id) == {"ESC_FILESYSTEM_WRITE_ADDED", "ESC_ACCESS_MODE_INCREASED"}
+    generic = by_id["ESC_ACCESS_MODE_INCREASED"]
+    assert "databases" in generic["summary"]
+    assert "filesystem" not in generic["summary"]
+    # Evidence and confidence come only from the capabilities the generic
+    # rule actually claims — not from the whole after-state.
+    assert {e["path"] for e in generic["evidence"]} == {"db.py"}
+
+
+def test_generic_rule_fires_when_specific_rule_is_kind_gated():
+    """An MCP capability on a non-MCP tool is still covered generically."""
+    before = state([cap("mcp", "read")], kind="tool")
+    after = state([cap("mcp", "mutate")], kind="tool")
+    ids = fired(before, after, "escalated")
+    assert "ESC_MCP_READ_TO_MUTATE" not in ids
     assert "ESC_ACCESS_MODE_INCREASED" in ids
+
+
+def test_mcp_server_read_to_mutate_reports_once():
+    before = state([cap("mcp", "read")], kind="mcp_server", name="github")
+    after = state([cap("mcp", "mutate")], kind="mcp_server", name="github")
+    escalations = classify_escalations(before, after, "escalated")
+    ids = [e["id"] for e in escalations]
+    assert ids == ["ESC_MCP_READ_TO_MUTATE"]
 
 
 def test_removed_tool_raises_no_escalation():

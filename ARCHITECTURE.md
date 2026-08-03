@@ -237,6 +237,8 @@ Deterministic scoring engine:
 
 - **7 risk categories** with configurable weights
 - **Severity point values** — Critical=25, High=15, Medium=8, Low=4, Info=1
+  (defined once in `safeai/severity.py`, the canonical vocabulary shared by
+  the CLI, escalation engine, policy evaluator, scorers, and renderers)
 - **Formula:** `category_score = clamp(100 - sum(weighted_contributions), 0, 100)`
 - **Overall:** Average of all category scores
 - **Explainability:** Per-category breakdown of contributions

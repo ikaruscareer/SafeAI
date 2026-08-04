@@ -39,16 +39,22 @@ SafeAI sits before runtime guardrails and red-teaming tools in the security life
 
 | Feature | Description |
 |---------|-------------|
-| **Framework Detection** | Detects and parses 15 AI agent frameworks |
-| **Capability Discovery** | Identifies filesystem, shell, network, database, and other capabilities |
-| **AI Risk Analysis** | Categorizes findings into 7 risk categories with weighted trust scoring |
+| **Framework Detection** | Detects and parses 15 AI agent frameworks (AST + config + regex, no mutual exclusion) |
+| **Tool Identity & Access Modes** | Capabilities attributed to named tools (agent / MCP server / skill / tool / workflow node) on an access scale `none < read < write < mutate < execute`; inferred modes are flagged, never overstated |
+| **Capability Discovery** | Maps 19 capability categories (shell, filesystem, network, database, memory, MCP, ...) with evidence, confidence, and provenance |
+| **Capability Escalation Detection** | Per-tool authority diffs between scans (new shell, read→write widening, new MCP server, removed approval gate, ...) — 14 rules, including gating-aware subsumption |
+| **AI Risk Analysis** | Categorizes findings into 7 risk categories with weighted trust scoring (0–100) |
 | **Prompt Risk Analysis** | Detects injection patterns, delimiter issues, system leak, role override |
-| **Tool Analysis** | Identifies agent-bound tools and their risk profiles |
-| **Memory Analysis** | Detects memory/checkpointer usage in agent workflows |
+| **Component-Level Analysis** | Skills, prompt files, tool definitions, model configurations, workflow templates |
+| **Deep Claude Code Analysis** | Structural analysis of `.claude/settings.json`, permissions, slash commands, subagents, hooks, `.mcp.json` |
 | **MCP Analysis** | Discovers MCP servers, clients, tools, resources, and validates configuration |
-| **Data Leakage Detection** | Flags hardcoded secrets, tokens, and API keys |
-| **CI/CD Integration** | SARIF output, exit codes, GitHub Actions workflow included |
-| **Multi-Format Reports** | Terminal summary, JSON, SARIF 2.1.0, HTML |
+| **Data Leakage Detection** | Flags hardcoded secrets, tokens, and API keys (redacted in all outputs) |
+| **KYA Shared Registry** | Append-only SQLite registry of scan-derived agent records, shared org-wide; `list`/`show`/`history`/`diff`/`export` |
+| **Baseline & Escalation Gating** | `--fail-on-new` for new/regressed findings, `--fail-on-escalation` for authority changes, `--pr-comment` PR summaries |
+| **Policy-as-Code & Suppressions** | `allow`/`warn`/`require_review`/`deny` policy with selectors; required-reason suppressions |
+| **Assurance Boundary** | Every scan states exactly what it did and could not verify — never a fixed disclaimer |
+| **CI/CD Integration** | SARIF 2.1.0 output, exit codes, GitHub Actions workflow included |
+| **Multi-Format Reports** | Terminal, JSON, SARIF 2.1.0, HTML, canonical KYA manifest, PR comment |
 | **Cross-File Analysis** | Import graph, symbol resolution, and project graph |
 | **Confidence-Arbitrated Parsing** | Multiple parsers per file, merged with provenance |
 
@@ -60,22 +66,34 @@ SafeAI sits before runtime guardrails and red-teaming tools in the security life
 Source Code
     │
     ▼
-Framework Detection — identifies AI frameworks via imports, configs, deps
+File Collection — Python, YAML, JSON, .prompt, and .claude configs;
+                 prunes VCS, caches, oversized files, and SafeAI's own artifacts
     │
     ▼
-Static Analysis — AST parsing, capability patterns, dependency scanning
+Framework Detection — 15 parsers (AST + config + regex), all run on all files;
+                     import graph and dependency manifests
     │
     ▼
-Capability Mapping — maps framework objects to normalized risk categories
+Static Analysis — semantic docs, component extraction, capability / prompt /
+                 data-leakage / MCP / Claude Code analyzers
     │
     ▼
-Risk Rules — applies rule engine with configurable severity and weights
+Capability Mapping — per-tool identity (agent, MCP server, skill, tool,
+                    workflow node) + access modes (read < write < mutate < execute)
     │
     ▼
-Trust Score — deterministic category-weighted scoring from 0–100
+Risk Rules — rule engine with severity, confidence, provenance, stable fingerprints
     │
     ▼
-Reports — terminal, JSON, SARIF, HTML
+Trust Score — deterministic 0–100 score across 7 weighted risk categories
+    │
+    ▼
+KYA Pipeline — finding normalization, suppressions, baseline (new/regressed),
+              policy-as-code, capability escalation diff
+    │
+    ▼
+Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML,
+                     canonical manifest, PR comment
 ```
 <img width="1024" height="1024" alt="SafeAI_AI_Capability_Risk_Analyzer" src="https://github.com/user-attachments/assets/618f9ebc-030b-40c9-a98e-b0a5c41e07cc" />
 
@@ -85,21 +103,21 @@ Reports — terminal, JSON, SARIF, HTML
 
 | Framework | Detection | Discovery | Capability Analysis | Risk Analysis | Status |
 |-----------|-----------|-----------|-------------------|---------------|--------|
-| LangGraph | ✔ | Partial | Partial | Partial | Early Preview |
-| CrewAI | ✔ | Partial | Partial | Partial | Early Preview |
-| LangChain | ✔ | Partial | Partial | Partial | Early Preview |
-| Semantic Kernel | ✔ | Partial | Partial | Partial | Early Preview |
-| OpenAI Agents SDK | ✔ | Partial | Partial | Partial | Early Preview |
-| Microsoft Agent Framework | ✔ | Partial | Partial | Partial | Early Preview |
-| Azure AI Foundry | ✔ | Minimal | Minimal | Minimal | Early Preview |
-| Bedrock Agent | ✔ | Minimal | Minimal | Minimal | Early Preview |
-| Claude Code | ✔ | Minimal | Minimal | Minimal | Early Preview |
-| Google ADK | ✔ | Partial | Minimal | Minimal | Early Preview |
-| Mastra | ✔ | Partial | Minimal | Minimal | Early Preview |
-| Haystack | ✔ | Partial | Minimal | Minimal | Early Preview |
-| LlamaIndex | ✔ | Partial | Minimal | Minimal | Early Preview |
-| Dify | ✔ | Minimal | Minimal | Minimal | Early Preview |
-| n8n | ✔ | Partial | Minimal | Minimal | Early Preview |
+| LangGraph | ✔ | Partial | Partial | Partial | Partial |
+| CrewAI | ✔ | Partial | Partial | Partial | Partial |
+| LangChain | ✔ | Partial | Partial | Partial | Partial |
+| Semantic Kernel | ✔ | Partial | Partial | Partial | Partial |
+| OpenAI Agents SDK | ✔ | Partial | Partial | Partial | Partial |
+| Microsoft Agent Framework | ✔ | Partial | Minimal | Minimal | Experimental |
+| Azure AI Foundry | ✔ | Minimal | Minimal | Minimal | Experimental |
+| Bedrock Agent | ✔ | Minimal | Minimal | Minimal | Experimental |
+| Claude Code | ✔ (deep) | Deep | Partial | Partial | Partial |
+| Google ADK | ✔ | Partial | Minimal | Minimal | Experimental |
+| Mastra | ✔ | Partial | Minimal | Minimal | Experimental |
+| Haystack | ✔ | Partial | Minimal | Minimal | Experimental |
+| LlamaIndex | ✔ | Partial | Minimal | Minimal | Experimental |
+| Dify | ✔ | Minimal | Minimal | Minimal | Experimental |
+| n8n | ✔ | Partial | Minimal | Minimal | Experimental |
 
 
 ### Framework Support Details
@@ -112,7 +130,8 @@ Reports — terminal, JSON, SARIF, HTML
 - **Microsoft Agent Framework** — detects `AgentClient`, tools, workflows, Azure models
 - **Azure AI Foundry** — detects YAML configurations with Azure resources
 - **Bedrock Agent** — detects JSON configurations with Bedrock resources
-- **Claude Code** — detects `CLAUDE.md` and `.claude/` configuration references
+- **Claude Code** — structural analysis of `.claude/settings.json`, permission
+  grants, `.mcp.json`, slash commands, subagent definitions, and lifecycle hooks
 - **Google ADK** — detects ADK agent, workflow, tool, and model patterns
 - **Mastra** — detects Mastra agents, workflows, tools, and model references
 - **Haystack** — detects Haystack pipelines, agents, tools, and retrievers
@@ -120,9 +139,11 @@ Reports — terminal, JSON, SARIF, HTML
 - **Dify** — detects Dify workflow and agent configuration files
 - **n8n** — detects n8n workflow exports, nodes, and connections
 
-The seven frameworks above are early-preview adapters. Detection and basic
-artifact discovery are available, but their framework-specific analysis is
-not yet equivalent to the established adapters.
+Maturity is on the scale defined in [`FRAMEWORK_SUPPORT.md`](FRAMEWORK_SUPPORT.md):
+**Partial** = reliable detection and discovery with capability/risk analysis over
+common patterns; **Experimental** = detection and basic artifact discovery with
+limited framework-specific analysis. No framework is rated fully **Supported**
+yet — SafeAI is in early preview and deliberately does not overclaim coverage.
 
 ---
 
@@ -150,31 +171,45 @@ SafeAI fingerprints capabilities at the framework object level and via fallback 
 | MCP Services | MCP | Exposed endpoints, unauthorized tool access |
 | Human Approval | Human Approval | Approval bypass risk |
 | Multi-Agent | Multi-Agent | Delegation-based privilege escalation |
+| Container | Container | Container orchestration abuse (Docker, Kubernetes) |
+| Collaboration | Collaboration | Cross-system coordination risk |
+| Untrusted Input | Untrusted Input | Injection surface into agent pipelines |
 
-> **Note:** Some capabilities (Browser, GitHub, Slack, Email, RAG, Human Approval) are detected primarily through MCP configuration analysis. Framework adapter detection for these capabilities is planned.
+> **Note:** A capability is detected wherever the evidence lives — through a
+> framework adapter, a direct pattern detector (for example Docker,
+> Kubernetes, S3, Slack, Jira, browser automation, GCP), or MCP
+> configuration analysis. Capabilities that only MCP configuration exposes
+> today (e.g. email, human approval gates) are still flagged — the tool is
+> reported with an unattributed identity rather than a guessed owner.
 
 ---
 
-## Know Your Agent (KYA) — Local Registry
+## Know Your Agent (KYA) — Shared Registry
 
-Every scan automatically builds a **private, local "Know Your Agent" registry**
-of scan-derived agent records — no server, no account, no network call, no
-source upload.
+Every scan automatically builds a **private "Know Your Agent" registry** of
+scan-derived agent records — no server, no account, no network call, no
+source upload. Scans from every project accumulate in **one shared SQLite
+database** (`SAFEAI_REGISTRY` env var or `~/.safeai/registry.db`), so
+`safeai registry list` shows the whole organization's agents from any folder.
 
 ```bash
-safeai scan .                              # scan + create/update .safeai/registry.db
+safeai scan .                              # scan + accumulate into the shared registry
 safeai scan . --manifest safeai-manifest.json   # also write the canonical KYA manifest
-safeai registry list                       # known agents/workflows
+safeai scan . --html report.html                # interactive HTML report (risk gauge, escalations)
+safeai registry list                       # agents/workflows from every scanned project
+safeai registry list --format html > registry.html   # shareable HTML inventory
 safeai registry show <agent-id>            # latest KYA record
 safeai registry history <agent-id>         # all scans for an agent
 safeai registry diff <agent-id> --from previous --to latest
 safeai registry export --format json --output inventory.json
+safeai registry export --format html --output inventory.html
 ```
 
 What you get on the first run:
 
 - A static scan ran successfully.
-- A local SQLite registry was initialized at `.safeai/registry.db`.
+- The shared registry was initialized (`SAFEAI_REGISTRY` or
+  `~/.safeai/registry.db`).
 - One or more KYA agent records were created with stable identities.
 - Findings carry confidence, provenance, remediation, and stable fingerprints.
 - No source code or secrets are uploaded or stored in output artifacts.
@@ -184,9 +219,9 @@ source/configuration say this agent can do?" — never "what is this agent doing
 in production?" See [REGISTRY.md](REGISTRY.md), [KYA_MANIFEST.md](KYA_MANIFEST.md),
 and [LIMITATIONS.md](LIMITATIONS.md).
 
-CI note: registry persistence is auto-disabled when the `CI` env var is set.
-Use `--registry "$RUNNER_TEMP/registry.db"` to persist in CI, or `--no-registry`
-for ephemeral scans.
+CI note: registry persistence is auto-disabled for bare CI jobs (the `CI`
+env var). Use `--registry "$RUNNER_TEMP/registry.db"`, set `SAFEAI_REGISTRY`
+to a shared path, or use `--no-registry` for ephemeral scans.
 
 ---
 
@@ -236,7 +271,7 @@ python -m safeai registry <subcommand> [options]
 | `--fail-on-new` | off | With `--baseline`: fail only on new/regressed findings |
 | `--policy` | `.safeai/policy.yml` | Policy-as-code YAML file |
 | `--suppressions` | `.safeai/suppressions.yml` | Suppressions YAML file |
-| `--registry` | `.safeai/registry.db` | Registry database path |
+| `--registry` | shared (`SAFEAI_REGISTRY`/`~/.safeai/registry.db`) | Registry database path |
 | `--no-registry` | off | Skip registry persistence |
 | `--strict-registry` | off | Fail the scan if registry persistence fails |
 | `--pr-comment` | — | Write a reviewer-facing Markdown summary of capability escalations to this path (never posted anywhere) |
@@ -257,7 +292,7 @@ python -m safeai registry <subcommand> [options]
 Suppressed findings never trigger exit code 1. With `--fail-on-new`, only
 findings classified `new` or `regressed` against the baseline are gated.
 
-### Common 1.3 Workflows
+### Common 1.4 Workflows
 
 ```bash
 # canonical manifest + baseline seed
@@ -266,7 +301,11 @@ python -m safeai scan . --manifest safeai-manifest.json
 # CI/PR scan: fail only for new or regressed findings
 python -m safeai scan . --baseline safeai-manifest.json --fail-on-new --fail-on high
 
-# inspect local KYA registry
+# CI/PR scan: fail on capability escalations and render a PR comment
+python -m safeai scan . --baseline safeai-manifest.json \
+  --fail-on-escalation high --pr-comment comment.md
+
+# inspect the shared KYA registry
 python -m safeai registry list
 python -m safeai registry show <agent-id>
 python -m safeai registry history <agent-id>
@@ -448,6 +487,10 @@ See [ROADMAP.md](./ROADMAP.md) for the detailed roadmap.
 
 - **Completed in 1.3**: KYA manifest, baseline/new-regressed gating,
   suppressions, policy-as-code, local SQLite registry, registry CLI.
+- **Completed in 1.4** (beta): tool-centric capability model (tool identity
+  + access modes), 14 capability escalation rules, capability diff v2,
+  deep Claude Code analysis, PR comment + CI context, assurance boundary,
+  registry schema v2, shared org-wide registry default.
 - **Next focus**: adapter depth improvements, governance signal detection,
   richer dataflow/context precision, and optional enterprise-scale workflows.
 

@@ -1,0 +1,516 @@
+"""Scan orchestration engine for SafeAI.
+
+Drives the entire pipeline as discrete, individually callable stages (see
+:class:`ScanOrchestrator`):
+
+  1. :meth:`ScanOrchestrator.prepare` — file collection (Python, YAML,
+     JSON, dependency manifests), rules loading, dependency extraction,
+     parser discovery
+  2. :meth:`ScanOrchestrator.load_sources` — read files, build semantic
+     documents (AST), construct the import graph
+  3. :meth:`ScanOrchestrator.parse_frameworks` — run all framework
+     parsers on all files (no mutual exclusion), capture provenance
+  4. :meth:`ScanOrchestrator.extract_components` — component-level
+     extraction, parser aggregation, capability normalization
+  5. :meth:`ScanOrchestrator.analyze` — multi-analyzer pipeline
+     (capability, prompt, data leakage, MCP, Claude Code, and the
+     component analyzers)
+  6. :meth:`ScanOrchestrator.assemble` — relativize paths, score the
+     report, build the tool surface and assurance boundary
+
+The module-level :func:`run_scan` is the historical entry point and a thin
+wrapper over :class:`ScanOrchestrator`; ``safeai.engine.scan`` re-exports
+both for backward compatibility.
+"""
+
+import logging
+import os
+
+from safeai.analysis.aggregation import aggregate_capabilities, aggregate_parser_models
+from safeai.analysis.components import extract_components
+from safeai.analysis.import_graph import build_import_graph, module_name_from_path
+from safeai.analysis.project_graph import build_project_graph
+from safeai.analysis.semantic import build_semantic_document
+from safeai.analysis.tool_surface import build_tool_surface
+from safeai.analyzers.capability.analyzer import CapabilityAnalyzer
+from safeai.analyzers.claude_code.analyzer import ClaudeCodeAnalyzer
+from safeai.analyzers.data_leakage.analyzer import DataLeakageAnalyzer
+from safeai.analyzers.mcp.analyzer import MCPAnalyzer
+from safeai.analyzers.prompt.analyzer import PromptAnalyzer
+from safeai.frameworks import discover_parsers
+from safeai.kya.assurance import build_assurance_boundary
+from safeai.rules.loader import load_rules
+from safeai.scoring.engine import score_report
+from safeai.severity import SEVERITIES
+
+logger = logging.getLogger("safeai")
+
+# Directories that are never scanned (version control, dependency caches,
+# virtual environments, build outputs, SafeAI's own local state).
+EXCLUDED_DIRS = {
+    ".git", ".hg", ".svn",
+    "node_modules",
+    "__pycache__",
+    ".venv", "venv", "env",
+    ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox",
+    "dist", "build", ".eggs",
+    ".idea", ".vscode",
+    ".safeai",
+}
+
+# SafeAI's own canonical artifacts are never re-scanned: scanning a
+# previously generated manifest would create a findings feedback loop.
+_EXCLUDED_FILES = {"safeai-manifest.json"}
+
+# Files larger than this are skipped to avoid excessive memory use.
+MAX_FILE_BYTES = 2 * 1024 * 1024
+
+
+def _is_scannable_file(filename):
+    """Return whether a file is source, configuration, or AI instructions."""
+    lower = filename.lower()
+    if lower.endswith((".py", ".json", ".yaml", ".yml", ".prompt")):
+        return True
+    return lower in {"claude.md", "prompt.md", "system_prompt.md"} or lower.endswith((".prompt.md", ".prompt.txt"))
+
+
+#: Additional extensions read inside a ``.claude/`` directory. Claude Code
+#: keeps real agent authority in markdown (slash commands, subagents) and
+#: shell hooks, which the generic source allowlist above does not cover.
+_CLAUDE_CONFIG_EXTS = (".md", ".markdown", ".sh", ".bash", ".toml")
+
+
+def _is_claude_config_file(full_path):
+    """True for Claude Code configuration inside the scanned repository.
+
+    Only paths under a repository-local ``.claude/`` directory qualify.
+    User-level configuration is never reached: this predicate is applied
+    to files already discovered by walking the scan root.
+    """
+    normalized = str(full_path).replace("\\", "/")
+    if "/.claude/" not in normalized:
+        return False
+    return normalized.lower().endswith(_CLAUDE_CONFIG_EXTS)
+
+
+def _is_within_root(root, path):
+    """True when ``path`` resolves inside ``root`` after symlink expansion."""
+    root_real = os.path.normcase(os.path.realpath(root))
+    path_real = os.path.normcase(os.path.realpath(path))
+    try:
+        return os.path.commonpath([root_real, path_real]) == root_real
+    except ValueError:
+        return False
+
+
+def _is_canonical_manifest_path(path, root):
+    """True for the canonical root-level manifest filename only."""
+    try:
+        rel = os.path.relpath(path, root)
+    except ValueError:
+        return False
+    return rel.replace("\\", "/") in _EXCLUDED_FILES
+
+
+def collect_files(root, skipped=None, excluded_paths=None):
+    """Collect scannable files, pruning excluded directories and oversized files.
+
+    ``skipped`` is an optional dict that accumulates ``reason -> count`` for
+    files the walk declined to read. It feeds the assurance boundary, which
+    has to state honestly what the scan did not look at. Passing nothing
+    keeps the historical single-return behaviour.
+    """
+    files = []
+    counters = skipped if skipped is not None else {}
+
+    def note(reason):
+        counters[reason] = counters.get(reason, 0) + 1
+
+    excluded = {
+        os.path.normcase(os.path.realpath(os.path.abspath(path)))
+        for path in (excluded_paths or [])
+        if path
+    }
+
+    for d, dirs, fs in os.walk(root):
+        dirs[:] = sorted(name for name in dirs if name not in EXCLUDED_DIRS)
+        for f in sorted(fs):
+            full = os.path.join(d, f)
+
+            full_real = os.path.normcase(os.path.realpath(full))
+            if full_real in excluded:
+                continue
+
+            if _is_canonical_manifest_path(full, root):
+                continue
+
+            if not _is_within_root(root, full):
+                note("outside scan root (symlink or path traversal)")
+                continue
+
+            if not (_is_scannable_file(f) or _is_claude_config_file(full)):
+                extension = os.path.splitext(f)[1].lower() or "(no extension)"
+                note(f"unsupported file type {extension}")
+                continue
+            try:
+                if os.path.getsize(full) > MAX_FILE_BYTES:
+                    logger.debug("Skipping oversized file: %s", full)
+                    note("larger than the 2 MiB read limit")
+                    continue
+            except OSError:
+                note("unreadable")
+                continue
+            files.append(full)
+    return sorted(files)
+
+
+def collect_dependency_files(root):
+    files = []
+    for filename in ["requirements.txt", "pyproject.toml", "Pipfile", "package.json"]:
+        path = os.path.join(root, filename)
+        if os.path.exists(path):
+            files.append(path)
+    return files
+
+
+def extract_dependencies(paths):
+    """Parse dependency manifests into a set of package names.
+
+    Handles requirements.txt, Pipfile, pyproject.toml, and package.json.
+    For structured manifests only known AI framework tokens are extracted.
+    """
+    deps = set()
+    for path in paths:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception:
+            continue
+
+        low = content.lower()
+        if path.endswith(("requirements.txt", "Pipfile")):
+            for line in content.splitlines():
+                raw = line.strip().split("#", 1)[0]
+                if not raw:
+                    continue
+                name = raw.split("==", 1)[0].split(">=", 1)[0].split("<=", 1)[0].strip().lower()
+                if name:
+                    deps.add(name)
+        elif path.endswith("pyproject.toml"):
+            for token in [
+                "langgraph",
+                "crewai",
+                "langchain",
+                "semantic-kernel",
+                "openai-agents",
+                "azure-ai-agents",
+                "azure-ai-projects",
+                "google-adk",
+                "haystack-ai",
+                "llama-index",
+                "mastra",
+                "dify",
+                "n8n",
+            ]:
+                if token in low:
+                    deps.add(token)
+        elif path.endswith("package.json"):
+            for token in [
+                "langchain", "openai", "@azure/ai-projects", "@microsoft/agents",
+                "@mastra/core", "n8n",
+            ]:
+                if token in low:
+                    deps.add(token)
+    return deps
+
+
+def _relativize(path, root):
+    """Convert an absolute path to a root-relative, forward-slash path.
+
+    Paths outside the scan root and sentinel values (e.g. ``<scan>``)
+    are returned unchanged. Relative paths keep report output portable
+    and allow GitHub code scanning to map SARIF results to files.
+    """
+    if not path or path.startswith("<"):
+        return path
+    try:
+        rel = os.path.relpath(path, root)
+    except ValueError:
+        return path
+    if rel.startswith(".."):
+        return path
+    return rel.replace("\\", "/")
+
+
+class ScanOrchestrator:
+    """Runs the static-analysis pipeline as discrete, testable stages.
+
+    Stage methods are intentionally independent so individual steps can be
+    exercised or replaced in tests; :meth:`run` chains them in order and
+    returns the assembled report.
+    """
+
+    def __init__(self, directory, rules_dir=None, baseline_report=None, excluded_paths=None):
+        self.directory = os.path.abspath(directory)
+        self.rules_dir = rules_dir
+        self.baseline_report = baseline_report
+        self.excluded_paths = excluded_paths
+
+        self.skipped_files = {}
+        self.files = []
+        self.rules = []
+        self.dependencies = set()
+        self.parsers = []
+        self.file_cache = {}
+        self.module_by_file = {}
+        self.semantic_docs = {}
+        self.import_graph = None
+        self.scan_ctx = {}
+        self.agent_models = []
+        self.detected_frameworks = []
+        self.framework_methods = {}
+        self.parser_results_by_file = {}
+        self.parse_provenance = []
+        self.diagnostics = []
+        self.components = []
+        self.unified_models = []
+        self.normalized_capabilities = []
+        self.findings = []
+        self.mcp_assets = []
+        self.mcp_capabilities = []
+        self.counts = {}
+        self.trust_score = {}
+        self.project_graph = {}
+        self.report = {}
+
+    def prepare(self):
+        """Stage 1: resolve the root, collect files, load rules/deps/parsers."""
+        self.files = collect_files(
+            self.directory, skipped=self.skipped_files, excluded_paths=self.excluded_paths
+        )
+        logger.info("Collected %d scannable files in %s", len(self.files), self.directory)
+        self.rules = load_rules(self.rules_dir)
+        self.dependencies = extract_dependencies(collect_dependency_files(self.directory))
+        self.parsers = discover_parsers()
+
+    def load_sources(self):
+        """Stage 2: read files into cache and build semantic docs + import graph."""
+        for path in self.files:
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+            except Exception as exc:
+                logger.debug("Failed to read %s: %s", path, exc)
+                continue
+
+            self.file_cache[path] = content
+            if path.endswith(".py"):
+                module_name = module_name_from_path(self.directory, path)
+                self.module_by_file[path] = module_name
+                self.semantic_docs[path] = build_semantic_document(
+                    path, content, module_name=module_name
+                )
+
+        self.import_graph = build_import_graph(self.directory, self.files, self.semantic_docs)
+        self.scan_ctx = {
+            "root": self.directory,
+            "files": self.files,
+            "file_cache": self.file_cache,
+            "dependencies": self.dependencies,
+            "module_by_file": self.module_by_file,
+            "semantic_docs": self.semantic_docs,
+            "import_graph": self.import_graph,
+        }
+
+    def parse_frameworks(self):
+        """Stage 3: run all framework parsers on all files, no mutual exclusion."""
+        for path in self.files:
+            content = self.file_cache.get(path, "")
+            for parser in self.parsers:
+                if parser.detect(path, content, scan_ctx=self.scan_ctx):
+                    parsed = parser.parse(path, content, scan_ctx=self.scan_ctx)
+                    framework = parsed.get("framework")
+                    if not framework:
+                        continue
+                    self.agent_models.append({
+                        "file": path,
+                        "framework": framework,
+                        "data": parsed,
+                    })
+                    self.parser_results_by_file.setdefault(path, []).append(parsed)
+                    self.parse_provenance.append({
+                        "file": path,
+                        "framework": framework,
+                        "confidence": parsed.get("parser_confidence", 0.65),
+                        "source": parsed.get("discovery_method", "regex"),
+                        "evidence": parsed.get("detection_evidence", []),
+                    })
+                    if framework and framework not in self.detected_frameworks:
+                        self.detected_frameworks.append(framework)
+                    self.framework_methods.setdefault(framework, set()).add(
+                        parsed.get("discovery_method", "regex")
+                    )
+
+    def extract_components(self):
+        """Stage 4: component-level extraction, aggregation, normalization."""
+        self.diagnostics = []
+        self.components = extract_components(
+            self.files, self.file_cache, self.semantic_docs, diagnostics=self.diagnostics
+        )
+        logger.info("Extracted %d AI components", len(self.components))
+
+        self.unified_models = aggregate_parser_models(self.parser_results_by_file)
+        logger.info(
+            "Detected frameworks: %s", ", ".join(self.detected_frameworks) or "none"
+        )
+
+        capabilities = []
+        for model in self.agent_models:
+            capabilities.extend(model.get("data", {}).get("capabilities") or [])
+        self.normalized_capabilities = aggregate_capabilities(capabilities)
+
+    def analyze(self):
+        """Stage 5: run the core + component analyzers over sources and components."""
+        analyzers = [
+            CapabilityAnalyzer(),
+            PromptAnalyzer(),
+            DataLeakageAnalyzer(),
+            MCPAnalyzer(),
+            ClaudeCodeAnalyzer(),
+        ]
+        for analyzer in analyzers:
+            self.findings.extend(analyzer.run(self.file_cache, self.rules, self.agent_models))
+
+        # --- Phase 1.5: component-level analyzers ---
+        from safeai.analyzers.model_config.analyzer import ModelConfigAnalyzer
+        from safeai.analyzers.prompt_file.analyzer import PromptFileAnalyzer
+        from safeai.analyzers.skill.analyzer import SkillAnalyzer
+        from safeai.analyzers.tool_def.analyzer import ToolDefAnalyzer
+        from safeai.analyzers.workflow.analyzer import WorkflowAnalyzer
+
+        component_analyzers = [
+            SkillAnalyzer(),
+            PromptFileAnalyzer(),
+            ToolDefAnalyzer(),
+            ModelConfigAnalyzer(),
+            WorkflowAnalyzer(),
+        ]
+        for analyzer in component_analyzers:
+            self.findings.extend(
+                analyzer.run(
+                    self.file_cache, self.rules, self.agent_models, components=self.components
+                )
+            )
+        self.findings.sort(key=lambda f: (
+            str(f.get("file") or ""),
+            int(f.get("line") or 0),
+            str(f.get("rule_id") or ""),
+            str(f.get("severity") or ""),
+            str(f.get("message") or ""),
+        ))
+        logger.info("Analysis produced %d findings", len(self.findings))
+
+    def _extract_mcp_assets(self):
+        self.mcp_assets = []
+        self.mcp_capabilities = []
+        for finding in self.findings:
+            if finding.get("rule_id") == "MCP_ASSETS_DISCOVERED":
+                self.mcp_assets.extend(finding.get("mcp_assets") or [])
+                self.mcp_capabilities.extend(finding.get("mcp_capabilities") or [])
+
+    def _count_severities(self):
+        self.counts = {severity: 0 for severity in reversed(SEVERITIES)}
+        for finding in self.findings:
+            sev = finding.get("severity", "medium")
+            if sev not in self.counts:
+                self.counts[sev] = 0
+            self.counts[sev] += 1
+
+    def _relativize_report(self):
+        # Normalize all paths in the report to be relative to the scanned
+        # root so reports are portable and SARIF consumers (e.g. GitHub
+        # code scanning) can map results back to repository files.
+        for finding in self.findings:
+            finding["file"] = _relativize(finding.get("file"), self.directory)
+        for model in self.agent_models:
+            model["file"] = _relativize(model.get("file"), self.directory)
+        for entry in self.parse_provenance:
+            entry["file"] = _relativize(entry.get("file"), self.directory)
+        for asset in self.mcp_assets:
+            asset["file"] = _relativize(asset.get("file"), self.directory)
+        for model in self.unified_models:
+            model["file"] = _relativize(model.get("file"), self.directory)
+        for component in self.components:
+            component["file"] = _relativize(component.get("file"), self.directory)
+        for diagnostic in self.diagnostics:
+            diagnostic["file"] = _relativize(diagnostic.get("file"), self.directory)
+
+    def assemble(self):
+        """Stage 6: score, relativize paths, build the final report document."""
+        self._extract_mcp_assets()
+        self._count_severities()
+        self.trust_score = score_report(self.findings)
+        self._relativize_report()
+        self.project_graph = build_project_graph(
+            self.agent_models, mcp_assets=self.mcp_assets, components=self.components
+        )
+
+        self.report = {
+            "report_type": "safeai.scan",
+            "findings": self.findings,
+            "counts": self.counts,
+            "files_scanned": len(self.files),
+            "agent_models": self.agent_models,
+            "detected_frameworks": sorted(self.detected_frameworks),
+            "framework_discovery_methods": {
+                k: sorted(v) for k, v in self.framework_methods.items()
+            },
+            "parser_provenance": self.parse_provenance,
+            "unified_models": self.unified_models,
+            "normalized_capabilities": self.normalized_capabilities,
+            "dependencies": sorted(self.dependencies),
+            "import_graph": {
+                "modules": self.import_graph.module_to_file,
+                "edges": {k: sorted(v) for k, v in self.import_graph.edges.items()},
+            },
+            "project_graph": self.project_graph,
+            "mcp_assets": self.mcp_assets,
+            "mcp_capabilities": self.mcp_capabilities,
+            "components": self.components,
+            "diagnostics": self.diagnostics,
+            "skipped_files": dict(sorted(self.skipped_files.items())),
+            "trust_score": self.trust_score,
+        }
+        # Per-tool capability surface (v1.4): the unit the diff compares and
+        # the registry persists. Built from report data only — no extra file
+        # access.
+        self.report["tool_surface"] = build_tool_surface(self.report)
+        # Assurance boundary (v1.4): what this scan did and did not verify.
+        # Derived from the run itself, never a fixed disclaimer string.
+        self.report["assurance_boundary"] = build_assurance_boundary(self.report)
+        if self.baseline_report is not None:
+            from safeai.analysis.capability_diff import compute_capability_diff
+
+            self.report["capability_diff"] = compute_capability_diff(
+                self.report, self.baseline_report
+            )
+        return self.report
+
+    def run(self):
+        """Execute all stages in order and return the assembled report."""
+        self.prepare()
+        self.load_sources()
+        self.parse_frameworks()
+        self.extract_components()
+        self.analyze()
+        return self.assemble()
+
+
+def run_scan(directory, rules_dir=None, baseline_report=None, excluded_paths=None):
+    """Scan ``directory`` and return the assembled report (historical API)."""
+    return ScanOrchestrator(
+        directory,
+        rules_dir=rules_dir,
+        baseline_report=baseline_report,
+        excluded_paths=excluded_paths,
+    ).run()

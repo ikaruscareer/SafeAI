@@ -4,6 +4,7 @@ import os
 
 from safeai.cmd.cli import main
 from safeai.kya.registry import (
+    SAFEAI_REGISTRY_ENV,
     agent_history,
     connect,
     get_agent,
@@ -13,6 +14,7 @@ from safeai.kya.registry import (
     list_agents,
     registry_exists,
     resolve_scan_ref,
+    shared_registry_path,
 )
 
 
@@ -177,3 +179,18 @@ def test_resolve_scan_refs(kya_project, tmp_path):
         assert get_snapshot(conn, agent_id, latest)
     finally:
         conn.close()
+
+
+def test_shared_registry_path_respects_env(monkeypatch, tmp_path):
+    expected = str(tmp_path / "custom" / "registry.db")
+    monkeypatch.setenv(SAFEAI_REGISTRY_ENV, expected)
+    assert shared_registry_path() == expected
+
+
+def test_shared_registry_path_defaults_to_home(monkeypatch):
+    monkeypatch.delenv(SAFEAI_REGISTRY_ENV, raising=False)
+    import os
+
+    assert shared_registry_path() == os.path.join(
+        os.path.expanduser("~"), ".safeai", "registry.db"
+    )

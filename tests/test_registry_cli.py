@@ -169,8 +169,90 @@ suppressions:
 def test_registry_missing_error(kya_project, tmp_path, capsys):
     missing = os.path.join(str(tmp_path), "nope", "registry.db")
     rc = main(["registry", "list", "--registry", missing])
+    err = capsys.readouterr().err
     assert rc == 2
-    assert "Registry not found" in capsys.readouterr().err
+    assert "Registry not found" in err
+    assert "--project-dir" in err
+
+
+def test_registry_commands_accept_project_dir(kya_project, tmp_path, capsys):
+    """registry list can find the registry a scan wrote into a project root
+    without cd'ing there: --project-dir derives the same path scan used."""
+    main(["scan", kya_project["root"], "--registry", kya_project["registry"],
+          "--sarif", os.path.join(tmp_path, "r.sarif")])
+    capsys.readouterr()  # discard scan output
+
+    rc = main(["registry", "list", "--project-dir", kya_project["root"], "--format", "json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["agents"]
+
+
+def test_registry_list_html(kya_project, tmp_path, capsys):
+    main(["scan", kya_project["root"], "--registry", kya_project["registry"],
+          "--sarif", os.path.join(tmp_path, "r.sarif")])
+    capsys.readouterr()
+    rc = main(["registry", "list", "--registry", kya_project["registry"], "--format", "html"])
+    assert rc == 0
+    html = capsys.readouterr().out
+    assert "<!doctype html>" in html.lower()
+    assert "Registry Inventory" in html
+    assert "data-theme=" in html
+
+
+def test_registry_export_html(kya_project, tmp_path, capsys):
+    main(["scan", kya_project["root"], "--registry", kya_project["registry"],
+          "--sarif", os.path.join(tmp_path, "r.sarif")])
+    capsys.readouterr()
+    out_html = os.path.join(str(tmp_path), "inventory.html")
+    rc = main(["registry", "export", "--registry", kya_project["registry"],
+               "--format", "html", "--output", out_html])
+    assert rc == 0
+    with open(out_html, encoding="utf-8") as fh:
+        content = fh.read()
+    assert "Inventory Export" in content
+    assert "data-theme=" in content
+
+
+def test_registry_diff_html_exit_contract(kya_project, tmp_path, capsys):
+    """HTML diff output must still honor the documented exit-code contract."""
+    _two_scans(kya_project, tmp_path)
+    reg = kya_project["registry"]
+    agent_id = _agent_id(reg)
+    capsys.readouterr()
+    rc = main(["registry", "diff", agent_id, "--from", "previous", "--to", "latest",
+               "--registry", reg, "--format", "html"])
+    assert rc == 1  # risk-relevant changes exist
+    assert "Agent Diff" in capsys.readouterr().out
+
+
+def test_resolve_registry_arg_precedence(kya_project):
+    from safeai.cmd.registry_cli import resolve_registry_arg
+
+    explicit = type("Args", (), {"registry": "custom.db", "project_dir": kya_project["root"]})()
+    assert resolve_registry_arg(explicit) == "custom.db"
+
+    by_project = type("Args", (), {"registry": None, "project_dir": kya_project["root"]})()
+    assert resolve_registry_arg(by_project) == kya_project["registry"]
+
+    no_flags = type("Args", (), {"registry": None, "project_dir": None})()
+    assert resolve_registry_arg(no_flags) == os.environ["SAFEAI_REGISTRY"]
+
+
+def test_scan_and_list_share_one_registry(kya_project, tmp_path, monkeypatch, capsys):
+    """Scans accumulate in one shared DB; registry list sees them from any cwd."""
+    shared = os.path.join(str(tmp_path), "shared", "registry.db")
+    monkeypatch.setenv("SAFEAI_REGISTRY", shared)
+    monkeypatch.delenv("CI", raising=False)
+
+    main(["scan", kya_project["root"], "--sarif", os.path.join(tmp_path, "r.sarif")])
+    capsys.readouterr()
+    assert os.path.exists(shared)
+
+    rc = main(["registry", "list", "--format", "json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["agents"]
 
 
 def test_registry_diff_is_agent_scoped(tmp_path, capsys):

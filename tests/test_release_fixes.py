@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-import safeai.engine.scan as scan_engine
+import safeai.engine.orchestrator as scan_engine
 from safeai.analysis.capabilities import resolve_access_mode
 from safeai.analyzers.data_leakage.analyzer import (
     DataLeakageAnalyzer,

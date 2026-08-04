@@ -1,8 +1,8 @@
 """``safeai registry`` command group: list, show, history, diff, export.
 
 All commands are offline, local-first, and read only static-analysis
-evidence from a SQLite registry. Output formats: ``table`` (default) and
-``json``.
+evidence from a SQLite registry. Output formats: ``table`` (default),
+``json``, and ``html`` (a self-contained, shareable report page).
 """
 
 import json
@@ -23,6 +23,7 @@ from safeai.kya.registry import (
     list_agents,
     registry_exists,
     resolve_scan_ref,
+    shared_registry_path,
 )
 
 
@@ -30,7 +31,8 @@ def _open_registry(path):
     if not registry_exists(path):
         raise RegistryError(
             f"Registry not found at {path}. Run 'safeai scan <dir>' first "
-            f"(registry persistence is enabled by default)."
+            f"(registry persistence is enabled by default). To inspect another "
+            f"project's registry use --project-dir <dir> or --registry <path>."
         )
     return connect(path)
 
@@ -63,6 +65,10 @@ def cmd_list(args):
     if args.format == "json":
         _print_json({"agents": agents, "disclaimer": STATIC_ANALYSIS_DISCLAIMER})
         return 0
+    if args.format == "html":
+        from safeai.report.registry_html import render_agents_list
+        sys.stdout.write(render_agents_list(agents, registry_path=args.registry_path))
+        return 0
     rows = [
         (
             a["agent_id"],
@@ -93,6 +99,10 @@ def cmd_show(args):
     if args.format == "json":
         agent["disclaimer"] = STATIC_ANALYSIS_DISCLAIMER
         _print_json(agent)
+        return 0
+    if args.format == "html":
+        from safeai.report.registry_html import render_agent_show
+        sys.stdout.write(render_agent_show(agent, registry_path=args.registry_path))
         return 0
 
     snapshot = agent.get("snapshot") or {}
@@ -138,6 +148,10 @@ def cmd_history(args):
         return 2
     if args.format == "json":
         _print_json({"agent_id": args.agent_id, "history": history})
+        return 0
+    if args.format == "html":
+        from safeai.report.registry_html import render_history
+        sys.stdout.write(render_history(args.agent_id, history, registry_path=args.registry_path))
         return 0
     rows = [
         (
@@ -254,6 +268,9 @@ def cmd_diff(args):
 
     if args.format == "json":
         _print_json(diff)
+    elif args.format == "html":
+        from safeai.report.registry_html import render_diff
+        sys.stdout.write(render_diff(args.agent_id, diff, registry_path=args.registry_path))
     else:
         print(f"Diff for agent {args.agent_id}")
         print(f"  from scan {from_id[:8]} -> to scan {to_id[:8]}")
@@ -291,19 +308,31 @@ def cmd_export(args):
         )
     finally:
         conn.close()
-    write_export(document, args.output)
+    if args.format == "html":
+        from safeai.report.registry_html import render_inventory
+        with open(args.output, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(render_inventory(document, registry_path=args.registry_path))
+    else:
+        write_export(document, args.output)
     print(f"Exported KYA inventory to {args.output}")
     print(f"Note: {STATIC_ANALYSIS_DISCLAIMER}")
     return 0
 
 
 def resolve_registry_arg(args, scan_root=None):
-    """Resolve ``--registry`` or the default ``.safeai/registry.db`` path."""
+    """Resolve which registry database a command should read.
+
+    Precedence: ``--registry PATH``, then ``--project-dir DIR`` (the
+    per-project ``DIR/.safeai/registry.db``), then the shared org registry
+    (``SAFEAI_REGISTRY`` env var or ``~/.safeai/registry.db``).
+    """
     explicit = getattr(args, "registry", None)
     if explicit:
         return explicit
-    root = scan_root or os.getcwd()
-    return default_registry_path(os.path.abspath(root))
+    project_dir = getattr(args, "project_dir", None) or scan_root
+    if project_dir:
+        return default_registry_path(os.path.abspath(project_dir))
+    return shared_registry_path()
 
 
 def run_registry_command(args):

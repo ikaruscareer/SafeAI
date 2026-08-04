@@ -129,6 +129,7 @@ def test_capability_change_across_versions(kya_project, tmp_path):
 
 def test_ci_env_disables_registry_by_default(kya_project, tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("CI", "true")
+    monkeypatch.delenv("SAFEAI_REGISTRY", raising=False)
     rc = main(["scan", kya_project["root"],
                "--sarif", os.path.join(tmp_path, "r.sarif")])
     assert rc in (0, 1)
@@ -139,6 +140,17 @@ def test_ci_env_disables_registry_by_default(kya_project, tmp_path, monkeypatch,
     main(["scan", kya_project["root"], "--registry", custom,
           "--sarif", os.path.join(tmp_path, "r.sarif")])
     assert os.path.exists(custom)
+
+
+def test_safeai_registry_env_enables_ci_persistence(kya_project, tmp_path, monkeypatch):
+    """An explicitly configured shared registry persists even in CI."""
+    shared = os.path.join(str(tmp_path), "shared", "registry.db")
+    monkeypatch.setenv("CI", "true")
+    monkeypatch.setenv("SAFEAI_REGISTRY", shared)
+    rc = main(["scan", kya_project["root"],
+               "--sarif", os.path.join(tmp_path, "r.sarif")])
+    assert rc in (0, 1)
+    assert os.path.exists(shared)
 
 
 def test_scan_succeeds_and_reports_even_without_registry(tmp_path):

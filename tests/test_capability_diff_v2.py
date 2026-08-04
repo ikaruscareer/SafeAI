@@ -107,7 +107,7 @@ def test_v13_registry_migrates_and_retains_rows(tmp_path):
     db_path = tmp_path / "legacy.db"
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
-    schema = pathlib.Path("safeai/kya/registry.py")
+    schema = pathlib.Path("safeai/kya/registry/schema.py")
     assert schema.exists()
 
     # Build a v1 registry using the shipped v1 baseline schema, then stamp it.

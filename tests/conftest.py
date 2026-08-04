@@ -5,6 +5,17 @@ import os
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _shared_registry_in_tmp(monkeypatch, tmp_path):
+    """Point the shared registry at a per-test temp database.
+
+    Scans without an explicit ``--registry`` would otherwise write to the
+    user's real shared registry (``~/.safeai/registry.db``). Tests stay
+    hermetic by redirecting ``SAFEAI_REGISTRY`` to a throwaway location.
+    """
+    monkeypatch.setenv("SAFEAI_REGISTRY", str(tmp_path / "registry.db"))
+
+
 @pytest.fixture()
 def kya_project(tmp_path):
     """Create a minimal LangGraph agent project with a shell capability

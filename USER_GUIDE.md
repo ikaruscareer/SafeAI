@@ -155,7 +155,7 @@ usage: safeai scan [-h] [--sarif SARIF] [--json JSON_PATH]
 | `--fail-on` | choice | `critical` | Minimum severity for non-zero exit |
 | `--baseline` | string | — | Baseline manifest/report for status comparison |
 | `--fail-on-new` | flag | off | Fail only on new/regressed findings when baseline is supplied |
-| `--registry` | string | `.safeai/registry.db` | Override registry database path |
+| `--registry` | string | shared | Override registry database path (default: `SAFEAI_REGISTRY` env var or `~/.safeai/registry.db`) |
 | `--no-registry` | flag | off | Do not persist scan state to local registry |
 | `--strict-registry` | flag | off | Fail scan on registry persistence errors |
 | `--pr-comment` | string | — | Write a reviewer-facing Markdown summary of capability escalations to this path. SafeAI never posts it anywhere. |
@@ -168,12 +168,29 @@ usage: safeai scan [-h] [--sarif SARIF] [--json JSON_PATH]
 ### `registry` — Query local KYA history
 
 ```bash
-safeai registry list [--registry PATH] [--format table|json]
-safeai registry show <agent-id> [--scan <scan-id>] [--registry PATH] [--format table|json]
-safeai registry history <agent-id> [--registry PATH] [--format table|json]
-safeai registry diff <agent-id> --from previous --to latest [--registry PATH] [--format table|json]
-safeai registry export --format json --output <path> [--include-history] [--include-suppressed] [--registry PATH]
+safeai registry list [--project-dir DIR] [--registry PATH] [--format table|json|html]
+safeai registry show <agent-id> [--scan <scan-id>] [--project-dir DIR] [--registry PATH] [--format table|json|html]
+safeai registry history <agent-id> [--project-dir DIR] [--registry PATH] [--format table|json|html]
+safeai registry diff <agent-id> --from previous --to latest [--project-dir DIR] [--registry PATH] [--format table|json|html]
+safeai registry export --format json --output <path> [--include-history] [--include-suppressed] [--project-dir DIR] [--registry PATH]
+safeai registry export --format html --output <path> [--include-history] [--include-suppressed] [--project-dir DIR] [--registry PATH]
 ```
+
+`--format html` prints a self-contained, shareable report page (dark-mode
+aware, searchable tables) — redirect it to a file:
+
+```bash
+safeai registry list --format html > registry.html
+safeai registry show <agent-id> --format html > agent.html
+safeai registry diff <agent-id> --format html > diff.html
+```
+
+`--project-dir DIR` inspects the per-project registry `DIR/.safeai/registry.db`
+(useful for databases created before the shared default). Without any of
+`--project-dir`/`--registry`, the shared registry is used (`SAFEAI_REGISTRY`
+env var or `~/.safeai/registry.db`) — the same place `safeai scan` writes by
+default, so agents from every scanned project are listed together.
+`--registry PATH` always wins.
 
 ---
 
@@ -327,10 +344,12 @@ Responsive design, print-friendly.
 
 ## KYA Registry
 
-Every scan automatically creates or updates a **local, private "Know Your
-Agent" registry** at `.safeai/registry.db` (SQLite). It keeps historical
-scan-derived agent records and evidence — no server, account, network call,
-or source upload.
+Every scan automatically creates or updates a **private, org-wide "Know Your
+Agent" registry** (SQLite). By default it is a **single shared database** —
+`SAFEAI_REGISTRY` env var if set, else `~/.safeai/registry.db` — so scans of
+every project (CrewAI, AGT, LangGraph, ...) accumulate in one place and
+`safeai registry list` shows the whole organization's agents from any folder.
+No server, account, network call, or source upload.
 
 > KYA records are **static analysis evidence** ("detected in
 > source/configuration"). They never represent deployed runtime state,
@@ -338,37 +357,44 @@ or source upload.
 
 ### Registry lifecycle
 
-- **First scan**: creates `.safeai/registry.db`, prints a one-line
-  initialization message and a `.gitignore` hint (SafeAI never edits your
-  `.gitignore` for you).
+- **First scan**: creates the shared database, prints a one-line
+  initialization message and a `SAFEAI_REGISTRY` tip (SafeAI never edits
+  your files for you).
 - **Subsequent scans**: append a new snapshot; prior history is never
   overwritten.
+- **Per-project registries**: `--registry PATH` or `--project-dir DIR`
+  still read/write `<DIR>/.safeai/registry.db`, keeping existing
+  per-project databases working.
 - **CI**: when the `CI` environment variable is set, persistence is
-  auto-disabled. Use `--registry PATH` to opt in, or `--no-registry` for
-  ephemeral scans.
+  auto-disabled for bare jobs. Use `--registry PATH` or set
+  `SAFEAI_REGISTRY` to opt in, or `--no-registry` for ephemeral scans.
 - **Failure tolerance**: a scan still succeeds and produces reports if
   persistence fails (a warning is printed). `--strict-registry` turns the
   failure into exit code 2.
 
 ```bash
-safeai scan .                                # default: persist to .safeai/registry.db
+safeai scan .                                # default: persist to the shared registry
 safeai scan . --no-registry                  # ephemeral
-safeai scan . --registry /secure/shared/safeai/registry.db
+safeai scan . --registry /secure/shared/safeai/registry.db   # explicit location
+SAFEAI_REGISTRY=/secure/shared/safeai/registry.db safeai scan .   # org-wide env config
 ```
 
 ### Registry commands
 
 ```bash
-safeai registry list [--format table|json]
-safeai registry show <agent-id> [--scan <scan-id>] [--format table|json]
-safeai registry history <agent-id> [--format json]
-safeai registry diff <agent-id> --from previous --to latest [--format table|json]
+safeai registry list [--format table|json|html]
+safeai registry show <agent-id> [--scan <scan-id>] [--format table|json|html]
+safeai registry history <agent-id> [--format table|json|html]
+safeai registry diff <agent-id> --from previous --to latest [--format table|json|html]
 safeai registry export --format json --output inventory.json \
+    [--include-history] [--include-suppressed]
+safeai registry export --format html --output inventory.html \
     [--include-history] [--include-suppressed]
 ```
 
-- All commands accept `--registry PATH`; without it, `.safeai/registry.db`
-  under the current directory is used.
+- All commands accept `--registry PATH`; without it, the shared registry
+  is used (`SAFEAI_REGISTRY` env var or `~/.safeai/registry.db`).
+- `--project-dir DIR` inspects a per-project `DIR/.safeai/registry.db`.
 - `diff` exit codes: `0` no risk-relevant change, `1` changes exist,
   `2` usage/registry error.
 

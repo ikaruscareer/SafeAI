@@ -1,53 +1,84 @@
 """Self-contained HTML report generator.
 
-Produces a single-file HTML report with embedded CSS styling.
-Includes executive summary, trust score breakdown, capability matrix,
-governance summary, and a detailed findings table.
+Produces a single-file HTML report with the shared SafeAI design system
+(:mod:`safeai.report.html_kit`). Includes an executive summary with a
+risk gauge, trust score breakdown, capability matrix, capability
+escalations (v1.4), governance summary, the full findings table, KYA
+agent records, per-tool capability surface, and the assurance boundary.
 """
 
 from datetime import UTC, datetime
 from html import escape
 
-
-def _sev_class(severity):
-    return {
-        "critical": "sev-critical",
-        "high": "sev-high",
-        "medium": "sev-medium",
-        "low": "sev-low",
-        "info": "sev-info",
-    }.get((severity or "").lower(), "sev-info")
+from safeai.report import html_kit
 
 
-def _findings_rows(findings):
-    rows = []
-    for finding in findings:
-        sev = escape(str(finding.get("severity", "info")))
-        cls = _sev_class(sev)
-        rows.append(
+def _sev_badge(severity):
+    return html_kit.sev_badge(severity)
+
+
+def _escalation_section(report):
+    """Render the capability escalation summary (v1.4 capability_diff)."""
+    diff = report.get("capability_diff")
+    if not diff:
+        return ""
+    counts = diff.get("counts") or {}
+    highest = diff.get("highest_escalation")
+
+    cards = "".join(
+        html_kit.kpi(label, value, accent="#0f766e")
+        for label, value in [
+            ("Added", counts.get("added", 0)),
+            ("Removed", counts.get("removed", 0)),
+            ("Changed", counts.get("changed", 0)),
+            ("Escalations", counts.get("escalations", 0)),
+        ]
+    )
+
+    tool_rows = []
+    for tool in diff.get("tools") or []:
+        summary = tool.get("access_summary") or {}
+        escalations = tool.get("escalations") or []
+        esc_html = "".join(
+            f"<div>{_sev_badge(e.get('severity', 'info'))} "
+            f"<code>{escape(str(e.get('id', '')))}</code> "
+            f"{escape(str(e.get('summary', '')))}{' <span class=muted>(inferred)</span>' if e.get('inferred') else ''}</div>"
+            for e in escalations
+        ) or "<span class='muted'>no per-rule escalation</span>"
+        tool_rows.append(
             "<tr>"
-            f"<td><span class='badge {cls}'>{sev}</span></td>"
-            f"<td>{escape(str(finding.get('rule_id', '')))}</td>"
-            f"<td>{escape(str(finding.get('file', '')))}:{escape(str(finding.get('line', 1)))}</td>"
-            f"<td>{escape(str(finding.get('message', '')))}</td>"
-            f"<td>{escape(str(finding.get('evidence', '')))}</td>"
-            f"<td>{escape(str(finding.get('remediation', '')))}</td>"
+            f"<td><code>{escape(str(tool.get('tool_key', '')))}</code></td>"
+            f"<td>{escape(str(tool.get('status', '')))}</td>"
+            f"<td>{escape(str(summary.get('before', '-')))} &rarr; {escape(str(summary.get('after', '-')))}</td>"
+            f"<td>{esc_html}</td>"
             "</tr>"
         )
-    return "\n".join(rows)
+    tools_table = (
+        f"<table><thead><tr><th>Tool</th><th>Status</th><th>Access (before -> after)</th>"
+        f"<th>Escalation rules</th></tr></thead><tbody>{''.join(tool_rows) or '<tr><td colspan=4 class=muted center>No tool-level changes.</td></tr>'}</tbody></table>"
+    )
+
+    baseline_note = (
+        "<div class='note'>Baseline predates per-tool attribution; only combination rules were "
+        "evaluated (individual per-tool escalation rules suppressed).</div>"
+        if diff.get("baseline_tool_attribution") is False
+        else ""
+    )
+
+    return f"""
+    <h2>Capability Escalations</h2>
+    <div class='hero'>{cards}</div>
+    {baseline_note}
+    {tools_table}
+    <p class='muted'>Highest escalation: {escape(str(highest or 'none'))}</p>"""
 
 
 def _kya_section(report):
-    """Render the Know Your Agent (KYA) section: agents, policy, limitations.
-
-    Only emitted when KYA data is present (scan ran through the 1.3+
-    pipeline). Contains static-analysis evidence only — no secrets, no
-    raw source values.
-    """
+    """Render the Know Your Agent section: agents, policy, registry status."""
     agents = report.get("kya_agents")
     registry = report.get("registry") or {}
     policy = report.get("policy_decision") or {}
-    if agents is None and not policy:
+    if agents is None and not policy and not registry:
         return ""
 
     rows = []
@@ -59,7 +90,7 @@ def _kya_section(report):
         rows.append(
             "<tr>"
             f"<td>{escape(str(agent.get('name', '')))}</td>"
-            f"<td>{escape(str(agent.get('agent_id', '')))}</td>"
+            f"<td><code>{escape(str(agent.get('agent_id', '')))}</code></td>"
             f"<td>{escape(str(agent.get('framework', '')))}</td>"
             f"<td>{escape(str(agent.get('agent_type', '')))}</td>"
             f"<td>{escape(caps)}</td>"
@@ -72,14 +103,17 @@ def _kya_section(report):
     if registry:
         registry_html = (
             f"<p class='muted'>Registry: {escape(str(registry.get('state', 'skipped')))}"
-            + (f" — {escape(str(registry.get('path')))}" if registry.get("path") else "")
+            + (f" - <code>{escape(str(registry.get('path')))}</code>" if registry.get("path") else "")
             + "</p>"
         )
 
     policy_html = ""
     if policy:
         reasons = "".join(f"<li>{escape(str(r))}</li>" for r in (policy.get("reasons") or []))
-        policy_html = f"<p><strong>Policy outcome:</strong> {escape(str(policy.get('outcome', '')))}</p><ul>{reasons}</ul>"
+        policy_html = (
+            f"<p><strong>Policy outcome:</strong> {escape(str(policy.get('outcome', '')))}</p>"
+            f"<ul>{reasons}</ul>"
+        )
 
     return f"""
     <h2>Know Your Agent (KYA)</h2>
@@ -87,17 +121,46 @@ def _kya_section(report):
     {policy_html}
     <table>
       <thead><tr><th>Agent</th><th>Agent ID</th><th>Framework</th><th>Type</th><th>Capabilities (static evidence)</th><th>Source</th><th>Confidence</th></tr></thead>
-      <tbody>{''.join(rows) or "<tr><td colspan='7' class='muted'>No agents/workflows detected in source/configuration.</td></tr>"}</tbody>
-    </table>
-    <p class='muted'>SafeAI results are static analysis evidence and do not verify deployed runtime permissions, identities, or behavior.</p>"""
+      <tbody>{''.join(rows) or "<tr><td colspan='7' class='muted center'>No agents/workflows detected in source/configuration.</td></tr>"}</tbody>
+    </table>"""
+
+
+def _tool_surface_section(report):
+    """Render the per-tool capability surface (tool identity + access modes)."""
+    surface = report.get("tool_surface")
+    if not surface:
+        return ""
+    rows = []
+    for tool in surface:
+        tool_key = tool.get("tool_key") or tool.get("name") or "-"
+        caps = tool.get("capabilities") or []
+        caps_html = ", ".join(
+            f"{escape(str(c.get('name', '')))} "
+            f"<span class='muted'>({escape(str(c.get('access_mode', 'read')))})</span>"
+            for c in caps
+        ) or "-"
+        inferred = sum(1 for c in caps if c.get("access_mode_inferred"))
+        rows.append(
+            "<tr>"
+            f"<td><code>{escape(str(tool_key))}</code></td>"
+            f"<td>{escape(str(tool.get('kind', '')))}</td>"
+            f"<td>{escape(str(tool.get('framework', '')))}</td>"
+            f"<td>{caps_html}</td>"
+            f"<td>{escape(str(tool.get('access_summary', '')))}</td>"
+            f"<td>{escape(str(inferred))}</td>"
+            "</tr>"
+        )
+    return f"""
+    <h2>Tool Capability Surface</h2>
+    <p class='muted'>Per-tool authority: capabilities are attributed to the named tool (agent, MCP server, skill, tool, workflow node) with their access modes.</p>
+    <table>
+      <thead><tr><th>Tool</th><th>Kind</th><th>Framework</th><th>Capabilities (access mode)</th><th>Access summary</th><th>Inferred modes</th></tr></thead>
+      <tbody>{''.join(rows) or "<tr><td colspan='6' class='muted center'>No tool surface captured.</td></tr>"}</tbody>
+    </table>"""
 
 
 def _assurance_section(report):
-    """Render the assurance boundary: what this scan did and did not verify.
-
-    Placed after the findings so it reads as a qualifier on them rather
-    than as boilerplate nobody scrolls past.
-    """
+    """Render the assurance boundary: what this scan did and did not verify."""
     boundary = report.get("assurance_boundary")
     if not isinstance(boundary, dict) or not boundary:
         return ""
@@ -109,12 +172,12 @@ def _assurance_section(report):
     return f"""
     <h2>Assurance boundary</h2>
     <p class='muted'>{escape(str(boundary.get("summary", "")))}</p>
-    <div class='grid'>
-      <div>
+    <div class='grid-2'>
+      <div class='card'>
         <h3>Verified statically</h3>
         <ul>{items(boundary.get("verified_statically"))}</ul>
       </div>
-      <div>
+      <div class='card'>
         <h3>Not verifiable statically</h3>
         <ul>{items(boundary.get("not_verifiable_statically"))}</ul>
       </div>
@@ -133,96 +196,105 @@ def write_html(report, path):
     components = report.get("components", [])
     diagnostics = report.get("diagnostics", [])
     capability_diff = report.get("capability_diff", {})
-    now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     capability_rows = []
     for cap in report.get("normalized_capabilities", []):
         capability_rows.append(
-            "<tr>"
-            f"<td>{escape(str(cap.get('name', '')))}</td>"
-            f"<td>{escape(str(cap.get('category', '')))}</td>"
-            f"<td>{escape(', '.join(cap.get('source_frameworks', [])))}</td>"
-            f"<td>{escape(str(round(float(cap.get('confidence', 0.0)), 2)))}</td>"
-            f"<td>{escape('; '.join(cap.get('evidence', [])))}</td>"
-            "</tr>"
+            [
+                cap.get("name", ""),
+                cap.get("category", ""),
+                ", ".join(cap.get("source_frameworks", [])),
+                f"{float(cap.get('confidence', 0.0)):.2f}",
+                "; ".join(cap.get("evidence", [])),
+            ]
         )
 
-    governance_summary = [f for f in findings if f.get("risk_category") in {"Governance", "Integration", "Identity"}]
+    trust_rows = [[k, str(v)] for k, v in categories.items()]
 
-    html = f"""<!doctype html>
-<html>
-<head>
-  <meta charset='utf-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1'>
-  <title>SafeAI Report</title>
-  <style>
-    :root {{ --bg:#f5f7fb; --card:#ffffff; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --brand:#0f766e; }}
-    body {{ margin:0; font-family: 'Segoe UI', Tahoma, sans-serif; background:var(--bg); color:var(--ink); }}
-    .container {{ max-width: 1200px; margin:0 auto; padding:24px; }}
-    .hero {{ background: linear-gradient(135deg, #ecfeff, #f0fdf4); border:1px solid var(--line); border-radius:16px; padding:20px; }}
-    .grid {{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px; margin-top:16px; }}
-    .card {{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }}
-    h1,h2,h3 {{ margin:0 0 10px 0; }}
-    h1 {{ font-size: 28px; }} h2 {{ margin-top:24px; font-size:20px; }}
-    .muted {{ color:var(--muted); font-size:13px; }}
-    table {{ width:100%; border-collapse: collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }}
-    th, td {{ text-align:left; font-size:13px; padding:10px; border-bottom:1px solid var(--line); vertical-align:top; }}
-    th {{ background:#f8fafc; }}
-    .badge {{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }}
-    .sev-critical {{ background:#fee2e2; color:#991b1b; }}
-    .sev-high {{ background:#ffedd5; color:#9a3412; }}
-    .sev-medium {{ background:#fef9c3; color:#854d0e; }}
-    .sev-low {{ background:#dbeafe; color:#1e3a8a; }}
-    .sev-info {{ background:#ecfeff; color:#155e75; }}
-    @media print {{ body {{ background:#fff; }} .hero {{ background:#fff; }} }}
-  </style>
-</head>
-<body>
-  <div class='container'>
+    governance_summary = [
+        f for f in findings if f.get("risk_category") in {"Governance", "Integration", "Identity"}
+    ]
+
+    severity_counts = "".join(
+        f"<div style='margin:2px 0'>{_sev_badge(k)} <strong>{v}</strong></div>"
+        for k, v in counts.items()
+    )
+
+    diff_counts = capability_diff.get("counts") or {}
+    baseline_summary = report.get("baseline")
+    baseline_html = ""
+    if baseline_summary:
+        baseline_html = (
+            f"<div class='kv'>"
+            f"<dt>New</dt><dd>{baseline_summary.get('new', 0)}</dd>"
+            f"<dt>Existing</dt><dd>{baseline_summary.get('existing', 0)}</dd>"
+            f"<dt>Resolved</dt><dd>{baseline_summary.get('resolved', 0)}</dd>"
+            f"<dt>New high+critical</dt><dd>{baseline_summary.get('new_high_critical', 0)}</dd>"
+            f"</div>"
+        )
+
+    body = f"""
     <section class='hero'>
-      <h1>SafeAI Early Preview Report</h1>
-      <div class='muted'>Generated {escape(now)}</div>
-      <div class='grid'>
-        <div class='card'><h3>Executive Summary</h3><div>Files Scanned: {report.get('files_scanned', 0)}</div><div>Findings: {len(findings)}</div><div>Overall AI Risk Score: {trust.get('overall_ai_risk_score', 'N/A')}</div></div>
-         <div class='card'><h3>Detected Frameworks</h3><div>{escape(', '.join(frameworks) if frameworks else 'None')}</div><div class='muted'>MCP Assets: {len(report.get('mcp_assets', []))}</div><div class='muted'>Components: {len(components)}</div><div class='muted'>Diagnostics: {len(diagnostics)}</div><div class='muted'>Capability diff: {escape(str(capability_diff.get('counts', 'N/A')))}</div></div>
-        <div class='card'><h3>Risk Summary</h3><div>Critical: {counts.get('critical', 0)}</div><div>High: {counts.get('high', 0)}</div><div>Medium: {counts.get('medium', 0)}</div></div>
-      </div>
+      {html_kit.kpi("Overall AI Risk Score", html_kit.risk_gauge(trust.get('overall_ai_risk_score')), accent='#0f766e')}
+      {html_kit.kpi("Files Scanned", report.get('files_scanned', 0), accent='#2563eb')}
+      {html_kit.kpi("Findings", len(findings), accent='#dc2626')}
+      {html_kit.kpi("Frameworks", escape(', '.join(frameworks) if frameworks else 'None'), f"{len(report.get('mcp_assets', []))} MCP assets", accent='#7c3aed')}
+    </section>
+    <section class='hero'>
+      <div class='card'><h3>Risk Summary</h3>{severity_counts}</div>
+      <div class='card'><h3>Components</h3><div>{len(components)}</div><div class='muted'>Diagnostics: {len(diagnostics)}</div><div class='muted'>Capability diff: {escape(str(diff_counts or 'N/A'))}</div></div>
+      <div class='card'><h3>Baseline</h3>{baseline_html or "<div class='muted'>No baseline supplied.</div>"}</div>
     </section>
 
+    <h2>Executive Summary</h2>
+    <div class='card'><p>{escape("SafeAI scanned " + str(report.get("files_scanned", 0)) + " files" + (" for " + ", ".join(frameworks) if frameworks else "") + " and produced " + str(len(findings)) + " findings.")}</p>
+    <p class='muted'>All results are static analysis evidence from source/configuration - they do not verify deployed runtime permissions, identities, or behavior.</p></div>
+
     <h2>Trust Scores</h2>
-    <table>
-      <thead><tr><th>Category</th><th>Score</th></tr></thead>
-      <tbody>
-        {''.join([f"<tr><td>{escape(k)}</td><td>{escape(str(v))}</td></tr>" for k, v in categories.items()])}
-      </tbody>
-    </table>
+    {html_kit.data_table(["Category", "Score"], trust_rows, empty="No category scores.", searchable=False)}
 
     <h2>Capability Matrix</h2>
-    <table>
-      <thead><tr><th>Capability</th><th>Category</th><th>Frameworks</th><th>Confidence</th><th>Evidence</th></tr></thead>
-      <tbody>{''.join(capability_rows)}</tbody>
-    </table>
+    {html_kit.data_table(["Capability", "Category", "Frameworks", "Confidence", "Evidence"], capability_rows, empty="No capabilities detected.")}
+
+    {_escalation_section(report)}
 
     <h2>Governance Summary</h2>
-    <table>
-      <thead><tr><th>Rule</th><th>Category</th><th>Message</th><th>Recommendation</th></tr></thead>
-      <tbody>
-        {''.join([f"<tr><td>{escape(str(f.get('rule_id', '')))}</td><td>{escape(str(f.get('risk_category', '')))}</td><td>{escape(str(f.get('message', '')))}</td><td>{escape(str(f.get('remediation', '')))}</td></tr>" for f in governance_summary])}
-      </tbody>
-    </table>
+    {html_kit.data_table(
+        ["Rule", "Category", "Message", "Recommendation"],
+        [[f.get('rule_id', ''), f.get('risk_category', ''), f.get('message', ''), f.get('remediation', '')] for f in governance_summary],
+        empty="No governance findings.",
+    )}
 
     <h2>Findings</h2>
-    <table>
-      <thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Message</th><th>Evidence</th><th>Recommendations</th></tr></thead>
-      <tbody>{_findings_rows(findings)}</tbody>
-    </table>
+    {html_kit.data_table(
+        ["Severity", "Status", "Rule", "Category", "Location", "Message", "Evidence", "Recommendation"],
+        [[
+            f.get('severity', 'info'),
+            f.get('status', ''),
+            f.get('rule_id', ''),
+            f.get('risk_category', ''),
+            f"{f.get('file', '')}:{f.get('line', 1)}",
+            f.get('message', ''),
+            f.get('evidence', ''),
+            f.get('remediation', ''),
+        ] for f in findings],
+        empty="No findings.",
+    )}
 
     {_kya_section(report)}
 
+    {_tool_surface_section(report)}
+
     {_assurance_section(report)}
-  </div>
-</body>
-</html>"""
+    """
+
+    html = html_kit.page(
+        title="SafeAI Early Preview Report",
+        subtitle=escape(", ".join(frameworks) if frameworks else ""),
+        body=body,
+        generated_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
+        footer="SafeAI - static AI capability & risk analysis. No source code or secrets are uploaded or stored in this file.",
+    )
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)

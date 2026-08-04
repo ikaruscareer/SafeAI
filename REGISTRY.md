@@ -10,29 +10,47 @@ records and evidence. It is created and updated automatically by
 
 ## Location & Lifecycle
 
-- Default path: `<scan-root>/.safeai/registry.db`
-- First scan creates `.safeai/` and initializes the database (a one-line
-  message is printed). Existing databases are never destroyed.
+The registry is a **single shared database** by default, so agents from
+every scanned project accumulate in one place:
+
+1. **`SAFEAI_REGISTRY` environment variable** — point it at a team-shared
+   or network location (e.g. `$ORG_DATA/safeai/registry.db`). Overrides the
+   default and also enables persistence in CI (see below).
+2. Otherwise **`~/.safeai/registry.db`** (per user, shared across projects).
+
+Resolution order for every registry path: `--registry PATH` >
+`--project-dir DIR` (the per-project `DIR/.safeai/registry.db`) > the
+shared registry above. `safeai scan` uses the same default, so scans from
+any folder land in the shared registry and `safeai registry list` shows
+the organization's agents regardless of the current directory.
+
+- First scan creates the database (a one-line message is printed, plus a
+  tip about `SAFEAI_REGISTRY`). Existing databases are never destroyed.
 - Every subsequent scan **appends** a new snapshot — history is never
   overwritten.
-- Add `.safeai/registry.db` to your `.gitignore` (SafeAI prints a hint on
-  first initialization; it never edits your `.gitignore` for you).
+- The per-project fallback (`<scan-root>/.safeai/registry.db`) is still
+  used when you pass `--project-dir`/`--registry` explicitly, keeping
+  existing per-project databases readable and backward compatible.
+- If you use the default location, add it to your `.gitignore`
+  (`~/.safeai/registry.db`); a per-project `registry.db` should also be
+  ignored.
 
 ### CI behavior
 
 When the `CI` environment variable is set, registry persistence is
-**auto-disabled** so CI jobs don't write local state into checkouts.
-Options:
+**auto-disabled** for bare jobs so they don't write local state into
+checkouts. An explicitly configured registry always wins:
 
 ```bash
 safeai scan . --no-registry                          # explicit ephemeral scan
 safeai scan . --registry "$RUNNER_TEMP/registry.db"  # persist to workspace/artifact storage
+SAFEAI_REGISTRY=/org/data/safeai/registry.db safeai scan .   # persist to the org-shared registry
 ```
 
-`--registry PATH` always overrides both the default location and CI
-auto-disable. A scan still succeeds and produces reports if persistence
-fails (a warning is printed); use `--strict-registry` to fail instead
-(exit code 2).
+`--registry PATH` and a set `SAFEAI_REGISTRY` both override CI
+auto-disable (they are deliberate configurations). A scan still succeeds
+and produces reports if persistence fails (a warning is printed); use
+`--strict-registry` to fail instead (exit code 2).
 
 ## Commands
 
@@ -45,7 +63,38 @@ safeai registry diff <agent-id> --from previous --to latest
 safeai registry export --format json --output inventory.json
 ```
 
-All commands accept `--registry PATH` and `--format table|json`.
+All commands accept `--registry PATH`, `--project-dir DIR`, and
+`--format table|json|html`. `--format html` renders a self-contained,
+dark-mode aware, searchable report page (redirect stdout to a file for
+`list`/`show`/`history`/`diff`); `export --format html --output <path>`
+writes the full inventory as one portable HTML document.
+
+The default registry is resolved with this precedence:
+
+```text
+--registry PATH  >  --project-dir DIR/.safeai/registry.db  >  shared registry
+```
+
+where the shared registry is `SAFEAI_REGISTRY` if set, else
+`~/.safeai/registry.db`. Because scans write to the same shared default,
+you can scan several projects and then list the whole organization's
+agents from anywhere:
+
+```bash
+safeai scan ../agents/crewai-examples                 # accumulates into the shared registry
+safeai scan ../agents/agt-examples
+safeai scan ../agents/langgraph-examples
+safeai registry list                                  # shows agents from all of them
+```
+
+To inspect one project's own database (backward compatible with existing
+per-project registries):
+
+```bash
+safeai scan ../other/project --registry ../other/project/.safeai/registry.db
+safeai registry list --project-dir ../other/project   # reads it back
+```
+
 `diff` exit codes: `0` = no risk-relevant change, `1` = capability/finding
 changes exist, `2` = usage/registry error.
 

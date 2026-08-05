@@ -2,138 +2,198 @@
 
 SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI agents and workflows.
 
-This document describes the planned roadmap across five phases. Phases are not strictly sequential; work may proceed in parallel where dependencies allow.
+This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
+
+> **Current state:** v1.4-b shipped. Community Edition **CE 1.4 (Reviewable Change)** is substantially complete; planned work there is limited to a handful of governance and surface items. CE 1.5/1.6/2.0 and the entire Corporate Edition are planned.
 
 ---
 
-## Phase 1 — Static AI Risk Scanner (OSS)
+# Roadmap 1 — Community Edition (Apache 2.0, offline, local-first)
 
-*Current state — Phase 1 scope substantially complete; Phase 1.5 stabilization and community-driven depth improvements ongoing.*
+**Mission:** know your agent before you deploy it, with zero setup, no account, and no network.
 
-**Static analyzers implemented:**
+**Constraint:** if a feature does not improve a developer's ability to understand, remediate or prevent a risky agent change *before deployment*, it is not in the Community core.
 
-| Analyzer | Coverage | Status |
-|----------|----------|--------|
-| **Capabilities** | Shell, filesystem, HTTP, database, code execution, Docker, K8s, Redis, S3, Slack, Jira, browser automation, GCP | ✅ |
-| **Prompts** | Injection patterns, delimiter issues, system leaks, role overrides, untrusted placeholders | ✅ |
-| **Tools** | Agent-bound tool definitions, missing validation, dangerous params, shell access, excessive permissions | ✅ |
-| **Memory** | Checkpointer and memory object usage (framework parsers) | ✅ |
-| **Workflows** | Composition, approval gaps, insecure defaults, capability sprawl | ✅ |
-| **Identities** | Credential and secret exposure (hardcoded secrets, env references) | ✅ |
-| **Models** | LLM provider references, unsafe temperature, missing content filters, disabled safety | ✅ |
-| **Autonomy** | Loop detection, unbounded execution | ✅ |
-| **MCP** | Schema validation (v1.0/v1.1), auth gaps, exposed endpoints, tool misuse, sensitive resources, insecure transports | ✅ |
-
-**Outputs implemented:** JSON, HTML, SARIF 2.1.0, capability graph (project_graph), trust score, capability diff (`--baseline`), canonical manifest (`safeai-manifest.json`)
-
-**Release 1.3 delivered (KYA baseline + local registry):**
-
-- Canonical KYA manifest (`schema_version: 1.0`)
-- Stable finding IDs/fingerprints and status lifecycle (`new`, `existing`, `regressed`, `resolved`, `suppressed`)
-- Baseline-driven PR gating (`--fail-on-new`)
-- Local suppression workflow (`.safeai/suppressions.yml`)
-- Minimal policy-as-code (`.safeai/policy.yml`)
-- Local SQLite KYA registry and CLI (`registry list/show/history/diff/export`)
-
-**Still planned in Phase 1:**
-
-- **Governance signals** — timeout, retry policy, approval workflow, audit logging, rate limiting detection
-- **Heuristic data flows** — deeper untrusted input propagation into prompts
-- **PR capability escalation diff refinement** — improve branch/base automation and deeper authority/context deltas on top of existing baseline support.
-- **Governed finding suppressions** — every suppression carries rule_id, file, location, reason, owner, and expiry. CI fails when code moves or waiver expires. Stale-detection for forgotten suppressions.
-- **Better terminal output** — structured, readable scan summary with severity grouping, improved layout, and clearer signal-to-noise ratio
-- **Trust score improvements** — weighted scoring giving higher impact to critical and high-severity findings
+Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planned**
 
 ---
 
-## Phase 1.5 — AI Component Security (Stabilization)
+## CE 1.4 — Reviewable Change (the PR release)
 
-*Partially complete — deep component analysis shipped in v1.1.0-beta; continued refinements.*
+*Goal: make SafeAI the thing a reviewer reads first on any PR that touches an agent.*
 
-**Artifact analysis implemented:**
+**Status: ✅ shipped (v1.3 → v1.4 → v1.4-b); a few items remain.**
 
-| Artifact | Analysis Focus | Status |
-|----------|---------------|--------|
-| **Skills** | Embedded prompts, excessive permissions, risky capabilities, insecure defaults, hardcoded secrets | ✅ |
-| **Prompts** | Injection resistance, system prompt exposure, role isolation, untrusted input | ✅ |
-| **MCP servers** | Auth gaps, endpoint exposure, tool misuse, sensitive resources, insecure transports | ✅ |
-| **Workflow templates** | Insecure defaults, capability sprawl, approval gaps, missing validation | ✅ |
-| **Tool definitions** | Overly broad permissions, missing validation, shell access, dangerous params | ✅ |
-| **Model configurations** | Unsafe parameters, content filter enforcement (provider-aware), disabled safety | ✅ |
+### Tool-centric diff model *(do this first — it is a schema change)*
+- ✅ Re-key capability snapshots on `(tool_identity, capability, access_mode)` instead of flat capability sets — `safeai/analysis/tool_identity.py` (path-independent keys), `tool_surface.py`, `capability_diff.py` (schema v2, per-tool).
+- ✅ Track access-mode transitions explicitly — `read-only → mutating` is a first-class escalation (ranked `none < read < write < mutate < execute`, with inference and severity caps).
+- ✅ Persist per-agent snapshots of capability, authority, autonomy, data reach and governance evidence per scan (`agent_snapshots`, `agent_tool_snapshots` v2).
+- ✅ Migration path for existing v1.3 registries — additive, forward-only `_MIGRATIONS` (1 → 2).
 
-**Framework adapters (15 total):**
+### PR escalation review
+- ✅ Detect and rank: new shell capability, filesystem write added, external HTTP/API access added, new MCP server bound, MCP read-only → mutation, human approval gate removed, memory scope expanded, new write-capable tool, new external destination — 14 `ESC_*` escalation rules in a data table with subsumption, `--fail-on-escalation`.
+- ✅ `--pr-comment` / `--pr-comment-stdout`: a short, grouped, reviewer-facing summary (never posted by SafeAI) — grouped by tool/server, leads with escalations, suppresses unchanged surface.
+- 🔄 Branch/base auto-detection — **GitHub Actions done**; GitLab CI and Azure Pipelines detection planned.
+- ✅ Risky-combination detection — untrusted input + shell, autonomous planning + broad access, delegation + external side effects (`ESC_COMBO_*`).
 
-| Tier | Frameworks |
-|------|-----------|
-| Earliest (v1.0) | LangGraph, CrewAI, LangChain, Semantic Kernel, OpenAI Agents SDK, Microsoft Agent, Azure AI Foundry, Bedrock Agent |
-| Phase 1.5 | Claude Code, Google ADK, Mastra, Haystack, LlamaIndex, Dify, n8n |
+### Surface depth *(the two that matter)*
+- 🔄 **Multi-source MCP discovery** — MCP servers discovered across the scanned repo and Claude Code configuration, normalised into one capability model with provenance on every entry. Cursor / Windsurf source scopes and user/global scopes are **not yet read** (out-of-repo scopes are intentionally behind an explicit gate and excluded from exports by default).
+- ✅ **Deep Claude Code analysis** — `.claude/settings.json`, instruction files, permissions, `allowedTools`, custom slash commands (treated as an injection surface), subagents, hooks, dangerous/auto-approve flags, project structure (10 `CC_*` rules; repo-local scope only, never user/machine config).
+- ✅ **MCP posture** — transport, authentication evidence, exposed tools and resources, wildcard permissions, local vs remote endpoint risk, configuration provenance.
 
-**Eight new capability detectors:** Docker, Kubernetes, Redis, S3, Slack, Jira, browser automation, GCP
+### Governance and lifecycle
+- 🔄 **Governed suppressions** — current suppressions already carry rule_id, file, location, reason, owner, expiry and are never silent. **Stale-suppression detection and CI failure when a waiver expires or code moves are planned.**
+- ⏳ **Per-finding lifecycle timeline** — introduced → resolved → reopened, with repeated reopening flagged as a governance signal.
+- 🔄 **Policy profiles** — policy-as-code shipped (`allow / warn / require_review / deny`); named profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`) planned.
+- ✅ **Policy decision recorded on every scan** (pass / warn / review-required / block / accepted-exception, with rationale).
+- ⏳ **Registry freshness indicators** — never scanned, stale, changed since last approval, policy drift.
+- ⏳ **Locally enrichable agent metadata** — business owner, technical owner, intended purpose, environment, lifecycle status, review date.
 
-**Still planned in Phase 1.5:**
+### Trust and honesty
+- ✅ **Mandatory machine-readable assurance boundary block** in every report and manifest — what was verified (declared tools, prompt files, MCP servers, workflow structure, configuration) versus what cannot be verified statically (IAM permissions, runtime identity, deployed network policy, actual behaviour) — `assurance_boundary`.
+- ⏳ **Governance signal detection** — timeout, retry policy, approval workflow, audit logging, rate limiting.
+- ✅ **Better terminal output** — severity-grouped summary, clear layout, improved signal-to-noise (v1.4-b).
+- ✅ **Severity-weighted trust score** — 7-category weighted scoring keyed on `safeai/severity.py`.
 
-| Item | Status |
-|------|--------|
-| AutoGen framework adapter | Not yet implemented |
-| LangGraph conditional edge detection | Partially implemented — `add_edge` detected; `add_conditional_edges` not handled |
-| Governance detectors (timeout, retry, audit, rate limiting) | Not yet implemented |
-| Teams, SharePoint, OneDrive detection (MCP-based) | Deferred — requires MCP asset analysis expansion |
-| Split browser automation into separate rules (Playwright, Selenium, browser_use) | Under consideration |
-
----
-
-## Phase 2 — AI Security Testing (optional future)
-
-Runtime and dynamic analysis capabilities:
-
-- Runtime sandbox for safe execution of agent workflows
-- Hallucination and jailbreak testing
-- Prompt injection resilience testing
-- Goal hijacking detection
-- Tool misuse detection
-- Data exfiltration monitoring
-- Reliability and consistency testing
+### Exit criterion
+> ✅ **Achieved.** A reviewer sees, in a PR comment, that a specific **named tool** gained a specific **new authority** — and SafeAI records that change, the policy decision and the assurance boundary in local KYA history. Ordinary SAST does not produce that.
 
 ---
 
-## Phase 3 — Test Packs
+## CE 1.5 — True Capability Surface
 
-Curated test suites for compliance and security validation:
+*Goal: close the gap between what an agent declares and what it actually needs to run.*
 
-| Pack | Coverage |
-|------|----------|
-| OWASP LLM | OWASP Top 10 for LLM Applications |
-| Agent Security | Agent-specific threat patterns |
-| MCP Security | Model Context Protocol misconfiguration |
-| RAG Security | Retrieval-Augmented Generation risks |
-| Healthcare | HIPAA, patient data handling |
-| Finance | PCI, transaction security |
-| GDPR | Data protection, consent, right-to-deletion |
-| Custom | Organization-specific rule packs |
+**Status: ⏳ planned. Small overlaps do ship in the current analyzers; the items below are the planned surface.**
 
----
+- ⏳ **Secret and configuration dependency inventory** — `os.getenv`, `process.env`, `${VAR}`, `.env`, Kubernetes Secrets, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, HashiCorp Vault — names and sources only, never values.
+- ⏳ **Dependency-to-capability correlation** — required credential with no matching declared tool = undeclared capability candidate; declared tool with no credential path = probable dead or misconfigured tool.
+- ⏳ **Tool → implementation mapping** — declaration site, implementation site, unresolved/orphan cases in both directions.
+- ⏳ **Command-aware MCP analysis** — resolve in-repo and vendored server entrypoints statically, depth-capped, never executed, with explicit resolved / unresolved-command labelling.
+- ⏳ **External write target taxonomy** — filesystem, databases, S3, blob storage, GitHub, Slack, external APIs — promoted to a first-class report view.
+- ⏳ **Heuristic data-flow depth** — untrusted input propagation into prompts and tool arguments.
+- ⏳ **Adapter completion** — AutoGen, LangGraph `add_conditional_edges`, browser-automation rule split (Playwright / Selenium / browser_use).
 
-## Phase 4 — Enterprise (Commercial)
-
-Scalability and management capabilities for enterprise adoption:
-
-- Fleet-wide scanning across repositories and projects
-- Central policy management with role-based access control
-- Trend analysis and risk dashboards over time
-- Enterprise integrations (Azure DevOps, GitLab, Jenkins, etc.)
-- Reporting dashboards with executive summaries
+### Exit criterion
+> SafeAI reports the credentials, destinations and implementations an agent actually depends on, and flags mismatches between declared and required capability — with no cloud access and no execution.
 
 ---
 
-## Phase 5 — Community Intelligence
+## CE 1.6 — AI Component Records
 
-Community-powered threat intelligence:
+*Goal: extend evidence from agents to the reusable components they share. Deliberately after 1.5.*
 
-- Reputation services for MCP servers, tools, and prompts
-- Known malicious prompts, skills, and MCP servers database
-- Community-shared detection rules
-- AI vulnerability database (curated from public sources)
-- Public risk intelligence feeds
+**Status: 🔄 partial. Component-level analysis ships today (skills, prompts, MCP configs, tool definitions, workflows, model configs); registry impact queries and component-change diffs are planned.**
+
+- ✅ Treat prompts, skills, MCP configurations, tool definitions, workflows and model configs as versioned components (component analysis → findings).
+- ✅ Scan only local and vendored artifacts — no external feeds.
+- ✅ Detect embedded prompts, hard-coded secrets, over-broad permissions, insecure defaults, unpinned references, unsafe composition.
+- ⏳ Record component identity, version/hash, source, findings and usage relationships in the local registry.
+- ⏳ **Impact queries** — which agents reference this MCP server, prompt template, tool definition or model config?
+- ⏳ **Component-change diffs** — a changed MCP configuration affects seven scanned agents.
+- ⏳ Component manifests where feasible; lockfile-style integrity metadata deferred to 2.x.
+
+### Exit criterion
+> A team can trace a risky reusable component to every consuming agent and repository, and produce static evidence for remediation.
+
+---
+
+## CE 2.0 — Ecosystem and Static Authority Correlation
+
+*Goal: grow coverage through contribution, and answer the authority question without leaving the repository.*
+
+**Status: 🔄 plugin architecture; the rest ⏳ planned.**
+
+### Ecosystem
+- 🔄 **Stable plugin SDK** — framework adapters, analyzers, and rules are already pluggable (entry-point + decorator discovery); report enrichers and policy packs planned.
+- ⏳ **Curated (and signed where practical) community registry** for versioned rule and policy packages.
+- ⏳ **`safeai init`** — config, local registry, recommended policy profile.
+- ⏳ **Custom rule authoring** with fixtures, tests, expected findings.
+- ⏳ **Control mappings** — OWASP Top 10 for Agentic Applications, OWASP Top 10 for LLM Applications, NIST AI RMF 1.0 (NIST AI 100-1) — presented as taxonomy, policy selection and prioritisation aid, explicitly **not** as coverage or compliance claims.
+- ⏳ Plugin and rule-pack versions recorded in every scan for reproducibility.
+- ⏳ **Portable registry export/import** so organisations can exchange KYA evidence without a central service.
+
+### Static authority correlation *(the community's Phase 3, offline)*
+- ⏳ Parse in-repo IaC — Terraform, CloudFormation, Helm, Kubernetes manifests, serverless configs.
+- ⏳ Compare declared capability against granted authority and report both directions: capability without grant (probable breakage), and grant without capability (excess authority).
+- ⏳ Report confidence honestly — IaC in the repo is not proof of what is deployed, and the assurance boundary block must say so.
+
+### Exit criterion
+> A contributor can add an adapter or rule pack with tests, and a reviewer can see declared-versus-granted authority mismatches using only files already in the repository.
+
+---
+
+## CE permanent guarantees
+
+- ✅ **Local by default** — no account, server, daemon, telemetry or external network calls.
+- ✅ **Source-private by default** — references and evidence, not raw source.
+- ✅ **Static truth only** — detected evidence always distinguished from unknown runtime state.
+- ✅ **No compliance certification claims** — mappings and evidence, never a declaration that an agent is safe or compliant.
+- ✅ **No runtime-platform creep in core** — no interception, sandboxing, identity issuance or production monitoring.
+
+---
+
+# Roadmap 2 — Corporate Edition (commercial evidence and governance plane)
+
+**Mission:** turn per-repository KYA evidence into organisational assurance — who owns which agent, what authority it holds, who approved it, and what changed since.
+
+**Status: ⏳ all milestones planned; architecture and sequencing defined below.**
+
+**Non-goals:** a second scanner, a runtime security platform, an observability product, a compliance certificate.
+
+**Architecture:** built entirely on `safeai-manifest.json` and portable registry exports produced by the free scanner. No privileged data path. Self-hosted first.
+
+## EE0 — Commercial foundation *(do before writing any Corporate feature)*
+Mindset: sequencing matters more than features — get it wrong and CE becomes unmonetisable or the contributor base walks.
+
+- Keep the core Apache 2.0 — do not relicense shipped code. Corporate lives in a separate repository or module under a proprietary or BSL licence (open-core, cleanly separated).
+- Contribution terms: a DCO or CLA in place **before** CE 2.0's plugin ecosystem attracts external contributions.
+- Publish the edition boundary and the never-gated list in the repository; say it once, publicly.
+- **Freeze the manifest contract** — version, document and schema-test `safeai-manifest.json` and the registry export format; it is the entire integration surface.
+- Protect the **SafeAI** name and the **KYA** positioning; keep "Know Your Agent" an operating principle, not a claimed standard.
+- Price on **agents or repositories under governance**, not seats; keep the free tier genuinely useful at small scale.
+
+## EE1 — Organisational Evidence Registry
+*The first thing to sell. Aggregation and ownership, not analytics.*
+- Self-hosted central registry of an org-wide KYA inventory from CI-submitted manifests and local exports.
+- Portfolio view across repositories, teams and environments; portfolio-level diffs.
+- Ownership model: business owner, technical owner, environment, lifecycle status, review date, approval state.
+- Central exception management: verified approver identity, approval workflow, expiry enforcement and notification, org-wide stale-waiver reporting (the identity-backed half of the Community CE 1.4 suppressions item).
+- PR risk ownership and security-review assignment routing.
+- SSO, RBAC, audit logs.
+- Registry coverage reporting: unscanned / stale / drifted repositories and agents.
+
+## EE2 — Policy Governance and Evidence Integrity
+- Private rule and policy registries, org-wide distribution and version pinning.
+- Central baseline management and approved-exception inheritance across repositories.
+- Signed attestations and tamper-evident, immutable scan evidence with retention controls.
+- Reproducibility guarantee per decision: exact scanner version, ruleset, policy and configuration hash.
+- Assurance-boundary declarations (from CE 1.4) carried into every attestation.
+- DevSecOps integrations: GitHub, GitLab, Azure DevOps, Jenkins, Jira, ServiceNow, SIEM, GRC, artifact stores.
+- Trend analysis and executive reporting — only once ownership, schemas and workflow are stable.
+
+## EE3 — Live Authority Reconciliation
+*The highest-value corporate capability, and the reason the edition boundary exists.*
+- Read-only reconciliation of declared capability against live granted authority: AWS IAM, Azure Managed Identity, GCP IAM, Kubernetes RBAC, service accounts, network policies.
+- Continuous drift detection between approved baseline authority and current deployed authority.
+- Cross-environment comparison (dev / staging / prod divergence).
+- Optional runtime-evidence correlation: link static finding IDs to observed behaviour from existing runtime/observability tools, presented as correlated evidence, never as static-scan evidence.
+- Capability-informed test-plan export to third-party evaluation, red-team and runtime-governance tools, with results linked to the exact scan and policy decision.
+- Delivered as a separate explicitly installed component with scoped read-only credentials — never inside the core scanner, so the offline guarantee holds.
+
+## EE4 — Regulated-Industry Content and Federation
+- Maintained compliance-oriented policy and rule packs: HIPAA/patient data, PCI/transaction security, GDPR/data protection, EU AI Act mappings, org-specific packs.
+- Control-mapped evidence exports for GRC and audit workflows, with explicit non-certification language.
+- Optional federated registry — safe KYA evidence across business groups without centralising source code.
+- Optional opt-in intelligence services (component reputation, known-malicious component data) — network-dependent by nature, therefore Corporate-only and always opt-in.
+
+---
+
+## Registry of latest shipped work (this branch, see CHANGELOG/releases)
+
+- **v1.4-b** — unified **org-wide shared registry** (`SAFEAI_REGISTRY` env var or `~/.safeai/registry.db`), self-contained **HTML reports** for scan and registry output, docs aligned to the v1.4 capability model.
+- **v1.4** — tool-centric capability model + access modes, 14 declarative escalation rules with subsumption, per-tool capability diff, deep **Claude Code** analysis, **PR comment** review output, **assurance boundary**, governed suppressions policy-as-code, severity centralization (`safeai/severity.py`), KYA registry schema v2 migration.
+- **Architecture refactor (P1)** — `safeai/kya/registry` split into `schema/connection/persist/queries`, `ScanOrchestrator` extracted from `run_scan`, `ScanPostProcessor` extracted from the scan CLI command. No public API break.
 
 ---
 

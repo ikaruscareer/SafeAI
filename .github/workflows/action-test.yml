@@ -38,18 +38,18 @@ jobs:
           echo "$WHEEL"
           python scripts/check_wheel.py "$WHEEL"
 
-      - name: Install the built SafeAI wheel (published-style install path)
-        run: pip install dist/*.whl
-
-      # The composite action installs SafeAI from PyPI by default; after the
-      # wheel above is installed, the exact-version install is satisfied by the
-      # local wheel, exercising the real install command without hitting PyPI.
+      # The composite action normally installs SafeAI from PyPI. For this test we
+      # have already installed the locally built wheel above, so we skip the
+      # action's own PyPI install (SAFEAI_ACTION_SKIP_INSTALL) and let it drive
+      # the installed wheel. This keeps the test hermetic and independent of any
+      # published PyPI version.
       - name: Run SafeAI action against a clean fixture
         uses: ./
         id: clean
+        env:
+          SAFEAI_ACTION_SKIP_INSTALL: "true"
         with:
           path: tests/fixtures/action/clean
-          version: "1.5.0"
           fail-on: critical
           sarif: clean.sarif
           scorecard: clean-scorecard.md
@@ -60,9 +60,10 @@ jobs:
         uses: ./
         id: risky
         continue-on-error: true
+        env:
+          SAFEAI_ACTION_SKIP_INSTALL: "true"
         with:
           path: tests/fixtures/action/risky
-          version: "1.5.0"
           fail-on: critical
           sarif: risky.sarif
           scorecard: risky-scorecard.md

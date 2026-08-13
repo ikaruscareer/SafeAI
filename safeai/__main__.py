@@ -1,4 +1,5 @@
 """Module entry point for ``python -m safeai``."""
+# ruff: noqa: I001
 from __future__ import annotations
 
 import sys

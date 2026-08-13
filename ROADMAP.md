@@ -102,6 +102,19 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 
 ---
 
+## CE 1.8 — Code-Level Authority & Provenance
+The Remaining "Deep Dive" Features (Currently marked as ⏳ in CE 1.5 and CE 1.4)
+These are the items that go deeper on your existing capabilities, but are not yet implemented:
+
+- Tool → Implementation Mapping: SafeAI extracts tool definitions but needs to map the declaration site to the actual implementation site.
+- Command-Aware MCP Analysis: The scanner needs to resolve command: python server.py by inspecting the actual local script to extract its true capability surface (labeled resolved or unresolved-command).
+- External Write-Target Taxonomy: Needs explicit taxonomy grouping for external write destinations (S3, Databases, Slack).
+- Per-Finding Lifecycle Timeline: Needs to track findings longitudinally (introduced → resolved → reopened) and flag recurring risks.
+- Stale Suppression Guard: Needs to track if a suppression is invalid because the underlying code or fingerprint changed.
+- Agent Metadata: Needs a schema to store Business Owner, Technical Owner, and Environment.
+
+---
+
 ## CE 2.0 — Ecosystem and Static Authority Correlation
 
 *Goal: grow coverage through contribution, and answer the authority question without leaving the repository.*

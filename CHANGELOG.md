@@ -39,20 +39,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — Component registry persistence
 
-- Component identity (name, version/hash, source, findings, usage relationships)
-  is now stored in the KYA registry alongside agent and tool records.
-- New query: "which agents reference this component?" via
-  `safeai registry components`.
+- Component snapshots (type, name, path, source, line, and full data JSON) are
+  now stored in the local KYA registry in a new schema-v3 `component_snapshots`
+  table, alongside agent and tool records, with `first_seen_scan` /
+  `last_seen_scan` provenance. (Component *version/hash* columns are deferred;
+  the schema records identity and last-seen, not an integrity hash yet.)
+- Internal query `get_component_agents` resolves which agents reference a
+  given component (via scan co-occurrence); surfaced in `component_diff` output
+  and intended for a future `safeai registry components` view (not yet exposed
+  as a standalone subcommand).
 
 ### Added — Component-change diffs
 
-- When a scan detects a changed MCP configuration, skill, prompt, tool
-  definition, or model config, all consuming agents are flagged.
-- New `component_diff` section in JSON report and HTML output.
+- When a scan detects a changed, added, or removed component (MCP configuration,
+  skill, prompt, tool definition, or model config), the consuming agents are
+  flagged via the `component_diff` section in the JSON report and HTML output.
+  The diff is computed against the baseline scan; with no baseline, all current
+  components are reported as newly added.
 
 ### Changed
 
 - Version bumped to `1.7.0`.
+
+## [1.8.0] - Unreleased
+
+**Curated theme — "True Authority & Complete Lifecycle."** This release bundles
+the remaining CE 1.4 and CE 1.5 gaps into two cohesive workstreams and is the
+gate for starting CE 2.0. Items below were confirmed as not-yet-implemented (or
+only partially implemented) during the v1.7.0 architectural review.
+
+### Planned — Workstream 1: Lifecycle & Ownership (CE 1.4 completion)
+
+- **Finding Lifecycle Event Engine** — add a `finding_lifecycle` table (registry
+  schema v4) tracking state transitions on existing fingerprints: `introduced` →
+  `persisting` → `resolved` → `reopened`. Add an `ESC_RECURRING_RISK` rule that
+  fires when a previously resolved finding is reintroduced.
+- **Stale Suppression Guard** — extend `safeai/kya/suppressions.py` to compare a
+  suppression's fingerprint against the current AST/location; fail
+  `--strict-suppressions` when a waiver exists but the underlying code has
+  materially shifted (not just moved).
+- **Agent Enrichment Schema** — `safeai registry metadata set <agent_id>
+  --owner "platform-sec" --env "production"` stored in a dedicated
+  `agent_metadata` table, decoupled from automated scan snapshots and rendered in
+  the HTML report.
+
+### Planned — Workstream 2: Code-Level Authority (CE 1.5 completion)
+
+- **Tool ↔ Implementation Mapping** — a correlator in `safeai/analysis/` that
+  bridges `tool_def` findings with skill/capabilities and surfaces orphan states
+  in reports: "Tool 'SlackSend' declared in configuration but no implementation
+  found."
+- **Command-Aware MCP Resolution** — extend `safeai/analyzers/mcp/analyzer.py` to
+  statically resolve a local MCP server `command` (e.g. `node build/index.js`,
+  depth-capped, never executed), attempt static extraction on the target, and
+  label output `assurance: resolved` vs `assurance: unresolved-command`.
+- **Target Taxonomy Engine** — extend `safeai/report/html_kit.py` and
+  `json_report.py` to aggregate external-network capabilities into explicit
+  buckets (Database, Object Storage, SaaS APIs) as a first-class report view.
+
+### Definition of done
+
+- All CE 1.4 and CE 1.5 items in ROADMAP.md can be confidently marked ✅ shipped.
+- A PR reviewer can see who owns an agent, that its suppressions are bound to
+  exact code fingerprints, and that its declared tools map to local code
+  implementations — unblocking CE 2.0 (Plugin SDK & Static IaC Correlation).
+
+## [1.9.0] - Unreleased
+
+**Curated theme — "Component Depth & Ecosystem Foundations."** Carries the
+remaining depth items not in v1.8.0.
+
+### Planned — CE 1.6 component-record depth
+
+- **Component version/hash in the registry** — integrity columns on
+  `component_snapshots` (deferred from v1.7.0).
+- **Impact-query CLI** — `safeai registry components` (list + "which agents
+  reference this component?") on top of `get_component_agents`.
+- **Component findings depth** — component-level detection for unpinned references
+  and unsafe composition (currently only proxy heuristics).
+- **Component manifests / lockfile-style integrity** — a thin, lockfile-style
+  integrity view where feasible.
+
+### Planned — CE 1.4 / CE 1.5 leftovers
+
+- **Governance signal detection** (CE 1.4) — timeout, retry policy, approval
+  workflow, audit logging, rate limiting.
+- **Heuristic data-flow depth** (CE 1.5) — untrusted-input propagation into
+  prompts and tool arguments (line-level proxy heuristics exist today).
+
+### Planned — CE 2.0 ecosystem foundations
+
+- **`safeai init`** — scaffold config, local registry, recommended policy profile.
+- **Custom rule authoring scaffold** — fixtures, tests, expected-findings tooling
+  on top of the existing `--rules` directory loader.
+- **Control mappings** — OWASP Top 10 for Agentic / LLM Applications, NIST AI RMF
+  1.0 (taxonomy / prioritisation aid only, never a compliance claim).
+- **Portable registry import** — complement the existing `registry export`.
+- **Per-scan plugin / rule-pack versions** — record parser/plugin versions
+  alongside the already-recorded ruleset version.
 
 ## [1.6.0] - 2026-08-13
 

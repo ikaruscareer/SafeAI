@@ -4,7 +4,7 @@ SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI 
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v1.7.0 in development. Community Edition **CE 1.4 (Reviewable Change)** is complete; **CE 1.5 (True Capability Surface)** env inventory + correlation shipped; **CE 1.6 (AI Component Records)** partial; **CE 2.0** and the entire Corporate Edition are planned.
+> **Current state:** v1.7.0 is complete (pending merge/release). Community Edition **CE 1.4 (Reviewable Change)** is complete; **CE 1.5 (True Capability Surface)** env inventory + correlation shipped; **CE 1.6 (AI Component Records)** is complete (registry persistence + component-change diffs shipped in v1.7.0); **v1.8.0** is the curated "depth" release closing the remaining CE 1.4/1.5/1.6 gaps and starting the CE 2.0 ecosystem surface; **CE 2.0** and the entire Corporate Edition remain planned.
 
 ---
 
@@ -22,7 +22,7 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 
 *Goal: make SafeAI the thing a reviewer reads first on any PR that touches an agent.*
 
-**Status: ✅ shipped (v1.3 → v1.4 → v1.4-b → v1.5 → v1.6); v1.7.0 adds final items.**
+**Status: ✅ shipped (v1.3 → v1.4 → v1.4-b → v1.5 → v1.6 → v1.7.0). CE 1.4 is complete; remaining governance items (lifecycle timeline, enrichable metadata, governance signals) are curated into v1.8.0.**
 
 ### Tool-centric diff model *(do this first — it is a schema change)*
 - ✅ Re-key capability snapshots on `(tool_identity, capability, access_mode)` instead of flat capability sets — `safeai/analysis/tool_identity.py` (path-independent keys), `tool_surface.py`, `capability_diff.py` (schema v2, per-tool).
@@ -38,23 +38,23 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 - ✅ **GitHub Actions Marketplace action** — composite action (`action.yml`) with SARIF upload, scorecard outputs, and native exit-code passthrough. Hermetic install path (`SAFEAI_ACTION_FIND_LINKS`), least-privilege design (`contents: read`), `set_output` sanitisation, and self-validating CI (`scripts/safeai-action.py`, `.github/workflows/action-test.yml`, 24 tests).
 
 ### Surface depth *(the two that matter)*
-- 🔄 **Multi-source MCP discovery** — MCP servers discovered across the scanned repo and Claude Code configuration, normalised into one capability model with provenance on every entry. Cursor / Windsurf source scopes and user/global scopes are **not yet read** (out-of-repo scopes are intentionally behind an explicit gate and excluded from exports by default).
+- ✅ **Multi-source MCP discovery** — MCP servers discovered across the scanned repo and Claude Code configuration, normalised into one capability model with provenance on every entry. Repo-local IDE scopes (`.cursor/`, `.windsurf/`, `.vscode/` via `--mcp-ide-scopes`) are now read; out-of-repo user/global scopes remain behind an explicit gate and excluded from exports by default.
 - ✅ **Deep Claude Code analysis** — `.claude/settings.json`, instruction files, permissions, `allowedTools`, custom slash commands (treated as an injection surface), subagents, hooks, dangerous/auto-approve flags, project structure (10 `CC_*` rules; repo-local scope only, never user/machine config).
 - ✅ **MCP posture** — transport, authentication evidence, exposed tools and resources, wildcard permissions, local vs remote endpoint risk, configuration provenance.
 
 ### Governance and lifecycle
-- 🔄 **Governed suppressions** — current suppressions already carry rule_id, file, location, reason, owner, expiry and are never silent. **Stale-suppression detection and CI failure when a waiver expires or code moves are planned.**
-- ⏳ **Per-finding lifecycle timeline** — introduced → resolved → reopened, with repeated reopening flagged as a governance signal.
-- 🔄 **Policy profiles** — policy-as-code shipped (`allow / warn / require_review / deny`); named profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`) planned.
+- ✅ **Governed suppressions** — suppressions carry rule_id, file, location, reason, owner, expiry and are never silent. Stale-suppression *detection* (warning) shipped earlier; **CI failure on expired or moved suppressions shipped in v1.7.0** via `--strict-suppressions`.
+- ⏳ **Per-finding lifecycle timeline** — introduced → resolved → reopened, with repeated reopening flagged as a governance signal. **Targeted for v1.8.0** (Finding Lifecycle Event Engine, `finding_lifecycle` table / schema v4, `ESC_RECURRING_RISK`).
+- ✅ **Policy profiles** — policy-as-code (`allow / warn / require_review / deny`) plus five named profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`) via `--policy-profile NAME`; bundled in `safeai/policy_profiles/`.
 - ✅ **Policy decision recorded on every scan** (pass / warn / review-required / block / accepted-exception, with rationale).
-- 🔄 **Registry freshness indicators** — never scanned, stale, changed since last approval, policy drift. `last_scan_timestamp` and `scan_count` tracked in registry; `safeai registry list` surfaces freshness status.
-- ⏳ **Locally enrichable agent metadata** — business owner, technical owner, intended purpose, environment, lifecycle status, review date.
+- ✅ **Registry freshness indicators** — never scanned, stale, changed since last approval, policy drift. `last_scan_timestamp` and `scan_count` tracked in registry; `safeai registry list` and the HTML report surface freshness status.
+- ⏳ **Locally enrichable agent metadata** — business owner, technical owner, intended purpose, environment, lifecycle status, review date. **Targeted for v1.8.0** (`safeai registry metadata set`, decoupled `agent_metadata` table, rendered in HTML).
 - ✅ **CLI version support** — `safeai --version` / `-V` prints a stable machine-readable line; single source of truth in `safeai/version.py` (`SAFEAI_VERSION`), with `pyproject.toml` reading the version dynamically from `safeai.__version__`.
 - ✅ **Developer guide** — local development and GitHub Actions usage guide (`DEVELOPER_GUIDE.md`), including the Security Scorecard flags.
 
 ### Trust and honesty
 - ✅ **Mandatory machine-readable assurance boundary block** in every report and manifest — what was verified (declared tools, prompt files, MCP servers, workflow structure, configuration) versus what cannot be verified statically (IAM permissions, runtime identity, deployed network policy, actual behaviour) — `assurance_boundary`.
-- ⏳ **Governance signal detection** — timeout, retry policy, approval workflow, audit logging, rate limiting.
+- ⏳ **Governance signal detection** — timeout, retry policy, approval workflow, audit logging, rate limiting. **Targeted for v1.9.0**.
 - ✅ **Better terminal output** — severity-grouped summary, clear layout, improved signal-to-noise (v1.4-b).
 - ✅ **Severity-weighted trust score** — 7-category weighted scoring keyed on `safeai/severity.py`.
 - ✅ **Security Scorecard** — a deterministic, auditable 0–10 report summarising a scan into an overall score, per-category scores, and a `pass`/`warn`/`fail` outcome. Markdown, JSON (`scorecard-schema.json`), and GitHub Actions step summary outputs. `--scorecard-fail-under N` gating. ~55 tests (`safeai/scorecard.py`).
@@ -72,11 +72,11 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 
 - ✅ **Secret and configuration dependency inventory** — names and sources only, never values: `os.getenv`, `os.environ`, `process.env`, dotenv keys, shell/template interpolation, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, HashiCorp Vault, Kubernetes `secretKeyRef` (`safeai/analyzers/env_dependency`).
 - ✅ **Dependency-to-capability correlation** — referenced credential/config with no matching declared capability = undeclared-capability candidate; declared credential-demanding capability with no referenced config = orphaned tool (`safeai/analysis/dependency_correlation.py`, rules `DEP_*`). Correlation findings feed severity, trust score, SARIF, HTML and the manifest. Matching uses whole-word-segment family keywords (no substring false positives on `jdbc`/`rabbit_mq`), with provider families taking precedence over the generic `api` fallback; the payload-carrying `ENV_DEP_INVENTORY` finding is exempt from suppression so the inventory section can never be blanked.
-- ⏳ **Tool → implementation mapping** — declaration site, implementation site, unresolved/orphan cases in both directions.
-- ⏳ **Command-aware MCP analysis** — resolve in-repo and vendored server entrypoints statically, depth-capped, never executed, with explicit resolved / unresolved-command labelling.
-- ⏳ **External write target taxonomy** — filesystem, databases, S3, blob storage, GitHub, Slack, external APIs — promoted to a first-class report view.
-- ⏳ **Heuristic data-flow depth** — untrusted input propagation into prompts and tool arguments.
-- ⏳ **Adapter completion** — AutoGen, LangGraph `add_conditional_edges`, browser-automation rule split (Playwright / Selenium / browser_use).
+- ⏳ **Tool → implementation mapping** — declaration site, implementation site, unresolved/orphan cases in both directions. **Targeted for v1.8.0** (Tool ↔ Implementation Mapping correlator; orphan states in reports).
+- ⏳ **Command-aware MCP analysis** — resolve in-repo and vendored server entrypoints statically, depth-capped, never executed, with explicit resolved / unresolved-command labelling. **Targeted for v1.8.0** (Command-Aware MCP Resolution; `assurance: resolved` vs `unresolved-command`).
+- ⏳ **External write target taxonomy** — filesystem, databases, S3, blob storage, GitHub, Slack, external APIs — promoted to a first-class report view. **Targeted for v1.8.0** (Target Taxonomy Engine; Database / Object Storage / SaaS API buckets in HTML/JSON).
+- ⏳ **Heuristic data-flow depth** — untrusted input propagation into prompts and tool arguments. **Targeted for v1.9.0** (line-level proxy heuristics exist today).
+- ⏳ **Adapter completion** — AutoGen, LangGraph `add_conditional_edges`, browser-automation rule split (Playwright / Selenium / browser_use). **Targeted for v1.9.0**.
 
 ### Exit criterion
 > SafeAI reports the credentials and destinations an agent actually depends on, and flags mismatches between declared and required capability — with no cloud access and no execution.
@@ -87,15 +87,15 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 
 *Goal: extend evidence from agents to the reusable components they share. Deliberately after 1.5.*
 
-**Status: 🔄 partial. Component-level analysis ships today (skills, prompts, MCP configs, tool definitions, workflows, model configs); v1.7.0 adds registry persistence and component-change diffs.**
+**Status: ✅ shipped. Component-level analysis ships (skills, prompts, MCP configs, tool definitions, workflows, model configs); registry persistence (schema v3) and component-change diffs shipped in v1.7.0. Remaining depth items (version/hash, impact-query CLI, unpinned/unsafe-composition detection, manifests) are curated into v1.8.0.**
 
 - ✅ Treat prompts, skills, MCP configurations, tool definitions, workflows and model configs as versioned components (component analysis → findings).
 - ✅ Scan only local and vendored artifacts — no external feeds.
-- ✅ Detect embedded prompts, hard-coded secrets, over-broad permissions, insecure defaults, unpinned references, unsafe composition.
-- 🔄 Record component identity, version/hash, source, findings and usage relationships in the local registry.
-- ⏳ **Impact queries** — which agents reference this MCP server, prompt template, tool definition or model config?
-- 🔄 **Component-change diffs** — a changed MCP configuration affects seven scanned agents.
-- ⏳ Component manifests where feasible; lockfile-style integrity metadata deferred to 2.x.
+- ✅ Detect embedded prompts, hard-coded secrets, over-broad permissions, insecure defaults. (Unpinned references and unsafe *composition* across component analyzers are **not yet** detected at the component level — only proxy heuristics exist in the unrelated Claude Code analyzer.)
+- ✅ Record component identity, source, and usage relationships in the local registry — schema-v3 `component_snapshots` (type, name, path, source, line, data JSON, first/last-seen) shipped in v1.7.0. **Component version/hash and explicit findings linkage are deferred** (the bug where the diff compared a scan to itself was fixed in v1.7.0).
+- ⏳ **Impact queries** — which agents reference this MCP server, prompt template, tool definition or model config? The `get_component_agents` query exists and powers `component_diff`, but is not yet exposed as a standalone `safeai registry components` view. **Targeted for v1.9.0**.
+- ✅ **Component-change diffs** — a changed/added/removed MCP configuration (or skill/prompt/tool/model) flags consuming agents via the `component_diff` report section (computed against the baseline scan).
+- ⏳ Component manifests where feasible; lockfile-style integrity metadata deferred to 2.x. **Targeted for v1.9.0**.
 
 ### Exit criterion
 > A team can trace a risky reusable component to every consuming agent and repository, and produce static evidence for remediation.
@@ -109,13 +109,13 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 **Status: 🔄 plugin architecture; the rest ⏳ planned.**
 
 ### Ecosystem
-- 🔄 **Stable plugin SDK** — framework adapters, analyzers, and rules are already pluggable (entry-point + decorator discovery); report enrichers and policy packs planned.
+- 🔄 **Stable plugin SDK** — framework adapters are pluggable via the `@register_parser` decorator and the `safeai.parsers` entry-point group. **Analyzers and rules are not yet entry-point discoverable**: analyzers are hard-coded in the orchestrator and rules are directory-loaded YAML (the `safeai.parsers` group is declared but currently empty). Report enrichers and policy packs planned.
 - ⏳ **Curated (and signed where practical) community registry** for versioned rule and policy packages.
 - ⏳ **`safeai init`** — config, local registry, recommended policy profile.
-- ⏳ **Custom rule authoring** with fixtures, tests, expected findings.
+- 🔄 **Custom rule authoring** — the `--rules <dir>` directory loader (custom YAML overriding built-in rules by ID) shipped; authoring *scaffold* with fixtures, tests, and expected-findings tooling is planned.
 - ⏳ **Control mappings** — OWASP Top 10 for Agentic Applications, OWASP Top 10 for LLM Applications, NIST AI RMF 1.0 (NIST AI 100-1) — presented as taxonomy, policy selection and prioritisation aid, explicitly **not** as coverage or compliance claims.
-- ⏳ Plugin and rule-pack versions recorded in every scan for reproducibility.
-- ⏳ **Portable registry export/import** so organisations can exchange KYA evidence without a central service.
+- 🔄 Plugin and rule-pack versions recorded in every scan — the **ruleset version** is recorded on every scan (manifest + registry); per-parser/plugin versions are not yet recorded.
+- 🔄 **Portable registry export/import** — `registry export` (portable KYA inventory JSON, source- and secret-safe, `--include-history`/`--include-suppressed`) **shipped**; `import` is not yet implemented.
 
 ### Static authority correlation *(the community's Phase 3, offline)*
 - ⏳ Parse in-repo IaC — Terraform, CloudFormation, Helm, Kubernetes manifests, serverless configs.
@@ -206,12 +206,56 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 
 ## Registry of latest shipped work (this branch, see CHANGELOG/releases)
 
-- **v1.7.0 (in development)** — IDE-scoped MCP discovery (Cursor, Windsurf, VS Code), named policy profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`), registry freshness indicators, `--strict-suppressions` CI failure, component registry persistence, component-change diffs.
+- **v1.7.0 (complete, pending release)** — IDE-scoped MCP discovery (Cursor, Windsurf, VS Code), named policy profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`), registry freshness indicators, `--strict-suppressions` CI failure, component registry persistence (schema v3 `component_snapshots`), component-change diffs (self-comparison bug fixed).
+- **v1.8.0 (curated: "True Authority & Complete Lifecycle")** — CE 1.4 + CE 1.5 closure: Finding Lifecycle Event Engine (`finding_lifecycle` / schema v4, `ESC_RECURRING_RISK`), Stale Suppression Guard (fingerprint-bound waivers), Agent Enrichment Schema (`safeai registry metadata set` / `agent_metadata` table), Tool ↔ Implementation Mapping, Command-Aware MCP Resolution (`assurance: resolved` vs `unresolved-command`), Target Taxonomy Engine (Database / Object Storage / SaaS API buckets). Gate for CE 2.0.
+- **v1.9.0 (curated: "Component Depth & Ecosystem Foundations")** — CE 1.6 depth (component version/hash, `safeai registry components` impact-query CLI, unpinned/unsafe-composition detection, manifests), CE 1.4/1.5 leftovers (governance signal detection, heuristic data-flow depth, adapter completion), CE 2.0 foundations (`safeai init`, custom rule authoring scaffold, OWASP Agentic/LLM + NIST AI RMF control mappings, portable registry import, per-scan plugin/rule-pack versions).
 - **v1.6.0** — **Security Scorecard** (0–10 deterministic score, Markdown/JSON outputs, `--scorecard-fail-under` gating, `scorecard-schema.json`), **Community Scan programme** (private pilot, target manifest, sanitisation pipeline, disclosure workflow), **CLI version support** (`safeai --version`), **Developer guide** (`DEVELOPER_GUIDE.md`), GitHub Action hardening (hermetic install path, `set_output` sanitisation, version source of truth).
 - **v1.5.0** — **GitHub Actions Marketplace action** (composite action with SARIF upload, scorecard outputs, native exit-code passthrough; `action.yml`, `scripts/safeai-action.py`, 24 tests). **Environment & credential dependency inventory** (`os.getenv`/`os.environ`/`process.env`/dotenv/shell/template, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, HashiCorp Vault, Kubernetes `secretKey`) and **dependency-to-capability correlation** (`DEP_UNDECLARED_CAPABILITY`, `DEP_ORPHANED_TOOL`), surfaced in terminal, HTML, SARIF, and the KYA manifest. First stable release (`Development Status :: 5 - Production/Stable`).
 - **v1.4-b** — unified **org-wide shared registry** (`SAFEAI_REGISTRY` env var or `~/.safeai/registry.db`), self-contained **HTML reports** for scan and registry output, docs aligned to the v1.4 capability model.
 - **v1.4** — tool-centric capability model + access modes, 14 declarative escalation rules with subsumption, per-tool capability diff, deep **Claude Code** analysis, **PR comment** review output, **assurance boundary**, governed suppressions policy-as-code, severity centralization (`safeai/severity.py`), KYA registry schema v2 migration.
 - **Architecture refactor (P1)** — `safeai/kya/registry` split into `schema/connection/persist/queries`, `ScanOrchestrator` extracted from `run_scan`, `ScanPostProcessor` extracted from the scan CLI command. No public API break.
+
+---
+
+## Implementation inventory (as of v1.7.0 — shipped but previously undocumented)
+
+The v1.7.0 architectural review found substantial shipped surface that the
+roadmap never enumerated. Captured here so future curation does not re-discover
+it:
+
+- **15 framework adapters** (`safeai/frameworks/`): azure_foundry, bedrock_agent,
+  claude_code, crewai, dify, google_adk, haystack, langchain, langgraph,
+  llamaindex, mastra, microsoft_agent, n8n, openai_agents, semantic_kernel. All
+  load via `@register_parser`; the `safeai.parsers` entry-point group is declared
+  but currently empty (third-party plugins not yet wired).
+- **11 analyzers** (`safeai/analyzers/`): capability, claude_code, data_leakage,
+  env_dependency, mcp, model_config, prompt, prompt_file, skill, tool_def,
+  workflow — emitting the `CAP_*`, `CC_*`, `DATA_*`, `DEP_*`, `ENV_*`, `MCP_*`,
+  `MODEL_*`, `PROMPT_*`, `PROMPT_FILE_*`, `SKILL_*`, `TOOL_*`, `WORKFLOW_*`
+  rule families (57 built-in rules in `safeai/rules/base_rules.yaml`).
+- **Analysis core** (`safeai/analysis/`): `semantic` (AST document + symbol
+  resolution), `import_graph` (project-wide import/symbol graph), `project_graph`
+  (cross-file entity aggregation), `aggregation` (multi-parser merge +
+  capability dedup), `capabilities` (23 capability categories + ranked access
+  modes `none<read<write<mutate<execute`), `escalation`, `tool_identity`,
+  `tool_surface`, `capability_diff`, `components`, `component_diff`,
+  `dependency_correlation`.
+- **KYA internals** (`safeai/kya/`): `enrich` (fingerprint/confidence/provenance
+  normalisation + default remediation), `identity` (deterministic project/agent
+  IDs via git-remote fingerprint + `.safeai/config.yml`), `fingerprints`
+  (SHA-256 contract), `exporter` (portable registry inventory export),
+  `util` (secret redaction + confidence labels), plus `baseline`, `ci_context`,
+  `manifest`, `policy`, `suppressions`, `assurance`.
+- **Report formats** (`safeai/report/`): terminal, json_report, html, sarif,
+  pr_comment, and `registry_html` (self-contained HTML for `registry --format
+  html`). Scoring (7 categories: Capability, Governance, Safety, Identity,
+  Integration, Autonomy, Enterprise Readiness; equal weight by default) lives in
+  `safeai/scoring/engine.py` with severity weights in `safeai/severity.py`
+  (`critical 25 / high 15 / medium 8 / low 4 / info 1`).
+- **Shipped-ahead-of-doc items** (previously marked ⏳, now ✅): `registry
+  export` (portable inventory, `--include-history`/`--include-suppressed`);
+  `--rules <dir>` custom-rule directory loader; GitLab CI + Azure Pipelines
+  detection (already in `ci_context.PROVIDERS`).
 
 ---
 

@@ -32,16 +32,49 @@ safeai scan /path/to/project --scorecard scorecard.md --scorecard-fail-under 7.0
     fail-on: critical
 ```
 
-### What's New in 1.6.0
+### What's New in 1.7.0
 
-- **Security Scorecard** — deterministic 0–10 score with per-category
-  breakdown and `pass`/`warn`/`fail` outcome. Flags: `--scorecard`,
-  `--scorecard-json`, `--scorecard-summary`, `--scorecard-fail-under`.
-- **Community Scan (private pilot)** — governed workflow for scanning public
-  third-party agent frameworks with responsible disclosure; private by default.
-- **CLI version support** — `safeai --version` / `-V`.
-- **Action hardening** — dynamic version source of truth, hermetic installs,
-  output-injection protection.
+- **IDE-scoped MCP discovery** — Cursor / Windsurf / VS Code MCP configs via
+  `--mcp-ide-scopes` (repo-local only, excluded from exports by default).
+- **Named policy profiles** — `developer`, `strict-ci`, `mcp`, `rag`,
+  `production-agent` via `--policy-profile NAME`.
+- **Registry freshness indicators** — `last_scan_timestamp` + `scan_count`;
+  `safeai registry list` shows freshness status.
+- **Suppression CI failure** — `--strict-suppressions` fails the scan on expired
+  or moved suppressions.
+- **Component registry persistence** — schema-v3 `component_snapshots` with
+  first/last-seen provenance; consuming agents resolved internally.
+- **Component-change diffs** — changed/added/removed components flag consuming
+  agents in the `component_diff` report section.
+
+---
+
+## v1.8.0 (Curated scope — Unreleased: "True Authority & Complete Lifecycle")
+
+A curated release bundling the remaining CE 1.4 and CE 1.5 gaps into two
+cohesive workstreams — the gate for starting CE 2.0. Confirmed
+not-yet-implemented in the v1.7.0 architectural review.
+
+- **Workstream 1 — Lifecycle & Ownership (CE 1.4)**: `finding_lifecycle` table
+  (schema v4) with `introduced → persisting → resolved → reopened` and an
+  `ESC_RECURRING_RISK` rule; Stale Suppression Guard binding waivers to exact
+  code fingerprints; `safeai registry metadata set` for owner/environment stored
+  in a decoupled `agent_metadata` table and shown in HTML.
+- **Workstream 2 — Code-Level Authority (CE 1.5)**: Tool ↔ Implementation
+  Mapping (orphan detection); Command-Aware MCP Resolution (`assurance: resolved`
+  vs `unresolved-command`); Target Taxonomy Engine aggregating external-network
+  capabilities into Database / Object Storage / SaaS API buckets.
+
+## v1.9.0 (Curated scope — Unreleased: "Component Depth & Ecosystem Foundations")
+
+- **CE 1.6 depth** — component version/hash columns; `safeai registry components`
+  impact-query CLI; component-level unpinned-reference and unsafe-composition
+  detection; component manifests / lockfile-style integrity.
+- **CE 1.4 / CE 1.5 leftovers** — governance signal detection; heuristic
+  data-flow depth.
+- **CE 2.0 foundations** — `safeai init`; custom rule authoring scaffold; OWASP
+  Agentic / OWASP LLM / NIST AI RMF control mappings (taxonomy only); portable
+  registry import; per-scan plugin / rule-pack versions.
 
 ### What It Detects
 

@@ -1,8 +1,5 @@
 name: SafeAI Community Scan
 
-# Private-pilot workflow. Do not add a schedule until the pilot gates in
-# community-scans/private-pilot.md have been reviewed and approved.
-
 on:
   workflow_dispatch:
     inputs:
@@ -18,9 +15,7 @@ on:
         description: Scan publication mode
         required: true
         type: choice
-        options:
-          - private
-          - review
+        options: [private, review]
         default: private
 
 permissions:
@@ -32,33 +27,22 @@ concurrency:
 
 jobs:
   prepare:
-    name: Prepare target matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.targets.outputs.matrix }}
     steps:
-      - name: Validate and select targets
-        id: targets
+      - id: targets
         env:
           REQUESTED_TARGET: ${{ inputs.target || 'all' }}
-        shell: bash
         run: |
           set -euo pipefail
           case "$REQUESTED_TARGET" in
-            all)
-              echo 'matrix={"target":["n8n","langchain","llamaindex","crewai","langgraph"]}' >> "$GITHUB_OUTPUT"
-              ;;
-            n8n|langchain|llamaindex|crewai|langgraph)
-              printf 'matrix={"target":["%s"]}\n' "$REQUESTED_TARGET" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "::error::Unknown target: $REQUESTED_TARGET"
-              exit 2
-              ;;
+            all) echo 'matrix={"target":["n8n","langchain","llamaindex","crewai","langgraph"]}' >> "$GITHUB_OUTPUT" ;;
+            n8n|langchain|llamaindex|crewai|langgraph) printf 'matrix={"target":["%s"]}\n' "$REQUESTED_TARGET" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::Unknown target: $REQUESTED_TARGET"; exit 2 ;;
           esac
 
   scan:
-    name: Scan ${{ matrix.target }}
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -73,17 +57,13 @@ jobs:
       SAFEAI_ACTION_COMMIT: fef9781e3a68ba591448aa18e9d2f299b3869589
       SCAN_MODE: ${{ inputs.mode || 'private' }}
     steps:
-      - name: Check out SafeAI workflow repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
         with:
           python-version: '3.12'
-
-      - name: Resolve target metadata and commit
+      - name: Resolve target metadata
         id: meta
         env:
           MATRIX_TARGET: ${{ matrix.target }}
@@ -95,7 +75,6 @@ jobs:
           META=$(python community-scans/scripts/resolve_meta.py)
           echo "$META"
           python -c 'import json,sys; d=json.load(sys.stdin); print("repository="+d["repository"]); print("requested_ref="+d["requested_ref"]); print("resolved_sha="+d["resolved_commit_sha"]); print("security_policy_url="+d.get("security_policy_url", ""))' <<< "$META" >> "$GITHUB_OUTPUT"
-
       - name: Check out target at resolved commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -104,8 +83,7 @@ jobs:
           path: target
           fetch-depth: 1
           persist-credentials: false
-
-      - name: Run released SafeAI Action
+      - name: Run SafeAI
         id: safeai
         continue-on-error: true
         uses: ikaruscareer/SafeAI@fef9781e3a68ba591448aa18e9d2f299b3869589
@@ -118,8 +96,7 @@ jobs:
           scorecard-summary: 'true'
           no-registry: 'true'
           extra-args: '["--json", "reports/raw/${{ matrix.target }}.json", "--html", "reports/raw/${{ matrix.target }}.html"]'
-
-      - name: Build provenance manifest and sanitised reports
+      - name: Build manifest and sanitised reports
         if: always()
         env:
           SAFEAI_VERSION: ${{ steps.safeai.outputs.safeai-version || '1.6.0' }}
@@ -130,38 +107,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p reports/raw reports/manifests reports/public reports/private
-          python community-scans/scripts/build_scan_manifest.py \
-            --target-id "$MATRIX_TARGET" \
-            --repository "$TARGET_REPOSITORY" \
-            --upstream-url "https://github.com/$TARGET_REPOSITORY" \
-            --requested-ref "$REQUESTED_REF" \
-            --resolved-commit-sha "$RESOLVED_SHA" \
-            --safeai-version "$SAFEAI_VERSION" \
-            --safeai-action-ref "$SAFEAI_ACTION_REF" \
-            --safeai-action-commit "$SAFEAI_ACTION_COMMIT" \
-            --scan-timestamp-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --fail-on critical \
-            --no-registry \
-            --github-run-id "${{ github.run_id }}" \
-            --disclosure-status "$SCAN_MODE" \
-            --security-policy-url "$SECURITY_POLICY_URL" \
-            --out "reports/manifests/$MATRIX_TARGET.json"
+          python community-scans/scripts/build_scan_manifest.py --target-id "$MATRIX_TARGET" --repository "$TARGET_REPOSITORY" --upstream-url "https://github.com/$TARGET_REPOSITORY" --requested-ref "$REQUESTED_REF" --resolved-commit-sha "$RESOLVED_SHA" --safeai-version "$SAFEAI_VERSION" --safeai-action-ref "$SAFEAI_ACTION_REF" --safeai-action-commit "$SAFEAI_ACTION_COMMIT" --scan-timestamp-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --fail-on critical --no-registry --github-run-id "${{ github.run_id }}" --disclosure-status "$SCAN_MODE" --security-policy-url "$SECURITY_POLICY_URL" --out "reports/manifests/$MATRIX_TARGET.json"
           if test -f "reports/raw/$MATRIX_TARGET.json"; then
-            python community-scans/scripts/sanitise_report.py \
-              --report "reports/raw/$MATRIX_TARGET.json" \
-              --out "reports/public/$MATRIX_TARGET-summary.json"
-            python community-scans/scripts/render_reddit_draft.py \
-              --summary "reports/public/$MATRIX_TARGET-summary.json" \
-              --manifest "reports/manifests/$MATRIX_TARGET.json" \
-              --template-dir community-scans/templates \
-              --reddit-out "reports/public/$MATRIX_TARGET-reddit-draft.md" \
-              --public-out "reports/public/$MATRIX_TARGET-summary.md" \
-              --maintainer-out "reports/private/$MATRIX_TARGET-maintainer-notification.md"
+            python community-scans/scripts/sanitise_report.py --report "reports/raw/$MATRIX_TARGET.json" --out "reports/public/$MATRIX_TARGET-summary.json"
+            python community-scans/scripts/render_reddit_draft.py --summary "reports/public/$MATRIX_TARGET-summary.json" --manifest "reports/manifests/$MATRIX_TARGET.json" --template-dir community-scans/templates --reddit-out "reports/public/$MATRIX_TARGET-reddit-draft.md" --public-out "reports/public/$MATRIX_TARGET-summary.md" --maintainer-out "reports/private/$MATRIX_TARGET-maintainer-notification.md"
           fi
-
       - name: Upload public review artifacts
         if: always()
-        uses: actions/upload-artifact@65462800fd760344b1a7b438efe1201a664fcaab
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: safeai-community-${{ matrix.target }}-public
           path: |
@@ -169,10 +122,9 @@ jobs:
             reports/public/
           retention-days: 30
           if-no-files-found: warn
-
       - name: Upload private raw artifacts
         if: always()
-        uses: actions/upload-artifact@65462800fd760344b1a7b438efe1201a664fcaab
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: safeai-community-${{ matrix.target }}-private
           path: |
@@ -180,15 +132,9 @@ jobs:
             reports/private/
           retention-days: 30
           if-no-files-found: warn
-
       - name: Remove target checkout
         if: always()
         run: rm -rf target
-
-      - name: Propagate SafeAI result after preserving reports
+      - name: Propagate SafeAI result
         if: always()
-        run: |
-          if [ "${{ steps.safeai.outcome }}" != success ]; then
-            echo "SafeAI returned ${{ steps.safeai.outcome }} for $MATRIX_TARGET"
-            exit 1
-          fi
+        run: test "${{ steps.safeai.outcome }}" = success

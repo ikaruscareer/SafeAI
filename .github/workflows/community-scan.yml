@@ -57,6 +57,7 @@ jobs:
               ;;
           esac
 
+jobs:
   scan:
     name: Scan ${{ matrix.target }}
     needs: prepare

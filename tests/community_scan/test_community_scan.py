@@ -131,6 +131,13 @@ def test_is_safe_ref():
     assert not is_safe_ref("")
     assert not is_safe_ref("; rm -rf /")
     assert not is_safe_ref("$(touch x)")
+    # Path traversal / URL-path manipulation must be rejected: the ref is
+    # interpolated into a GitHub API URL path.
+    assert not is_safe_ref("..")
+    assert not is_safe_ref("../foo")
+    assert not is_safe_ref("heads/../other")
+    assert not is_safe_ref("/etc/passwd")
+    assert not is_safe_ref("refs/heads/x/")
 
 
 def test_security_policy_validation_rejects_non_github():
@@ -138,6 +145,14 @@ def test_security_policy_validation_rejects_non_github():
     assert ok is False
     ok2, _ = validate_security_policy("", None)
     assert ok2 is False
+
+
+def test_security_policy_validation_is_offline_by_default():
+    # A GitHub-hosted URL must not trigger a network call by default; it should
+    # be reported as "unknown" (None) so target validation stays hermetic.
+    ok, status = validate_security_policy("https://github.com/owner/repo/security/policy", None)
+    assert ok is None
+    assert status == 0
 
 
 def test_resolve_repository_detects_public(monkeypatch):

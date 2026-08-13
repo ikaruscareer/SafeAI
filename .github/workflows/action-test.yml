@@ -38,22 +38,29 @@ jobs:
           echo "$WHEEL"
           python scripts/check_wheel.py "$WHEEL"
 
-      # Install the locally built wheel so the composite action can drive it.
-      - name: Install the built SafeAI wheel
-        run: pip install dist/*.whl
+      # The composite action installs SafeAI from PyPI by default. For this test
+      # we derive the version from the built wheel and point the action's install
+      # command at ``dist/`` via SAFEAI_ACTION_FIND_LINKS. This exercises the
+      # *real* install path (version pin + pip install) while resolving SafeAI
+      # from the local build instead of PyPI, so the test stays hermetic and the
+      # pin auto-syncs with every version bump.
+      - name: Resolve SafeAI version from the built wheel
+        id: safeai-version
+        run: |
+          WHEEL=$(find dist -name '*.whl' | head -n 1)
+          echo "wheel=$WHEEL"
+          VER="${WHEEL#*SafeAI_Static_Analyzer-}"
+          VER="${VER%%-*}"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
 
-      # The composite action normally installs SafeAI from PyPI. For this test we
-      # have already installed the locally built wheel above, so we skip the
-      # action's own PyPI install (SAFEAI_ACTION_SKIP_INSTALL) and let it drive
-      # the installed wheel. This keeps the test hermetic and independent of any
-      # published PyPI version.
       - name: Run SafeAI action against a clean fixture
         uses: ./
         id: clean
         env:
-          SAFEAI_ACTION_SKIP_INSTALL: "true"
+          SAFEAI_ACTION_FIND_LINKS: "${{ github.workspace }}/dist"
         with:
           path: tests/fixtures/action/clean
+          version: "${{ steps.safeai-version.outputs.version }}"
           fail-on: critical
           sarif: clean.sarif
           scorecard: clean-scorecard.md
@@ -65,9 +72,10 @@ jobs:
         id: risky
         continue-on-error: true
         env:
-          SAFEAI_ACTION_SKIP_INSTALL: "true"
+          SAFEAI_ACTION_FIND_LINKS: "${{ github.workspace }}/dist"
         with:
           path: tests/fixtures/action/risky
+          version: "${{ steps.safeai-version.outputs.version }}"
           fail-on: critical
           sarif: risky.sarif
           scorecard: risky-scorecard.md

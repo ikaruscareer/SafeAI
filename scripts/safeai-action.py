@@ -54,13 +54,23 @@ def as_bool(value):
     return str(value).strip().lower() in {"true", "1", "yes", "on"}
 
 
-def build_install_command(version):
-    """Return the argv that installs SafeAI at ``version`` (no shell)."""
+def build_install_command(version, find_links=""):
+    """Return the argv that installs SafeAI at ``version`` (no shell).
+
+    When ``find_links`` points at a directory of wheels, pip prefers the local
+    wheel there (e.g. a freshly built ``SafeAI-Static-Analyzer``) over PyPI,
+    letting CI exercise the real install command without depending on a
+    published version. Dependencies such as PyYAML still resolve from PyPI, so
+    we deliberately avoid ``--no-index`` here.
+    """
     if version:
         spec = f"{DIST}=={version}"
     else:
         spec = DIST
-    return [sys.executable, "-m", "pip", "install", "--quiet", spec]
+    cmd = [sys.executable, "-m", "pip", "install", "--quiet", spec]
+    if find_links:
+        cmd += ["--find-links", find_links]
+    return cmd
 
 
 def build_scan_argv(path, fail_on, sarif, rules="", baseline="", fail_on_new=False,
@@ -149,27 +159,26 @@ def validate_no_control_chars(value, label):
     return None
 
 
-def write_outputs(sarif_path, scorecard_path="", safeai_version=""):
-    """Append action outputs to ``$GITHUB_OUTPUT`` when present."""
+def set_output(name, value):
+    """Append a single ``name=value`` line to ``$GITHUB_OUTPUT`` when present.
+
+    Each output is written independently so a missing value cannot clobber a
+    neighbouring output (the previous ``write_outputs`` overload required
+    callers to pass positional empty strings, which was error-prone).
+    """
     out_file = os.environ.get("GITHUB_OUTPUT")
     if not out_file:
         return
-    if sarif_path and os.path.isabs(sarif_path):
-        with open(out_file, "a", encoding="utf-8") as fh:
-            fh.write(f"sarif-path={sarif_path}\n")
-    if scorecard_path and os.path.isabs(scorecard_path):
-        with open(out_file, "a", encoding="utf-8") as fh:
-            fh.write(f"scorecard-path={scorecard_path}\n")
-    if safeai_version:
-        with open(out_file, "a", encoding="utf-8") as fh:
-            fh.write(f"safeai-version={safeai_version}\n")
+    with open(out_file, "a", encoding="utf-8") as fh:
+        fh.write(f"{name}={value}\n")
 
 
 def get_safeai_version():
     """Return installed SafeAI version string, or 'unknown' on failure.
 
     Runs from a neutral working directory so a checked-out target tree cannot
-    shadow the installed ``safeai`` package.
+    shadow the installed ``safeai`` package. Failures are surfaced as a
+    ``::warning::`` rather than swallowed, so a broken install is diagnosable.
     """
     try:
         neutral_cwd = os.environ.get("RUNNER_TEMP") or tempfile.mkdtemp(prefix="safeai-ver-")
@@ -182,8 +191,13 @@ def get_safeai_version():
         )
         if proc.returncode == 0 and proc.stdout.strip():
             return proc.stdout.strip().split()[0]
-    except Exception:
-        pass
+        print(
+            f"::warning::could not determine installed SafeAI version "
+            f"(exit {proc.returncode}; stderr: {proc.stderr.strip()[:200]})",
+            file=sys.stderr,
+        )
+    except Exception as exc:
+        print(f"::warning::could not determine installed SafeAI version: {exc}", file=sys.stderr)
     return "unknown"
 
 
@@ -275,7 +289,8 @@ def main(argv=None):
         return 2
 
     if not skip_install:
-        install_cmd = build_install_command(version)
+        find_links = env_val("SAFEAI_ACTION_FIND_LINKS")
+        install_cmd = build_install_command(version, find_links=find_links)
         install_rc = subprocess.call(install_cmd)
         if install_rc != 0:
             print(
@@ -329,38 +344,17 @@ def main(argv=None):
         )
 
     if sarif and os.path.exists(sarif):
-        try:
-            write_outputs(os.path.abspath(sarif))
-        except OSError as exc:
-            print(
-                f"::error::could not write action output to $GITHUB_OUTPUT: {exc}",
-                file=sys.stderr,
-            )
-            return 2
+        set_output("sarif-path", os.path.abspath(sarif))
 
     # Write the scorecard-path output when the scorecard was generated.
     # The scorecard path is preserved even when the scan fails, so a later
     # step with ``if: always()`` can still read it.
     scorecard_path = os.path.abspath(scorecard) if scorecard else ""
     if scorecard_path and os.path.exists(scorecard_path):
-        try:
-            write_outputs("", scorecard_path=scorecard_path)
-        except OSError as exc:
-            print(
-                f"::error::could not write scorecard-path output to $GITHUB_OUTPUT: {exc}",
-                file=sys.stderr,
-            )
-            return 2
+        set_output("scorecard-path", scorecard_path)
 
     safeai_version = get_safeai_version()
-    try:
-        write_outputs("", safeai_version=safeai_version)
-    except OSError as exc:
-        print(
-            f"::error::could not write safeai-version output to $GITHUB_OUTPUT: {exc}",
-            file=sys.stderr,
-        )
-        return 2
+    set_output("safeai-version", safeai_version)
 
     return proc.returncode
 

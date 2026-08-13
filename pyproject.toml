@@ -4,7 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SafeAI-Static-Analyzer"
-version = "1.6.0"
+# The version is the single source of truth in ``safeai/__init__.py``
+# (``__version__``). Reading it dynamically here prevents the pyproject and
+# package versions from drifting apart on a version bump.
+dynamic = ["version"]
 description = "The lightweight, open-source Static AI Capability & Risk Analyzer for CI/CD pipelines."
 readme = "README.md"
 license = "Apache-2.0"
@@ -55,6 +58,9 @@ extend-per-file-ignores = { "tests/fixtures/action/**" = ["I001", "F841", "PLW15
 
 [tool.setuptools.packages.find]
 include = ["safeai*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "safeai.__version__"}
 
 [tool.setuptools.package-data]
 safeai = ["rules/*.yaml", "rules/*.yml"]

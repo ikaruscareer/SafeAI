@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 
+SAFEAI_VERSION = "1.6.0"
 VERSION_FLAGS = ("--version", "-V")
 
 
@@ -12,6 +13,6 @@ def version_requested(argv: list[str] | None = None) -> bool:
     return len(values) == 1 and values[0] in VERSION_FLAGS
 
 
-def print_version(version: str) -> None:
+def print_version(version: str = SAFEAI_VERSION) -> None:
     """Print a stable machine-readable version line."""
     print(version)

@@ -5,7 +5,9 @@ from __future__ import annotations
 import os
 import sys
 
-__version__ = "1.6.0"
+from safeai.version import SAFEAI_VERSION
+
+__version__ = SAFEAI_VERSION
 
 # The setuptools console script imports ``safeai.cmd.cli`` before calling its
 # main function. Handle the standalone version option at package import time

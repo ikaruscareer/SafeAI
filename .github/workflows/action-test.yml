@@ -39,18 +39,15 @@ jobs:
           python scripts/check_wheel.py "$WHEEL"
 
       # The composite action installs SafeAI from PyPI by default. For this test
-      # we derive the version from the built wheel and point the action's install
-      # command at ``dist/`` via SAFEAI_ACTION_FIND_LINKS. This exercises the
-      # *real* install path (version pin + pip install) while resolving SafeAI
-      # from the local build instead of PyPI, so the test stays hermetic and the
-      # pin auto-syncs with every version bump.
-      - name: Resolve SafeAI version from the built wheel
+      # we pin the version from the package's single source of truth and point
+      # the action's install command at ``dist/`` via SAFEAI_ACTION_FIND_LINKS.
+      # This exercises the *real* install path (version pin + pip install) while
+      # resolving SafeAI from the local build instead of PyPI, so the test stays
+      # hermetic and the pin auto-syncs with every version bump.
+      - name: Resolve SafeAI version from the package
         id: safeai-version
         run: |
-          WHEEL=$(find dist -name '*.whl' | head -n 1)
-          echo "wheel=$WHEEL"
-          VER="${WHEEL#*SafeAI_Static_Analyzer-}"
-          VER="${VER%%-*}"
+          VER=$(python -c "import safeai; print(safeai.__version__)")
           echo "version=$VER" >> "$GITHUB_OUTPUT"
 
       - name: Run SafeAI action against a clean fixture

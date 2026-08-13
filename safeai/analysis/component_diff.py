@@ -35,7 +35,7 @@ def compute_component_diff(current_components, previous_components, registry_con
             "affected_agents": {},
         }
 
-    prev_index = {_component_key(c): c for c in current_components}
+    prev_index = {_component_key(c): c for c in previous_components}
     curr_index = {_component_key(c): c for c in current_components}
 
     added = []

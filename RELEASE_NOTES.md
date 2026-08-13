@@ -1,5 +1,47 @@
 # SafeAI — Release Notes
 
+## v1.7.0 (Unreleased)
+
+**SafeAI 1.7.0 completes the CE 1.4 and CE 1.6 roadmap milestones.** Adds
+IDE-scoped MCP discovery, named policy profiles, registry freshness
+indicators, suppression CI failure, component registry persistence, and
+component-change diffs. The scanner stays fully offline, static, and
+local-first.
+
+### Headline: Multi-source MCP discovery
+
+MCP server configs are now discovered across Cursor, Windsurf, and VS Code
+scopes in addition to the scanned repo. Out-of-repo scopes are behind an
+explicit `--mcp-ide-scopes` flag and excluded from exports by default.
+
+### Headline: Named policy profiles
+
+Five built-in profiles (`developer`, `strict-ci`, `mcp`, `rag`,
+`production-agent`) provide composable policy rule sets. Load with
+`--policy-profile NAME`; user overrides in `.safeai/policy.yml` extend the
+preset.
+
+### Headline: Registry freshness + suppression enforcement
+
+- Agent records track `last_scan_timestamp` and `scan_count`; `safeai registry
+  list` surfaces freshness status.
+- `--strict-suppressions` fails the scan on expired or moved suppressions,
+  enabling CI enforcement.
+
+### Headline: Component registry + change diffs
+
+- Component identity, version/hash, source, and findings are stored in the KYA
+  registry. Query with `safeai registry components`.
+- Changed components flag all consuming agents in a new `component_diff`
+  section.
+
+### Upgrade notes
+
+- No breaking changes. All new flags are opt-in.
+- Registry schema auto-migrates from v1.6.0.
+
+---
+
 ## v1.6.0 (2026-08-13)
 
 **SafeAI 1.6.0 adds a Security Scorecard, a Community Scan programme, and a

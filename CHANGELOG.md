@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - Unreleased
+
+### Added — Multi-source MCP discovery
+
+- IDE-scoped MCP config discovery for Cursor (`.cursor/mcp.json`), Windsurf
+  (`.windsurf/mcp.json`), and VS Code (`.vscode/mcp.json`). Out-of-repo scopes
+  are behind an explicit `--mcp-ide-scopes` flag and excluded from exports by
+  default, preserving the source-private guarantee.
+
+### Added — Named policy profiles
+
+- Five built-in profiles: `developer`, `strict-ci`, `mcp`, `rag`,
+  `production-agent`. Each profile is a composable set of policy rules that
+  extends (not replaces) the user's `.safeai/policy.yml`.
+- `--policy-profile NAME` loads the preset profile plus user overrides.
+- Profiles documented in `POLICY.md`.
+
+### Added — Registry freshness indicators
+
+- Agent records now track `last_scan_timestamp` and `scan_count` in the local
+  SQLite registry.
+- `safeai registry list` surfaces freshness status (fresh / stale / never
+  scanned).
+- HTML report includes freshness indicators per agent.
+
+### Added — Suppression CI failure
+
+- `--strict-suppressions` fails the scan (exit 1) when expired or moved
+  suppressions are detected, enabling CI enforcement of suppression hygiene.
+- Expired suppressions already produce warnings; this flag promotes them to
+  failures.
+
+### Added — Component registry persistence
+
+- Component identity (name, version/hash, source, findings, usage relationships)
+  is now stored in the KYA registry alongside agent and tool records.
+- New query: "which agents reference this component?" via
+  `safeai registry components`.
+
+### Added — Component-change diffs
+
+- When a scan detects a changed MCP configuration, skill, prompt, tool
+  definition, or model config, all consuming agents are flagged.
+- New `component_diff` section in JSON report and HTML output.
+
+### Changed
+
+- Version bumped to `1.7.0`.
+
 ## [1.6.0] - 2026-08-13
 
 ### Added — SafeAI Security Scorecard

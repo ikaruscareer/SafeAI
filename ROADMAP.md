@@ -4,7 +4,7 @@ SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI 
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v1.6.0 shipped. Community Edition **CE 1.4 (Reviewable Change)** is complete; **CE 1.5 (True Capability Surface)** env inventory + correlation shipped; **CE 1.6 (AI Component Records)** partial; **CE 2.0** and the entire Corporate Edition are planned.
+> **Current state:** v1.7.0 in development. Community Edition **CE 1.4 (Reviewable Change)** is complete; **CE 1.5 (True Capability Surface)** env inventory + correlation shipped; **CE 1.6 (AI Component Records)** partial; **CE 2.0** and the entire Corporate Edition are planned.
 
 ---
 
@@ -22,7 +22,7 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 
 *Goal: make SafeAI the thing a reviewer reads first on any PR that touches an agent.*
 
-**Status: ✅ shipped (v1.3 → v1.4 → v1.4-b → v1.5 → v1.6); complete.**
+**Status: ✅ shipped (v1.3 → v1.4 → v1.4-b → v1.5 → v1.6); v1.7.0 adds final items.**
 
 ### Tool-centric diff model *(do this first — it is a schema change)*
 - ✅ Re-key capability snapshots on `(tool_identity, capability, access_mode)` instead of flat capability sets — `safeai/analysis/tool_identity.py` (path-independent keys), `tool_surface.py`, `capability_diff.py` (schema v2, per-tool).
@@ -47,7 +47,7 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 - ⏳ **Per-finding lifecycle timeline** — introduced → resolved → reopened, with repeated reopening flagged as a governance signal.
 - 🔄 **Policy profiles** — policy-as-code shipped (`allow / warn / require_review / deny`); named profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`) planned.
 - ✅ **Policy decision recorded on every scan** (pass / warn / review-required / block / accepted-exception, with rationale).
-- ⏳ **Registry freshness indicators** — never scanned, stale, changed since last approval, policy drift.
+- 🔄 **Registry freshness indicators** — never scanned, stale, changed since last approval, policy drift. `last_scan_timestamp` and `scan_count` tracked in registry; `safeai registry list` surfaces freshness status.
 - ⏳ **Locally enrichable agent metadata** — business owner, technical owner, intended purpose, environment, lifecycle status, review date.
 - ✅ **CLI version support** — `safeai --version` / `-V` prints a stable machine-readable line; single source of truth in `safeai/version.py` (`SAFEAI_VERSION`), with `pyproject.toml` reading the version dynamically from `safeai.__version__`.
 - ✅ **Developer guide** — local development and GitHub Actions usage guide (`DEVELOPER_GUIDE.md`), including the Security Scorecard flags.
@@ -87,14 +87,14 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 
 *Goal: extend evidence from agents to the reusable components they share. Deliberately after 1.5.*
 
-**Status: 🔄 partial. Component-level analysis ships today (skills, prompts, MCP configs, tool definitions, workflows, model configs); registry impact queries and component-change diffs are planned.**
+**Status: 🔄 partial. Component-level analysis ships today (skills, prompts, MCP configs, tool definitions, workflows, model configs); v1.7.0 adds registry persistence and component-change diffs.**
 
 - ✅ Treat prompts, skills, MCP configurations, tool definitions, workflows and model configs as versioned components (component analysis → findings).
 - ✅ Scan only local and vendored artifacts — no external feeds.
 - ✅ Detect embedded prompts, hard-coded secrets, over-broad permissions, insecure defaults, unpinned references, unsafe composition.
-- ⏳ Record component identity, version/hash, source, findings and usage relationships in the local registry.
+- 🔄 Record component identity, version/hash, source, findings and usage relationships in the local registry.
 - ⏳ **Impact queries** — which agents reference this MCP server, prompt template, tool definition or model config?
-- ⏳ **Component-change diffs** — a changed MCP configuration affects seven scanned agents.
+- 🔄 **Component-change diffs** — a changed MCP configuration affects seven scanned agents.
 - ⏳ Component manifests where feasible; lockfile-style integrity metadata deferred to 2.x.
 
 ### Exit criterion
@@ -206,6 +206,7 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 
 ## Registry of latest shipped work (this branch, see CHANGELOG/releases)
 
+- **v1.7.0 (in development)** — IDE-scoped MCP discovery (Cursor, Windsurf, VS Code), named policy profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`), registry freshness indicators, `--strict-suppressions` CI failure, component registry persistence, component-change diffs.
 - **v1.6.0** — **Security Scorecard** (0–10 deterministic score, Markdown/JSON outputs, `--scorecard-fail-under` gating, `scorecard-schema.json`), **Community Scan programme** (private pilot, target manifest, sanitisation pipeline, disclosure workflow), **CLI version support** (`safeai --version`), **Developer guide** (`DEVELOPER_GUIDE.md`), GitHub Action hardening (hermetic install path, `set_output` sanitisation, version source of truth).
 - **v1.5.0** — **GitHub Actions Marketplace action** (composite action with SARIF upload, scorecard outputs, native exit-code passthrough; `action.yml`, `scripts/safeai-action.py`, 24 tests). **Environment & credential dependency inventory** (`os.getenv`/`os.environ`/`process.env`/dotenv/shell/template, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, HashiCorp Vault, Kubernetes `secretKey`) and **dependency-to-capability correlation** (`DEP_UNDECLARED_CAPABILITY`, `DEP_ORPHANED_TOOL`), surfaced in terminal, HTML, SARIF, and the KYA manifest. First stable release (`Development Status :: 5 - Production/Stable`).
 - **v1.4-b** — unified **org-wide shared registry** (`SAFEAI_REGISTRY` env var or `~/.safeai/registry.db`), self-contained **HTML reports** for scan and registry output, docs aligned to the v1.4 capability model.

@@ -1,12 +1,13 @@
 # SafeAI — GitHub Release
 
-## v1.6.0
+## v1.7.0
 
 Static AI Capability & Risk Analyzer for AI agents and workflows. Detects
 prompt injection, data leakage, excessive agency, MCP misconfigurations, and
 credential/capability mismatches — entirely offline and static. This release
-adds the **Security Scorecard**, the **Community Scan** programme (private
-pilot), and a hardened **GitHub Action**.
+completes CE 1.4 and CE 1.6 with **IDE-scoped MCP discovery**, **named
+policy profiles**, **registry freshness indicators**, **suppression CI
+failure**, **component registry persistence**, and **component-change diffs**.
 
 ### Installation
 

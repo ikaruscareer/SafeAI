@@ -9,6 +9,8 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 from safeai.scorecard import (
     SCORECARD_SCHEMA_VERSION,
     SEVERITY_WEIGHTS,
@@ -758,3 +760,56 @@ def test_cli_scorecard_severity_weights():
     assert SEVERITY_WEIGHTS["medium"] == 0.75
     assert SEVERITY_WEIGHTS["low"] == 0.25
     assert SEVERITY_WEIGHTS["info"] == 0.0
+
+
+# --- Schema validation tests ---
+
+SCHEMA_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "safeai", "scorecard-schema.json"
+)
+
+
+def _load_schema():
+    with open(SCHEMA_PATH, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def test_scorecard_output_validates_against_schema():
+    """build_scorecard output conforms to the published JSON schema."""
+    import jsonschema
+
+    findings = [_base_finding(severity="high")]
+    report = _base_report(findings)
+    scorecard = build_scorecard(report, _base_scan_meta(), _base_policy(), scan_args=_base_args())
+    schema = _load_schema()
+    jsonschema.validate(scorecard, schema)
+
+
+def test_scorecard_schema_rejects_unknown_status():
+    """Schema rejects an invalid status value."""
+    import jsonschema
+
+    schema = _load_schema()
+    bad = {
+        "safeai_security_scorecard": {
+            "schema_version": 1,
+            "summary": {"status": "INVALID", "score": 8.0},
+        }
+    }
+    with pytest.raises(jsonschema.ValidationError, match="INVALID"):
+        jsonschema.validate(bad, schema)
+
+
+def test_scorecard_schema_rejects_missing_tool():
+    """Schema rejects a scorecard missing the required tool object."""
+    import jsonschema
+
+    schema = _load_schema()
+    bad = {
+        "safeai_security_scorecard": {
+            "schema_version": 1,
+            "summary": {"status": "pass", "score": 10.0},
+        }
+    }
+    with pytest.raises(jsonschema.ValidationError, match="tool"):
+        jsonschema.validate(bad, schema)

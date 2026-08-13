@@ -1,252 +1,174 @@
 name: SafeAI Community Scan
 
-# All third-party actions are pinned to full commit SHAs (see comments).
-# Rotate the SHAs when updating the action versions. The SafeAI action is
-# uses the checked-out SafeAI action, while the triggering commit is recorded
-# in the provenance manifest.
+# Private-pilot workflow. Do not add a schedule until the pilot gates in
+# community-scans/private-pilot.md have been reviewed and approved.
 
 on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Target ID to scan, or "all"'
+        description: Target ID or all
         required: false
-        default: 'all'
+        default: all
       ref:
-        description: 'Optional target ref, tag, or commit SHA'
+        description: Optional branch, tag, or commit SHA override
         required: false
         default: ''
-      publish_mode:
-        description: 'Report mode'
+      mode:
+        description: Scan publication mode
         required: true
         type: choice
         options:
           - private
           - review
         default: private
-  schedule:
-    - cron: '0 3 * * 6'
-
-# Prevent duplicate scans when a cron and manual dispatch overlap.
-# ``cancel-in-progress: false`` avoids leaving partial artifacts from a
-# mid-flight scan.
-concurrency:
-  group: community-scan-${{ github.event.inputs.target || 'scheduled' }}
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: safeai-community-private-pilot-${{ inputs.target || 'all' }}
+  cancel-in-progress: false
+
 jobs:
-  resolve-targets:
-    name: Resolve scan targets
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-    steps:
-      - name: Checkout SafeAI
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Compute target matrix
-        id: matrix
-        env:
-          DISPATCH_TARGET: ${{ github.event.inputs.target }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          ALL=("n8n" "langchain" "crewai" "llamaindex" "langgraph")
-          SELECTED="${DISPATCH_TARGET:-}"
-          if [[ -z "${SELECTED}" || "${SELECTED}" == "all" ]]; then
-            OUT=$(printf '%s\n' "${ALL[@]}" | jq -R . | jq -cs .)
-          else
-            case "${SELECTED}" in
-              n8n|langchain|crewai|llamaindex|langgraph) ;;
-              *) echo "::error::unknown target: ${SELECTED}" >&2; exit 2 ;;
-            esac
-            OUT=$(jq -cn --arg t "${SELECTED}" '[$t]')
-          fi
-          echo "matrix=${OUT}" >> "$GITHUB_OUTPUT"
-
   scan:
     name: Scan ${{ matrix.target }}
-    needs: resolve-targets
+    if: inputs.target == 'all' || inputs.target == matrix.target
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target: ${{ fromJson(needs.resolve-targets.outputs.matrix) }}
-    env:
-      MATRIX_TARGET: ${{ matrix.target }}
-      SAFEAI_ACTION_COMMIT: ${{ github.sha }}
     timeout-minutes: 30
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - n8n
+          - langchain
+          - llamaindex
+          - crewai
+          - langgraph
+    env:
+      MATRIX_TARGET: ${{ matrix.target }}
+      SAFEAI_ACTION_REF: ikaruscareer/SafeAI@v1.6
+      SAFEAI_ACTION_COMMIT: fef9781e3a68ba591448aa18e9d2f299b3869589
+      SCAN_MODE: ${{ inputs.mode || 'private' }}
     steps:
-      - name: Checkout SafeAI
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - name: Check out SafeAI workflow repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
 
-      # The token is only explicitly forwarded to the metadata step; however,
-      # GITHUB_TOKEN is automatically present in every step's environment.
-      # Because this workflow only requests ``contents: read`` (no write
-      # permissions), the blast radius of an accidental leak is bounded.
-      - name: Resolve target metadata
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: '3.12'
+
+      - name: Resolve target metadata and commit
         id: meta
         env:
           MATRIX_TARGET: ${{ matrix.target }}
-          REQUESTED_REF: ${{ github.event.inputs.ref }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
+          REQUESTED_REF: ${{ inputs.ref }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           python -m pip install --require-hashes -r community-scans/requirements.txt
           META=$(python community-scans/scripts/resolve_meta.py)
-          echo "${META}"
-          REPO=$(python -c "import json,sys; print(json.load(sys.stdin)['repository'])" <<<"${META}")
-          REF=$(python -c "import json,sys; print(json.load(sys.stdin)['resolved_ref'])" <<<"${META}")
-          REQ=$(python -c "import json,sys; print(json.load(sys.stdin)['requested_ref'])" <<<"${META}")
-          POL=$(python -c "import json,sys; print(json.load(sys.stdin).get('security_policy_url',''))" <<<"${META}")
-          echo "repository=${REPO}" >> "$GITHUB_OUTPUT"
-          echo "ref=${REF}" >> "$GITHUB_OUTPUT"
-          echo "requested_ref=${REQ}" >> "$GITHUB_OUTPUT"
-          echo "security_policy_url=${POL}" >> "$GITHUB_OUTPUT"
+          echo "$META"
+          python -c 'import json,sys; d=json.load(sys.stdin); print("repository="+d["repository"]); print("requested_ref="+d["requested_ref"]); print("resolved_sha="+d["resolved_commit_sha"]); print("security_policy_url="+d.get("security_policy_url", ""))' <<< "$META" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout target (read-only, pinned SHA)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - name: Check out target at resolved commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: ${{ steps.meta.outputs.repository }}
-          ref: ${{ steps.meta.outputs.ref }}
-          path: target-src
+          ref: ${{ steps.meta.outputs.resolved_sha }}
+          path: target
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
-        with:
-          python-version: '3.12'
-
-      - name: Run SafeAI
+      - name: Run released SafeAI Action
         id: safeai
         continue-on-error: true
-        uses: ./
+        uses: ikaruscareer/SafeAI@fef9781e3a68ba591448aa18e9d2f299b3869589
         with:
-          path: target-src
+          path: target
           fail-on: critical
-          sarif: reports/raw/${{ env.MATRIX_TARGET }}.sarif
-          scorecard: reports/raw/${{ env.MATRIX_TARGET }}.md
-          scorecard-json: reports/raw/${{ env.MATRIX_TARGET }}.json
-          scorecard-summary: "true"
-          no-registry: true
+          sarif: reports/raw/${{ matrix.target }}.sarif
+          scorecard: reports/raw/${{ matrix.target }}-scorecard.md
+          scorecard-json: reports/raw/${{ matrix.target }}-scorecard.json
+          scorecard-summary: 'true'
+          no-registry: 'true'
+          extra-args: '["--json", "reports/raw/${{ matrix.target }}.json", "--html", "reports/raw/${{ matrix.target }}.html"]'
 
-      - name: Process and package reports
-        id: package
+      - name: Build provenance manifest and sanitised reports
         if: always()
         env:
-          SAFEAI_VERSION: ${{ steps.safeai.outputs.safeai-version || 'unknown' }}
+          SAFEAI_VERSION: ${{ steps.safeai.outputs.safeai-version || '1.6.0' }}
+          TARGET_REPOSITORY: ${{ steps.meta.outputs.repository }}
+          REQUESTED_REF: ${{ steps.meta.outputs.requested_ref }}
+          RESOLVED_SHA: ${{ steps.meta.outputs.resolved_sha }}
           SECURITY_POLICY_URL: ${{ steps.meta.outputs.security_policy_url }}
-        shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --require-hashes -r community-scans/requirements.txt
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          mkdir -p reports/raw reports/manifests reports/public reports/private
           python community-scans/scripts/build_scan_manifest.py \
-            --target-id "${MATRIX_TARGET}" \
-            --repository "${{ steps.meta.outputs.repository }}" \
-            --upstream-url "https://github.com/${{ steps.meta.outputs.repository }}" \
-            --requested-ref "${{ steps.meta.outputs.requested_ref }}" \
-            --resolved-commit-sha "${{ steps.meta.outputs.ref }}" \
-            --safeai-version "${SAFEAI_VERSION}" \
-            --safeai-action-ref "local:./@${SAFEAI_ACTION_COMMIT}" \
-            --safeai-action-commit "${SAFEAI_ACTION_COMMIT}" \
-            --scan-timestamp-utc "${TIMESTAMP}" \
+            --target-id "$MATRIX_TARGET" \
+            --repository "$TARGET_REPOSITORY" \
+            --upstream-url "https://github.com/$TARGET_REPOSITORY" \
+            --requested-ref "$REQUESTED_REF" \
+            --resolved-commit-sha "$RESOLVED_SHA" \
+            --safeai-version "$SAFEAI_VERSION" \
+            --safeai-action-ref "$SAFEAI_ACTION_REF" \
+            --safeai-action-commit "$SAFEAI_ACTION_COMMIT" \
+            --scan-timestamp-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --fail-on critical \
+            --no-registry \
             --github-run-id "${{ github.run_id }}" \
-            --disclosure-status "${{ github.event.inputs.publish_mode || 'private' }}" \
-            --security-policy-url "${SECURITY_POLICY_URL}" \
-            --out "reports/manifests/${MATRIX_TARGET}.json"
-          RAW_JSON="reports/raw/${MATRIX_TARGET}.json"
-          if [ -f "$RAW_JSON" ]; then
+            --disclosure-status "$SCAN_MODE" \
+            --security-policy-url "$SECURITY_POLICY_URL" \
+            --out "reports/manifests/$MATRIX_TARGET.json"
+          if test -f "reports/raw/$MATRIX_TARGET.json"; then
             python community-scans/scripts/sanitise_report.py \
-              --report "$RAW_JSON" \
-              --out "reports/public/${MATRIX_TARGET}-summary.json"
+              --report "reports/raw/$MATRIX_TARGET.json" \
+              --out "reports/public/$MATRIX_TARGET-summary.json"
             python community-scans/scripts/render_reddit_draft.py \
-              --summary "reports/public/${MATRIX_TARGET}-summary.json" \
-              --manifest "reports/manifests/${MATRIX_TARGET}.json" \
+              --summary "reports/public/$MATRIX_TARGET-summary.json" \
+              --manifest "reports/manifests/$MATRIX_TARGET.json" \
               --template-dir community-scans/templates \
-              --reddit-out "reports/public/${MATRIX_TARGET}-reddit-draft.md" \
-              --public-out "reports/public/${MATRIX_TARGET}-public-summary.md" \
-              --maintainer-out "reports/private/${MATRIX_TARGET}-maintainer-notification.md"
-          else
-            echo "::warning::No SafeAI JSON report produced for ${MATRIX_TARGET}; publishing failure manifest only."
-            python - <<'PY'
-            import json, os
-            p = os.path.join("reports", "public", os.environ["MATRIX_TARGET"] + "-summary.json")
-            os.makedirs(os.path.dirname(p), exist_ok=True)
-            json.dump({"status": "SCAN_FAILED", "findings": [], "finding_counts": {},
-                       "safeai_score": None, "sensitive_count": 0}, open(p, "w"), indent=2)
-            PY
+              --reddit-out "reports/public/$MATRIX_TARGET-reddit-draft.md" \
+              --public-out "reports/public/$MATRIX_TARGET-summary.md" \
+              --maintainer-out "reports/private/$MATRIX_TARGET-maintainer-notification.md"
           fi
-      # NOTE: GitHub Actions artifact permissions are per-run, not per-artifact.
-      # Any collaborator who can view this workflow run can download both the
-      # "private" and "public" artifact sets.  The naming convention alone does
-      # not enforce access control.  If true isolation is required, use a
-      # separate mechanism (e.g. encrypted upload to external storage).
-      - name: Upload private artifacts
-        if: always()
-        uses: actions/upload-artifact@65462800fd760344b1a7b438efe1201a664fcaab  # v4.3.1
-        with:
-          name: safeai-community-${{ env.MATRIX_TARGET }}
-          path: |
-            reports/raw/${{ env.MATRIX_TARGET }}.sarif
-            reports/raw/${{ env.MATRIX_TARGET }}.json
-            reports/raw/${{ env.MATRIX_TARGET }}.md
-            reports/manifests/${{ env.MATRIX_TARGET }}.json
-            reports/private/${{ env.MATRIX_TARGET }}-maintainer-notification.md
-          retention-days: 30
-          if-no-files-found: warn
 
       - name: Upload public review artifacts
         if: always()
-        uses: actions/upload-artifact@65462800fd760344b1a7b438efe1201a664fcaab  # v4.3.1
+        uses: actions/upload-artifact@65462800fd760344b1a7b438efe1201a664fcaab
         with:
-          name: safeai-community-${{ env.MATRIX_TARGET }}-public
+          name: safeai-community-${{ matrix.target }}-public
           path: |
-            reports/public/${{ env.MATRIX_TARGET }}-reddit-draft.md
-            reports/public/${{ env.MATRIX_TARGET }}-public-summary.md
-            reports/public/${{ env.MATRIX_TARGET }}-summary.json
+            reports/manifests/${{ matrix.target }}.json
+            reports/public/
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Propagate scan failure
+      - name: Upload private raw artifacts
         if: always()
-        env:
-          OUTCOME: ${{ steps.safeai.outcome }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "${OUTCOME}" != "success" ]; then
-            echo "::error::SafeAI scan failed or errored for ${MATRIX_TARGET} (outcome=${OUTCOME})"
-            exit 1
-          fi
+        uses: actions/upload-artifact@65462800fd760344b1a7b438efe1201a664fcaab
+        with:
+          name: safeai-community-${{ matrix.target }}-private
+          path: |
+            reports/raw/
+            reports/private/
+          retention-days: 30
+          if-no-files-found: warn
 
-  summarise:
-    name: Summarise community scans
-    needs: scan
-    runs-on: ubuntu-latest
-    if: always()
-    permissions:
-      contents: read
-    steps:
-      - name: Report completion
-        shell: bash
+      - name: Remove target checkout
+        if: always()
+        run: rm -rf target
+
+      - name: Propagate SafeAI result after preserving reports
+        if: always()
         run: |
-          echo "Community scan matrix completed. Individual artifacts are uploaded per-target."
-          echo "Scan job result: ${{ needs.scan.result }}"
-          echo "No public report was published. Reddit drafts are available for human review only."
-          if [ "${{ needs.scan.result }}" != "success" ]; then
-            echo "::error::One or more target scans failed. Review the uploaded artifacts."
+          if [ "${{ steps.safeai.outcome }}" != success ]; then
+            echo "SafeAI returned ${{ steps.safeai.outcome }} for $MATRIX_TARGET"
             exit 1
           fi

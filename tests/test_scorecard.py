@@ -813,3 +813,38 @@ def test_scorecard_schema_rejects_missing_tool():
     }
     with pytest.raises(jsonschema.ValidationError, match="tool"):
         jsonschema.validate(bad, schema)
+
+
+# --- Robustness regression tests ---
+
+
+def test_compute_score_non_numeric_line():
+    """A non-numeric line value must not crash scoring."""
+    findings = [_base_finding(severity="high", line="not-a-number")]
+    assert compute_score(findings) == 8.0
+
+
+def test_build_scorecard_unknown_fail_on_fails_closed():
+    """An unrecognised fail-on threshold blocks any active finding."""
+    findings = [_base_finding(severity="medium")]
+    report = _base_report(findings)
+    scorecard = build_scorecard(
+        report, _base_scan_meta(), _base_policy(), scan_args={"fail_on": "bogus"}
+    )
+    assert scorecard["safeai_security_scorecard"]["summary"]["status"] == "fail"
+
+
+def test_scorecard_schema_catches_policy_type_drift():
+    """Schema rejects a policy value that build_scorecard never emits."""
+    import jsonschema
+
+    schema = _load_schema()
+    bad = {
+        "safeai_security_scorecard": {
+            "schema_version": 1,
+            "summary": {"status": "pass", "score": 10.0},
+            "policy": {"outcome": "deny"},
+        }
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(bad, schema)

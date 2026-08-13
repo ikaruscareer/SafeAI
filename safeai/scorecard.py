@@ -207,7 +207,7 @@ def compute_score(findings: list[dict]) -> float:
         key = (
             finding.get("rule_id", ""),
             finding.get("file", ""),
-            int(finding.get("line") or 0),
+            _safe_line(finding.get("line")),
         )
         groups.setdefault(key, []).append(finding)
 
@@ -337,10 +337,16 @@ def build_scorecard(report: dict, scan_meta: dict, policy_decision: dict,
     overall_score = compute_score(active)
     policy_outcome = policy_decision.get("outcome", "warn")
     fail_on = scan_args.get("fail_on", "critical")
-    threshold_index = SEVERITIES.index(fail_on)
+    # An unrecognised fail-on threshold is a configuration error; we must not
+    # crash, so fall back to the strictest posture (block on any active
+    # finding) rather than silently failing open.
+    if fail_on not in SEVERITIES:
+        threshold_index = 0
+    else:
+        threshold_index = _severity_index(fail_on)
     blocking = [
         f for f in active
-        if SEVERITIES.index(f.get("severity", "medium")) >= threshold_index
+        if _severity_index(f.get("severity", "medium")) >= threshold_index
     ]
     if policy_outcome == "deny":
         status = "fail"

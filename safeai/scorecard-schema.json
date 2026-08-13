@@ -87,18 +87,24 @@
         },
         "coverage": {
           "type": "object",
+          "required": ["analyzers_run", "analyzers_skipped", "limitations"],
           "properties": {
             "analyzers_run": { "type": "array", "items": { "type": "string" } },
             "analyzers_skipped": { "type": "array", "items": { "type": "string" } },
             "limitations": { "type": "array", "items": { "type": "string" } }
-          }
+          },
+          "additionalProperties": false
         },
         "policy": {
           "type": "object",
+          "required": ["fail_on"],
           "properties": {
-            "outcome": { "type": "string" },
-            "fail_on": { "type": "string" }
-          }
+            "fail_on": { "type": "string" },
+            "fail_on_new": { "type": "boolean" },
+            "fail_on_escalation": { "type": ["string", "null"] },
+            "scorecard_fail_under": { "type": ["number", "null"] }
+          },
+          "additionalProperties": false
         }
       }
     }
@@ -106,17 +112,18 @@
   "$defs": {
     "finding": {
       "type": "object",
-      "required": ["rule_id", "severity"],
+      "required": ["rule_id", "severity", "file", "line", "fingerprint", "status"],
       "properties": {
         "rule_id": { "type": "string" },
         "severity": { "type": "string" },
-        "message": { "type": "string" },
-        "file": { "type": "string" },
-        "line": { "type": "integer" },
-        "remediation": { "type": "string" },
-        "fingerprint": { "type": "string" },
-        "status": { "type": "string" }
-      }
+        "message": { "type": ["string", "null"] },
+        "file": { "type": ["string", "null"] },
+        "line": { "type": "integer", "minimum": 0 },
+        "remediation": { "type": ["string", "null"] },
+        "fingerprint": { "type": ["string", "null"] },
+        "status": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
     }
   }
 }

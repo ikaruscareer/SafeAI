@@ -75,7 +75,7 @@ def compute_freshness(last_seen):
     if not last_seen:
         return {"label": "never", "age_days": None, "color": "#6b7280"}
     try:
-        last = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+        last = datetime.fromisoformat(last_seen)
     except (ValueError, AttributeError):
         return {"label": "unknown", "age_days": None, "color": "#6b7280"}
     now = datetime.now(UTC)

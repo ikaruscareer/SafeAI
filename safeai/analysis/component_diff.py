@@ -102,10 +102,7 @@ def _has_changed(prev, curr):
 
     prev_data = json.dumps(prev.get("data") or {}, sort_keys=True, default=str)
     curr_data = json.dumps(curr.get("data") or {}, sort_keys=True, default=str)
-    if prev_data != curr_data:
-        return True
-
-    return False
+    return prev_data != curr_data
 
 
 def _find_affected_agents(registry_conn, changed, added, removed):

@@ -1,0 +1,39 @@
+name: SafeAI Fuzz Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'community-scans/scripts/**'
+      - 'community-scans/*.json'
+      - 'community-scans/*.yml'
+      - 'fuzz/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: P0 parser and sanitiser fuzzing
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out SafeAI
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: '3.12'
+      - name: Install fuzz dependencies
+        run: python -m pip install -r fuzz/requirements.txt
+      - name: Fuzz public report sanitisation
+        run: |
+          timeout 60s python fuzz/fuzz_sanitise_report.py || test "$?" -eq 124
+      - name: Fuzz report schema parsing
+        run: |
+          timeout 60s python fuzz/fuzz_report_schema.py || test "$?" -eq 124
+      - name: Fuzz target manifest parsing
+        run: |
+          timeout 60s python fuzz/fuzz_targets_manifest.py || test "$?" -eq 124

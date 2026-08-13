@@ -1,5 +1,69 @@
 # SafeAI — Release Notes
 
+## v1.6.0 (2026-08-13)
+
+**SafeAI 1.6.0 adds a Security Scorecard, a Community Scan programme, and a
+hardened GitHub Action.** The scanner stays fully offline, static, and
+local-first — nothing in this release executes agent code or calls an LLM.
+
+### Headline: the SafeAI Security Scorecard
+
+Every scan can now produce a **Security Scorecard** — a single deterministic
+0–10 score with per-category breakdowns and a `pass`/`warn`/`fail` outcome,
+designed to be the first thing a reviewer reads on a PR.
+
+- **Transparent scoring**: severity weights (`critical=4.0 … info=0.0`),
+  diminishing returns for repeated findings, and fingerprint deduplication are
+  all documented in `safeai/scorecard.py`. Identical findings always produce an
+  identical score.
+- **Suppressed findings never move the score** — waivers are respected without
+  silently hiding findings.
+- **Five new flags**: `--scorecard` / `--scorecard-md`, `--scorecard-json`,
+  `--scorecard-summary` (GitHub Actions step summary), and
+  `--scorecard-fail-under N` to gate CI on a minimum score.
+- **Machine-readable**: `safeai-scorecard.json` conforms to
+  `safeai/scorecard-schema.json` (`schema_version: 1`), and every rendering
+  Markdown-escapes and secret-redacts untrusted finding text.
+
+```bash
+safeai scan . --scorecard scorecard.md --scorecard-json scorecard.json \
+  --scorecard-fail-under 7.0
+```
+
+### Community Scan programme (private pilot)
+
+SafeAI can now be pointed at **public third-party agent frameworks** under a
+governed, responsible-disclosure process (`community-scans/`): a target
+manifest, a documented methodology and disclosure policy, provenance manifests,
+and a sanitiser that turns a private report into a public-safe summary.
+Everything is **private by default**; nothing is published without human
+review. CI runs with `contents: read`, SHA-pinned actions, a concurrency group,
+and a 30-minute timeout.
+
+### GitHub Action & packaging hardening
+
+- The package version is now read dynamically from `safeai.__version__`, so
+  source and metadata cannot drift.
+- `scripts/safeai-action.py` supports a hermetic install via
+  `SAFEAI_ACTION_FIND_LINKS`, rejects control characters in path inputs, and
+  strips newlines from `$GITHUB_OUTPUT` values to block output injection.
+- `safeai --version` / `-V` prints a stable machine-readable version line
+  (`safeai/version.py`), and a new `DEVELOPER_GUIDE.md` covers local and
+  Actions usage.
+
+### Verification Snapshot
+
+- 459 tests collected; scorecard, community-scan, and action suites green.
+- Lint passing (`ruff check safeai/ tests/ scripts/ community-scans/`).
+- Scorecard output validated against `safeai/scorecard-schema.json`.
+
+### Upgrade Notes
+
+- No breaking changes to existing CLI flags, exit codes, or report shapes; all
+  scorecard flags are opt-in.
+- The informational scorecard is additive — existing SARIF/JSON/HTML outputs
+  are unchanged unless a `--scorecard*` flag is supplied.
+
 ## v1.5.0 (2026-08-11)
 
 First **stable** release (`5 - Production/Stable`). In addition to the CE 1.5

@@ -5,7 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.0] - unreleased
+## [1.6.0] - 2026-08-13
+
+### Added — SafeAI Security Scorecard
+
+- **Security Scorecard** (`safeai/scorecard.py`): a deterministic, auditable
+  0–10 report that summarises a scan into an overall score, per-category
+  scores, and a `pass`/`warn`/`fail` outcome. It is a Scorecard-style report,
+  **not** an OpenSSF Scorecard report, and says so in every rendering.
+- **Scoring model** (documented in-module): severity weights
+  `critical=4.0, high=2.0, medium=0.75, low=0.25, info=0.0`, diminishing
+  returns for repeated findings at the same `(rule_id, file, line)`, and
+  fingerprint deduplication. Suppressed findings are excluded from the score
+  and from gating.
+- **Five new scan flags**: `--scorecard`/`--scorecard-md` (Markdown),
+  `--scorecard-json` (JSON), `--scorecard-summary` (append to the GitHub
+  Actions step summary via `$GITHUB_STEP_SUMMARY`), and
+  `--scorecard-fail-under N` (fail the scan when the score is below `N`,
+  validated to `[0, 10]`).
+- **Machine-readable contract** (`safeai/scorecard-schema.json`,
+  `schema_version: 1`) with `additionalProperties: false` on the `policy`,
+  `coverage`, and finding objects so producer/consumer drift fails validation.
+- **Injection-safe rendering**: all untrusted finding text is Markdown-escaped
+  and secret-redacted before it reaches the report or the job summary.
+- Robustness: malformed finding input (non-numeric `line`, unknown severity,
+  unrecognised `--fail-on`) never crashes the scorecard; an unknown fail-on
+  threshold fails closed. ~55 scorecard tests in `tests/test_scorecard.py`.
+
+### Added — Community Scan programme (private pilot)
+
+- **`community-scans/`**: a governed workflow for scanning public third-party
+  agent frameworks and disclosing results responsibly. Includes the target
+  manifest (`targets.yml` + `targets-schema.json`), `methodology.md`,
+  `disclosure-policy.md`, `private-pilot.md`, and a pinned-dependency
+  `requirements.txt`.
+- **Pipeline scripts** (`community-scans/scripts/`): `validate_targets.py`
+  (read-only GitHub API validation, path-traversal-safe refs), `resolve_meta.py`
+  (pin a target to a 40-char commit SHA), `build_scan_manifest.py` (provenance
+  manifest), `sanitise_report.py` (redact a private report into a public-safe
+  summary), and `render_reddit_draft.py` (human-review disclosure drafts).
+- **Workflows**: `.github/workflows/community-scan.yml` (SHA-pinned actions,
+  `contents: read` only, concurrency group, 30-minute timeout, private/public
+  artifact split) and `.github/workflows/validate-community-scan.yml`.
+- Nothing is published automatically; every report is private by default and
+  requires human review before any external disclosure.
+
+### Added — CLI version support & developer guide
+
+- **`safeai/version.py`**: single source of truth for the version string
+  (`SAFEAI_VERSION`) plus `version_requested()`/`print_version()` helpers.
+  `safeai --version` / `-V` prints a stable machine-readable line.
+- **`DEVELOPER_GUIDE.md`**: local development and GitHub Actions usage guide,
+  including the Security Scorecard flags.
+
+### Changed — GitHub Action hardening
+
+- **Version source of truth**: `pyproject.toml` reads the version dynamically
+  from `safeai.__version__` (`setuptools` `attr:`), so the package metadata and
+  the source can no longer drift.
+- **Hermetic install path**: `scripts/safeai-action.py` honours
+  `SAFEAI_ACTION_FIND_LINKS` so CI can install a freshly built wheel instead of
+  a published PyPI version; dependencies still resolve from PyPI.
+- **Output hardening**: `set_output()` strips `\n`/`\r` to prevent
+  `$GITHUB_OUTPUT` key injection; path inputs are rejected when they contain
+  control characters; `get_safeai_version()` failures surface as `::warning::`.
+
+### Notes
+
+- Version bumped to `1.6.0` (tag `v1.6`). Full suite: 459 tests collected.
+
+## [1.5.0] - 2026-08-11
 
 ### Added — GitHub Actions Marketplace action
 

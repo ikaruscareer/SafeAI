@@ -61,8 +61,10 @@ SafeAI sits before runtime guardrails and red-teaming tools in the security life
 | **Baseline & Escalation Gating** | `--fail-on-new` for new/regressed findings, `--fail-on-escalation` for authority changes, `--pr-comment` PR summaries |
 | **Policy-as-Code & Suppressions** | `allow`/`warn`/`require_review`/`deny` policy with selectors; required-reason suppressions |
 | **Assurance Boundary** | Every scan states exactly what it did and could not verify — never a fixed disclaimer |
+| **Security Scorecard** | Deterministic 0–10 score with per-category breakdown and `pass`/`warn`/`fail` outcome; `--scorecard`, `--scorecard-json`, `--scorecard-summary`, and `--scorecard-fail-under` to gate CI on a minimum score |
 | **CI/CD Integration** | SARIF 2.1.0 output, exit codes, GitHub Actions **Marketplace action** and workflow included |
-| **Multi-Format Reports** | Terminal, JSON, SARIF 2.1.0, HTML, canonical KYA manifest, PR comment |
+| **Community Scan** | Governed private-pilot workflow for scanning public third-party agent frameworks with responsible disclosure (`community-scans/`) — private by default, human-reviewed before any publication |
+| **Multi-Format Reports** | Terminal, JSON, SARIF 2.1.0, HTML, canonical KYA manifest, PR comment, Security Scorecard |
 | **Cross-File Analysis** | Import graph, symbol resolution, and project graph |
 | **Confidence-Arbitrated Parsing** | Multiple parsers per file, merged with provenance |
 
@@ -285,6 +287,10 @@ python -m safeai registry <subcommand> [options]
 | `--pr-comment` | — | Write a reviewer-facing Markdown summary of capability escalations to this path (never posted anywhere) |
 | `--pr-comment-stdout` | off | Print the PR comment Markdown to stdout |
 | `--fail-on-escalation` | — | Fail if a capability escalation at or above `critical`, `high`, or `medium` is detected (requires `--baseline`) |
+| `--scorecard` / `--scorecard-md` | — | Write the SafeAI Security Scorecard as Markdown to this path |
+| `--scorecard-json` | — | Write the SafeAI Security Scorecard as JSON (conforms to `safeai/scorecard-schema.json`) |
+| `--scorecard-summary` | — | Append the Security Scorecard to the GitHub Actions step summary (`$GITHUB_STEP_SUMMARY`) |
+| `--scorecard-fail-under` | — | Fail the scan if the Security Scorecard score is below this value (`0`–`10`) |
 | `--rules` | built-in | Custom rules directory |
 | `--fail-on` | `critical` | Exit code threshold: `critical`, `high`, `medium` |
 | `--verbose` | — | Enable verbose output |

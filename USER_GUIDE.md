@@ -340,6 +340,30 @@ Self-contained HTML report with:
 
 Responsive design, print-friendly.
 
+### Security Scorecard
+
+A deterministic 0–10 summary of a scan, intended to be the first thing a
+reviewer reads. It reports an overall score, per-category scores, and a
+`pass`/`warn`/`fail` outcome. It is a SafeAI report, not an OpenSSF Scorecard
+report.
+
+```bash
+# Markdown + JSON scorecard
+safeai scan . --scorecard scorecard.md --scorecard-json scorecard.json
+
+# Gate CI on a minimum score (0-10)
+safeai scan . --scorecard-fail-under 7.0
+
+# In GitHub Actions, also append to the step summary
+safeai scan . --scorecard-summary
+```
+
+Scoring is transparent and reproducible: severity weights
+(`critical=4.0, high=2.0, medium=0.75, low=0.25, info=0.0`), diminishing
+returns for repeated findings at the same location, and fingerprint
+deduplication. Suppressed findings do not affect the score. The JSON output
+conforms to `safeai/scorecard-schema.json`.
+
 ---
 
 ## KYA Registry

@@ -1,57 +1,74 @@
 # SafeAI — GitHub Release
 
-## v1.0.0-beta
+## v1.6.0
 
-Static AI Capability & Risk Analyzer for detecting prompt injection, data leakage, excessive agency, and MCP misconfigurations in AI agent codebases.
+Static AI Capability & Risk Analyzer for AI agents and workflows. Detects
+prompt injection, data leakage, excessive agency, MCP misconfigurations, and
+credential/capability mismatches — entirely offline and static. This release
+adds the **Security Scorecard**, the **Community Scan** programme (private
+pilot), and a hardened **GitHub Action**.
 
 ### Installation
 
 ```bash
-pip install git+https://github.com/ikaruscareer/SafeAI.git
+pip install SafeAI-Static-Analyzer
 ```
 
 ### Quick Start
 
 ```bash
 safeai scan /path/to/project
-safeai scan /path/to/project --json results.json
-safeai scan /path/to/project --html report.html
+safeai scan /path/to/project --json results.json --html report.html
+safeai scan /path/to/project --scorecard scorecard.md --scorecard-fail-under 7.0
 ```
+
+### GitHub Action
+
+```yaml
+- uses: ikaruscareer/SafeAI@v1
+  with:
+    path: .
+    fail-on: critical
+```
+
+### What's New in 1.6.0
+
+- **Security Scorecard** — deterministic 0–10 score with per-category
+  breakdown and `pass`/`warn`/`fail` outcome. Flags: `--scorecard`,
+  `--scorecard-json`, `--scorecard-summary`, `--scorecard-fail-under`.
+- **Community Scan (private pilot)** — governed workflow for scanning public
+  third-party agent frameworks with responsible disclosure; private by default.
+- **CLI version support** — `safeai --version` / `-V`.
+- **Action hardening** — dynamic version source of truth, hermetic installs,
+  output-injection protection.
 
 ### What It Detects
 
 | Category | Examples |
 |----------|----------|
 | Prompt Injection | User input in prompts, missing delimiters, system prompt leaks |
-| Data Leakage | Hardcoded API keys, tokens, passwords |
+| Data Leakage | Hardcoded API keys, tokens, passwords (masked in all outputs) |
 | Excessive Agency | Shell exec, filesystem access, HTTP, database, code exec, autonomous loops |
 | MCP Misconfig | Missing auth, weak permissions, exposed endpoints, hardcoded secrets |
+| Capability Escalation | Per-tool authority diffs between scans (14 `ESC_*` rules) |
+| Dependency Correlation | Undeclared capabilities, orphaned tools (`DEP_*`) |
 | Supply Chain | AI framework dependency detection |
 
 ### Supported Frameworks
 
-- LangGraph
-- CrewAI
-- LangChain
-- Semantic Kernel
-- OpenAI Agents
-- Microsoft Agent
-- Azure AI Foundry
-- Bedrock Agent
-- Claude Code (early preview)
-- Google ADK (early preview)
-- Mastra (early preview)
-- Haystack (early preview)
-- LlamaIndex (early preview)
-- Dify (early preview)
-- n8n (early preview)
+LangGraph, CrewAI, LangChain, Semantic Kernel, OpenAI Agents, Microsoft Agent,
+Azure AI Foundry, Bedrock Agent, Claude Code, Google ADK, Mastra, Haystack,
+LlamaIndex, Dify, n8n (15 adapters).
 
 ### Output Formats
 
 - Terminal (human-readable)
 - JSON (machine-readable)
 - SARIF 2.1.0 (GitHub Advanced Security)
-- HTML (interactive report)
+- HTML (self-contained interactive report)
+- KYA manifest (`safeai-manifest.json`)
+- PR comment (reviewer-facing escalation summary)
+- Security Scorecard (Markdown / JSON)
 
 ### Links
 
@@ -62,5 +79,5 @@ safeai scan /path/to/project --html report.html
 
 ### Assets
 
-- `safeai-1.0.0b0-py3-none-any.whl`
-- `safeai-1.0.0b0.tar.gz`
+- `safeai_static_analyzer-1.6.0-py3-none-any.whl`
+- `safeai_static_analyzer-1.6.0.tar.gz`

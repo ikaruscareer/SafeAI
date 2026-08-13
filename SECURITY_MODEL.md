@@ -30,54 +30,34 @@ SafeAI is designed to detect sources of risk in AI agent codebases *before* runt
 
 ## Trust Score Model
 
-SafeAI computes a **deterministic trust score** (0–100) from scan findings.
-
-The score is **always reproducible** — given the same codebase and rules, the score is identical regardless of environment or execution order.
-
-### Score Formula
+SafeAI computes a **deterministic trust score** (0–100) from scan findings. The
+score is **always reproducible** — given the same codebase and rules, the score
+is identical regardless of environment or execution order.
 
 ```
 Category Score = clamp(100 - sum(weighted_contributions), 0, 100)
-Overall Score = average of all Category Scores
+Overall Score  = average of all Category Scores
 ```
 
-### Weighted Contribution per Finding
+Severity point values (`critical=25, high=15, medium=8, low=4, info=1`) are
+defined in `safeai/severity.py`; each finding's contribution is multiplied by
+its category weight (default `1.0`). The 7 risk categories are Capability,
+Governance, Safety, Identity, Integration, Autonomy, and Enterprise Readiness.
 
-| Severity | Base Points | Notes |
-|----------|-------------|-------|
-| critical | 25 | Multiplied by rule weight (0.5-1.5) |
-| high | 15 | Multiplied by category weight |
-| medium | 8 | Multiplied by category weight |
-| low | 4 | Multiplied by category weight |
-| info | 1 | Minimal impact |
+Each finding also carries a confidence label (`high|medium|low`) reflecting how
+it was detected (AST/import vs config vs regex). Confidence is reported for
+review; scoring weights are driven by severity and category.
 
-### Risk Categories (7)
-
-| Category | Default Weight | Example Threats |
-|----------|---------------|-----------------|
-| Safety | 1.0 | Prompt injection, delimiter issues, system leak |
-| Identity | 0.8 | Hardcoded secrets, credential exposure |
-| Autonomy | 1.0 | Autonomous agent capabilities |
-| Antipattern | 0.5 | Coding anti-patterns |
-| MCP | 1.0 | MCP misconfiguration |
-| Dependency | 0.7 | AI framework dependency risk indicators |
-| Capability | 0.6 | Dangerous capabilities |
-
-### Confidence System
-
-Each finding has a confidence level:
-
-| Confidence | Description | Weight |
-|------------|-------------|--------|
-| high | Verified via AST/import analysis | 1.0 |
-| medium | Detected via config or dependency analysis | 0.75 |
-| low | Detected via regex or heuristic | 0.5 |
-
-Findings below a configurable confidence threshold (default: `low`) are excluded from scoring but included in reports.
+> **Full scoring reference:** see [RISK_MODEL.md](RISK_MODEL.md) for the
+> complete Trust Score model and the separate 0–10 Security Scorecard, including
+> how to read the numbers safely.
 
 ---
 
-## Category Coverage
+## Detection Coverage by Threat Area
+
+These are detection groupings (not the 7 scoring categories — see
+[RISK_MODEL.md](RISK_MODEL.md)).
 
 ### Safety (Prompt Injection Prevention)
 - **PROMPT_INJECTION**: Direct user input interpolation into prompt strings
@@ -111,7 +91,7 @@ Findings below a configurable confidence threshold (default: `low`) are excluded
 
 ## Output Formats
 
-SafeAI supports four output formats:
+SafeAI supports these output formats:
 
 | Format | Use Case |
 |--------|----------|
@@ -119,12 +99,16 @@ SafeAI supports four output formats:
 | JSON | Machine parsing, integration with other tools |
 | SARIF 2.1.0 | Integration with GitHub Advanced Security and other SARIF-compatible tools |
 | HTML | Detailed interactive reports for team review |
+| KYA manifest | Canonical `safeai-manifest.json` evidence contract |
+| PR comment | Reviewer-facing capability-escalation summary (Markdown) |
+| Security Scorecard | 0–10 reviewer score (Markdown / JSON) |
 
 ### Output Security
 
-- **Secret masking** — credential values detected by the data leakage analyzer are masked in finding evidence (first four characters retained for identification, remainder replaced with `***MASKED***`) across all output formats: terminal, JSON, SARIF, and HTML.
+- **Secret masking** — credential values detected by the data leakage analyzer are masked in finding evidence (first four characters retained for identification, remainder replaced with `***MASKED***`) across all output formats.
 - **Relative paths** — file paths in findings are relativized to the scanned root, so reports do not expose the scanner host's filesystem layout and SARIF consumers (e.g. GitHub code scanning) can map results to repository files.
 - **HTML output** uses a self-contained file with no external dependencies.
+- **Scorecard injection safety** — untrusted finding text is Markdown-escaped and secret-redacted before it reaches the Scorecard or the GitHub Actions step summary.
 
 ---
 
@@ -135,4 +119,4 @@ SafeAI follows these security practices:
 1. **No code execution** — Scans source code without importing or executing it
 2. **No network access** — All analysis is local; no telemetry, no API calls
 3. **Deterministic** — Identical output for identical input
-4. **Minimal dependencies** — Only Python standard library + `yaml` + `packaging`
+4. **Minimal dependencies** — Python standard library + `PyYAML` for the core scanner (the community-scan pipeline pins its own additional dependencies separately)

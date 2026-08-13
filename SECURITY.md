@@ -17,7 +17,8 @@ You should receive a response within 72 hours. If the issue is confirmed, we wil
 
 | Version | Supported |
 |---------|-----------|
-| 1.0.0-beta | Yes |
+| 1.6.x | Yes |
+| < 1.6 | No |
 
 ## Security Model
 

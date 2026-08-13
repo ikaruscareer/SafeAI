@@ -1,31 +1,41 @@
 # SafeAI — Technical Architecture
 
-This document describes the technical architecture of the SafeAI Static AI Capability & Risk Analyzer.
+This document describes the technical architecture of the SafeAI Static AI
+Capability & Risk Analyzer. It reflects the v1.6 structure: the scan engine is
+split into an orchestrator and a post-scan KYA pipeline, the registry is a
+focused package, and the Security Scorecard is a first-class report.
 
 ---
 
 ## Overview
 
-SafeAI is a modular, plugin-based static analysis tool. It is designed as a pipeline of independent stages:
+SafeAI is a modular, plugin-based static analysis tool. It runs as a pipeline
+of independent stages, split into two halves:
+
+1. **Scan engine** (`engine/orchestrator.py`) — collect, parse, analyze, score.
+2. **KYA post-processing** (`cmd/postprocess.py`) — normalize, suppress, diff
+   against a baseline, evaluate policy, and persist evidence.
 
 ```
 Source Code
     │
     ▼
-Collect Files ───► Build Semantic Docs ───► Build Import Graph
-    │                                              │
-    ▼                                              ▼
-Framework Parser Registry ────► Multi-Parser Aggregation (per file)
-    │                                              │
-    ▼                                              ▼
-Capability Analyzer ──── Prompt Analyzer ──── Data Leakage Analyzer ──── MCP Analyzer
-    │                                              │
-    ▼                                              ▼
-Finding Deduplication ──── Trust Score Calculation
+prepare ──► load_sources ──► parse_frameworks ──► extract_components
+    │                                                      │
+    ▼                                                      ▼
+analyze (11 analyzers) ──────────────────────► assemble (score, tool surface,
+    │                                                      assurance boundary)
+    ▼
+ScanPostProcessor: normalize → suppress → baseline → policy → identity
+                   → manifest → registry → outputs → exit code
     │
     ▼
-Report Generation (Terminal / JSON / SARIF / HTML)
+Report Generation (Terminal / JSON / SARIF / HTML / PR comment / Scorecard)
 ```
+
+SafeAI never executes the scanned code, never imports it, and never makes a
+network call. Every stage is deterministic: identical input produces identical
+output.
 
 ---
 
@@ -33,57 +43,76 @@ Report Generation (Terminal / JSON / SARIF / HTML)
 
 ```
 safeai/
-├── cmd/                    # CLI entry point
-│   ├── cli.py             # scan + registry command groups
-│   └── registry_cli.py    # registry command handlers
-├── engine/                 # Scanner orchestration
-│   └── scan.py
-├── kya/                   # Know Your Agent (Release 1.3)
-│   ├── util.py            # hashing, timestamps, secret redaction
-│   ├── identity.py        # project/agent ID derivation
-│   ├── fingerprints.py    # deterministic finding fingerprints
-│   ├── enrich.py          # finding normalization, agent records
-│   ├── manifest.py        # canonical safeai-manifest.json (schema v1.0)
-│   ├── baseline.py        # baseline comparison (new/existing/resolved)
-│   ├── suppressions.py    # .safeai/suppressions.yml workflow
-│   ├── policy.py          # .safeai/policy.yml evaluator
-│   ├── registry.py        # SQLite registry (schema, migrations, queries)
-│   └── exporter.py        # registry inventory export
-├── analysis/              # Core analysis primitives
-│   ├── semantic.py        # AST document, symbol resolution
-│   ├── import_graph.py    # Project-wide import tracking
-│   ├── capabilities.py    # Capability model & helpers
-│   ├── aggregation.py     # Multi-parser merge & arbitration
-│   └── project_graph.py   # Cross-file entity graph
-├── analyzers/             # Analysis modules
-│   ├── capability/        # Capability fingerprinting
-│   ├── prompt/            # Prompt injection analysis
-│   ├── data_leakage/      # Secret detection
-│   └── mcp/               # MCP discovery & validation
-│       ├── analyzer.py    # MCP analyzer logic
-│       ├── schema.py      # Versioned MCP schemas
-│       ├── compatibility.py # Schema version resolution
-│       └── validators.py  # Schema validation rules
-├── frameworks/            # Framework adapters (plugins)
-│   ├── langgraph/
-│   ├── crewai/
-│   ├── langchain/
-│   ├── semantic_kernel/
-│   ├── openai_agents/
-│   ├── microsoft_agent/
-│   ├── azure_foundry/
-│   └── bedrock_agent/
-├── report/                # Output generators
-│   ├── terminal.py        # Terminal summary
-│   ├── json_report.py     # JSON output
-│   ├── sarif.py           # SARIF 2.1.0 output
-│   └── html.py            # HTML report
-├── rules/                 # Rule definitions
-│   ├── loader.py          # Rule loading
-│   └── base_rules.yaml    # Built-in rules
-├── scoring/               # Risk scoring engine
-│   └── engine.py          # Deterministic trust score
-└── tests/                 # Test suite
+├── __init__.py               # package init; handles `safeai --version`
+├── version.py                # SAFEAI_VERSION + version helpers (single source)
+├── severity.py               # canonical severity vocabulary + point values
+├── scorecard.py              # Security Scorecard (0-10) build/render/write
+├── scorecard-schema.json     # machine-readable scorecard contract (schema v1)
+├── cmd/                      # CLI entry points
+│   ├── cli.py                # argparse shell: scan + registry subcommands
+│   ├── postprocess.py        # ScanPostProcessor (KYA pipeline)
+│   └── registry_cli.py       # registry list/show/history/diff/export
+├── engine/                   # scan orchestration
+│   ├── orchestrator.py       # ScanOrchestrator (6 stages) + run_scan wrapper
+│   └── scan.py               # backward-compat re-export of run_scan
+├── kya/                      # Know Your Agent evidence pipeline
+│   ├── util.py               # hashing, timestamps, secret redaction
+│   ├── identity.py           # project/agent ID derivation
+│   ├── fingerprints.py       # deterministic finding fingerprints
+│   ├── enrich.py             # finding normalization, agent records
+│   ├── manifest.py           # canonical safeai-manifest.json
+│   ├── baseline.py           # new/existing/resolved comparison
+│   ├── suppressions.py       # .safeai/suppressions.yml workflow
+│   ├── policy.py             # .safeai/policy.yml evaluator
+│   ├── assurance.py          # assurance boundary (verified vs not)
+│   ├── ci_context.py         # CI provider/branch/PR detection
+│   ├── exporter.py           # registry inventory export
+│   └── registry/             # local SQLite registry (package)
+│       ├── schema.py         # DDL + forward-only migrations
+│       ├── connection.py     # paths, open, migrate, init
+│       ├── persist.py        # append-only scan persistence
+│       └── queries.py        # read-only query helpers
+├── analysis/                 # core analysis primitives
+│   ├── semantic.py           # AST document, symbol resolution
+│   ├── import_graph.py       # project-wide import tracking
+│   ├── capabilities.py       # capability model & helpers
+│   ├── aggregation.py        # multi-parser merge & arbitration
+│   ├── project_graph.py      # cross-file entity graph
+│   ├── components.py         # component-level extraction
+│   ├── tool_identity.py      # path-independent tool keys
+│   ├── tool_surface.py       # per-tool capability index
+│   ├── capability_diff.py    # schema-v2 per-tool baseline diff
+│   ├── escalation.py         # 14 ESC_* capability-escalation rules
+│   └── dependency_correlation.py  # DEP_* credential/capability correlation
+├── analyzers/                # analysis modules (11)
+│   ├── capability/           # CapabilityAnalyzer
+│   ├── prompt/               # PromptAnalyzer
+│   ├── prompt_file/          # PromptFileAnalyzer
+│   ├── data_leakage/         # DataLeakageAnalyzer
+│   ├── env_dependency/       # EnvDependencyAnalyzer (CE 1.5)
+│   ├── mcp/                  # MCPAnalyzer (+ schema/compatibility/validators)
+│   ├── claude_code/          # ClaudeCodeAnalyzer
+│   ├── skill/                # SkillAnalyzer
+│   ├── tool_def/             # ToolDefAnalyzer
+│   ├── model_config/         # ModelConfigAnalyzer
+│   └── workflow/             # WorkflowAnalyzer
+├── frameworks/               # framework adapters (15)
+│   ├── langgraph/  crewai/  langchain/  semantic_kernel/
+│   ├── openai_agents/  microsoft_agent/  azure_foundry/  bedrock_agent/
+│   └── claude_code/  google_adk/  mastra/  haystack/  llamaindex/  dify/  n8n/
+├── report/                   # output generators
+│   ├── terminal.py           # console summary
+│   ├── json_report.py        # JSON output
+│   ├── sarif.py              # SARIF 2.1.0 output
+│   ├── html.py               # self-contained HTML report
+│   ├── html_kit.py           # shared HTML rendering helpers
+│   ├── registry_html.py      # registry HTML views
+│   └── pr_comment.py         # reviewer-facing escalation summary
+├── rules/                    # rule definitions
+│   ├── loader.py             # rule loading/merge
+│   └── base_rules.yaml       # built-in rules
+└── scoring/
+    └── engine.py             # deterministic 0-100 trust score
 ```
 
 ---
@@ -92,240 +121,199 @@ safeai/
 
 ### 1. CLI (`cmd/cli.py`)
 
-Entry point for the `safeai` command. Parses CLI arguments and invokes `run_scan()`. Handles report generation and exit codes.
+A thin `argparse` shell over the pipeline. It parses `scan` and `registry`
+subcommands, delegates the scan to `run_scan()` + `ScanPostProcessor`, and maps
+results to exit codes. It contains no analysis logic.
 
-**Key design decisions:**
-- Uses Python `argparse` (no external CLI framework)
-- Single subcommand (`scan`) with optional output flags
-- Exit code 0/1 based on `--fail-on` threshold
+**Exit codes:** `0` = pass, `1` = policy/finding/escalation/score gate hit,
+`2` = operational error. The Security Scorecard adds `--scorecard-fail-under`
+as an additional gate.
 
-### 1b. KYA Pipeline (`kya/`)
+### 2. Scan Orchestrator (`engine/orchestrator.py`)
 
-Release 1.3 adds a post-scan pipeline that runs after `run_scan()` in the
-CLI (the engine itself is untouched):
+`ScanOrchestrator` drives the scan as six individually callable stages:
+
+1. `prepare()` — file collection (Python/YAML/JSON/dependency manifests), rule
+   loading, dependency extraction, parser discovery.
+2. `load_sources()` — read files, build AST semantic documents, construct the
+   import graph.
+3. `parse_frameworks()` — run all framework parsers on all files (no mutual
+   exclusion), capture provenance.
+4. `extract_components()` — component-level extraction, parser aggregation,
+   capability normalization.
+5. `analyze()` — the multi-analyzer pipeline.
+6. `assemble()` — relativize paths, score the report, build the tool surface
+   and the assurance boundary.
+
+The module-level `run_scan()` is the historical entry point and a thin wrapper
+over the orchestrator; `safeai.engine.scan` re-exports both for backward
+compatibility.
+
+### 3. KYA Post-Processor (`cmd/postprocess.py`)
+
+`ScanPostProcessor` runs after `run_scan()` and owns the evidence pipeline:
 
 ```
-run_scan() → normalize_findings() → suppressions → baseline compare
-          → policy evaluate → build_agent_records() → build_manifest()
-          → registry persist → report writers
+normalize → suppress → baseline → policy → identity → manifest → registry
+          → outputs → exit code
 ```
 
-Key properties:
+It writes the canonical manifest, persists to the registry, renders reports,
+and computes the final exit code. The engine itself is untouched by KYA.
 
-- **Manifest-first** — `safeai-manifest.json` is the public contract; the
-  SQLite registry is an implementation detail.
-- **Deterministic identities** — project/agent/finding IDs derive from
-  content (never timestamps or randomness; scan IDs are the only per-run
-  UUIDs).
-- **Append-only registry** — every scan inserts a new snapshot; history is
-  never overwritten. Schema is versioned via `schema_migrations`.
-- **Redaction at the boundary** — evidence is secret-masked before it
-  reaches the manifest, registry, SARIF, or exports.
+### 4. Severity (`severity.py`)
 
-### 2. Scanner Engine (`engine/scan.py`)
+The single source of truth for the severity vocabulary. Finding severities are
+`info < low < medium < high < critical`; escalation severities never use
+`info`. `SEVERITY_POINTS` (`critical=25, high=15, medium=8, low=4, info=1`) is
+defined here and imported by the CLI, escalation engine, policy evaluator,
+scorers, and renderers so the scales cannot drift.
 
-Orchestrates the entire scan pipeline:
+### 5. Analyzers (`analyzers/*/analyzer.py`)
 
-1. **File collection** — Walks directory, collects `.py`, `.json`, `.yaml`, `.yml` files and dependency manifests
-2. **Dependency extraction** — Parses `requirements.txt`, `pyproject.toml`, `Pipfile`, `package.json`
-3. **Semantic document building** — Creates AST-based semantic documents for each Python file
-4. **Import graph construction** — Builds a project-wide module/symbol graph
-5. **Framework parsing** — Runs all framework parsers on each file (no mutual exclusion)
-6. **Parser aggregation** — Merges results from multiple parsers per file
-7. **Analysis** — Runs capability, prompt, data leakage, and MCP analyzers
-8. **Project graph** — Builds cross-file entity relationship graph
-9. **Trust scoring** — Computes category scores and overall risk score
-
-### 3. Semantic Analysis (`analysis/semantic.py`)
-
-Performs AST-level analysis of Python files:
-
-- **SemanticDocument** — Holds imports, function definitions, class definitions, variable assignments, and call expressions
-- **Symbol resolution** — Resolves local names to fully qualified names via imports and aliases
-- **Origin resolution** — Maps symbols to their defining module/file via the import graph
-- **Literal value extraction** — Extracts literal arguments from function calls
-
-### 4. Import Graph (`analysis/import_graph.py`)
-
-Builds a project-wide dependency graph:
-
-- **Module resolution** — Maps module names to file paths
-- **Edge tracking** — Records import relationships between files
-- **Symbol indexing** — Tracks functions, classes, and re-exports per file
-- **Re-export resolution** — Follows re-exports through `__init__.py`
-
-### 5. Framework Adapters (`frameworks/*/parser.py`)
-
-Each framework adapter is a self-contained Python module implementing:
-
-```python
-class FrameworkParser:
-    name = "framework_name"
-
-    def detect(self, path, content, scan_ctx=None): ...
-    def parse(self, path, content, scan_ctx=None): ...
-```
-
-**Detection priority:**
-1. AST import analysis (highest confidence)
-2. Dependency manifest (requirements.txt, etc.)
-3. Configuration files (YAML, JSON)
-4. Regex fallback (lowest confidence)
-
-**Output contract:**
-
-```python
-{
-    "framework": "framework_name",
-    "agents": [...],
-    "workflows": [...],
-    "planners": [...],
-    "tools": [...],
-    "prompts": [...],
-    "memory": [...],
-    "models": [...],
-    "capabilities": [...],
-    "relationships": [...],
-    "discovery_method": "ast+config+regex_fallback",
-    "parser_confidence": 0.85,
-    "detection_evidence": ["imports:framework", "ast:calls"]
-}
-```
-
-### 6. Multi-Parser Aggregation (`analysis/aggregation.py`)
-
-Merges output from multiple framework parsers for the same file:
-
-- **Artifact deduplication** — Named entities merged by name (case-insensitive)
-- **Evidence accumulation** — Evidence strings merged across frameworks
-- **Confidence arbitration** — Max confidence per artifact
-- **Provenance tracking** — Records which frameworks contributed
-- **Capability aggregation** — Merges capabilities by name+category, max confidence
-
-### 7. Analyzers (`analyzers/*/analyzer.py`)
-
-Each analyzer implements:
-
-```python
-class Analyzer:
-    name = "analyzer_name"
-
-    def run(self, file_cache, rules, agent_models=None): ...
-```
-
-**Current analyzers:**
+Each analyzer implements `run(file_cache, rules, agent_models=None)`. The 11
+analyzers:
 
 | Analyzer | Purpose |
 |----------|---------|
 | `CapabilityAnalyzer` | Framework capability arbitration + regex fallback |
 | `PromptAnalyzer` | Prompt injection, delimiter, system leak, role override |
+| `PromptFileAnalyzer` | Prompt / system-instruction file analysis |
 | `DataLeakageAnalyzer` | API keys, tokens, passwords, env secrets |
-| `MCPAnalyzer` | MCP config discovery, schema validation, security analysis |
+| `EnvDependencyAnalyzer` | Credential/config dependency inventory (CE 1.5) |
+| `MCPAnalyzer` | MCP discovery, schema validation, security analysis |
+| `ClaudeCodeAnalyzer` | Deep `.claude/` structural analysis |
+| `SkillAnalyzer` | Skill component analysis |
+| `ToolDefAnalyzer` | Tool definition analysis |
+| `ModelConfigAnalyzer` | Model configuration safety checks |
+| `WorkflowAnalyzer` | Workflow template analysis |
 
-### 8. MCP Analysis (`analyzers/mcp/`)
+### 6. Framework Adapters (`frameworks/*/parser.py`)
 
-Multi-layer MCP analysis:
+15 adapters: LangGraph, CrewAI, LangChain, Semantic Kernel, OpenAI Agents,
+Microsoft Agent, Azure AI Foundry, Bedrock Agent, Claude Code, Google ADK,
+Mastra, Haystack, LlamaIndex, Dify, n8n. Each implements `detect()` and
+`parse()` and returns a consistent artifact schema (agents, workflows, tools,
+prompts, memory, models, capabilities, relationships) with confidence and
+provenance. See "Plugin Architecture" below.
 
-- **`schema.py`** — Versioned schema definitions (v1.0, v1.1)
-- **`compatibility.py`** — Schema version resolution and data normalization
-- **`validators.py`** — Spec-driven validation against schema rules
-- **`analyzer.py`** — Discovery, security analysis, capability mapping
+### 7. Capability Model & Escalation (`analysis/`)
 
-### 9. Trust Scoring (`scoring/engine.py`)
+- `tool_identity.py` — capabilities are attributed to a named tool with a
+  deterministic `tool_key` (e.g. `mcp_server:invoice-lookup`).
+- `tool_surface.py` — per-tool capability index written to the report, manifest,
+  and registry.
+- `capability_diff.py` — schema-v2 baseline diff keyed on
+  `(tool_key, capability, access_mode)`.
+- `escalation.py` — 14 `ESC_*` rules (including 3 combination rules) that rank
+  authority changes between scans; drives `--fail-on-escalation`.
+- `dependency_correlation.py` — matches the CE 1.5 credential/config inventory
+  against declared capabilities, producing `DEP_UNDECLARED_CAPABILITY` and
+  `DEP_ORPHANED_TOOL`.
 
-Deterministic scoring engine:
+### 8. KYA Registry (`kya/registry/`)
 
-- **7 risk categories** with configurable weights
-- **Severity point values** — Critical=25, High=15, Medium=8, Low=4, Info=1
-  (defined once in `safeai/severity.py`, the canonical vocabulary shared by
-  the CLI, escalation engine, policy evaluator, scorers, and renderers)
-- **Formula:** `category_score = clamp(100 - sum(weighted_contributions), 0, 100)`
-- **Overall:** Average of all category scores
-- **Explainability:** Per-category breakdown of contributions
+A local, append-only SQLite registry (`.safeai/registry.db`, or the org-wide
+shared registry via `SAFEAI_REGISTRY` / `~/.safeai/registry.db`). Standard
+library `sqlite3` only, WAL mode, versioned via `schema_migrations`. Split into
+`schema` (DDL + forward-only migrations), `connection` (open/migrate/init),
+`persist` (append-only writes), and `queries` (read-only helpers); the package
+`__init__` re-exports the public API. Raw source and unredacted secrets are
+never stored.
 
-### 10. Report Generators (`report/*.py`)
+### 9. Assurance Boundary (`kya/assurance.py`)
+
+A factual, per-scan statement of what was verified statically versus what
+cannot be verified (IAM/cloud permissions, runtime identity, deployed network
+policy, actual behaviour). Computed from real scan data, never a fixed
+template. Written to the manifest as `assurance_boundary`.
+
+### 10. Trust Scoring (`scoring/engine.py`)
+
+Deterministic 0–100 scoring across **7 risk categories** — Capability,
+Governance, Safety, Identity, Integration, Autonomy, Enterprise Readiness
+(default weight 1.0 each). Formula:
+`category_score = clamp(100 - sum(weighted_contributions), 0, 100)`;
+`overall = average(category_scores)`. The result key is
+`overall_ai_risk_score`. See `RISK_MODEL.md`.
+
+### 11. Security Scorecard (`scorecard.py`)
+
+A separate, deterministic **0–10** report (distinct from the 0–100 trust
+score): an overall score, per-category scores, and a `pass`/`warn`/`fail`
+outcome. Severity weights `critical=4.0, high=2.0, medium=0.75, low=0.25,
+info=0.0`, with diminishing returns for repeated findings and fingerprint
+deduplication. Suppressed findings do not affect the score. Rendered to
+Markdown, JSON (`scorecard-schema.json`), and the GitHub Actions step summary.
+See `USER_GUIDE.md` and `DEVELOPER_GUIDE.md`.
+
+### 12. Report Generators (`report/*.py`)
 
 | Generator | Output | Format |
 |-----------|--------|--------|
 | `terminal.py` | Console summary | Plain text |
 | `json_report.py` | Raw scanner output | JSON |
 | `sarif.py` | SARIF 2.1.0 | JSON (SARIF) |
-| `html.py` | HTML report | HTML (self-contained) |
+| `html.py` (+ `html_kit.py`) | Self-contained report | HTML |
+| `registry_html.py` | Registry views | HTML |
+| `pr_comment.py` | Reviewer escalation summary | Markdown |
+| `scorecard.py` | Security Scorecard | Markdown / JSON |
 
 ---
 
 ## Data Flow
 
 ```
-              ┌─────────────────────────────┐
-              │       Project Directory      │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │      collect_files()         │
-              │   .py, .json, .yaml, .yml   │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │   Dependency extraction      │
-              │   (requirements.txt, etc.)   │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │  Semantic Document Builder   │
-              │    (AST parsing per file)    │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │    Import Graph Builder      │
-              │  (module + symbol resolution)│
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │    Framework Parsing         │
-              │  (all parsers, all files)    │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │  Parser Aggregation          │
-              │  (merge, dedup, arbitrate)   │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │   Analyzer Pipeline          │
-              │  Capability │ Prompt │ MCP  │
-              │  Data Leakage                │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │    Project Graph Builder     │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │   Trust Score Calculation    │
-              └──────────────┬──────────────┘
-                             ▼
-              ┌─────────────────────────────┐
-              │     Report Generation        │
-              │  Terminal │ JSON │ SARIF │HTML│
-              └─────────────────────────────┘
+Project Directory
+    │
+    ▼
+prepare: collect_files (.py/.json/.yaml/.yml + dependency manifests)
+    │      + rules loading + dependency extraction + parser discovery
+    ▼
+load_sources: semantic documents (AST) + import graph
+    │
+    ▼
+parse_frameworks: all 15 parsers on all files (no mutual exclusion)
+    │
+    ▼
+extract_components: component extraction + parser aggregation + capabilities
+    │
+    ▼
+analyze: 11 analyzers (capability, prompt, prompt_file, data_leakage,
+         env_dependency, mcp, claude_code, skill, tool_def, model_config,
+         workflow)
+    │
+    ▼
+assemble: relativize paths + trust score + tool surface + assurance boundary
+    │
+    ▼
+ScanPostProcessor: normalize → suppress → baseline → policy → identity
+                   → manifest → registry → outputs → exit code
+    │
+    ▼
+Reports: Terminal │ JSON │ SARIF │ HTML │ PR comment │ Scorecard
 ```
 
 ---
 
 ## Plugin Architecture
 
-Framework adapters follow a plugin-like pattern. Each adapter:
+Framework adapters, analyzers, and rules are pluggable. Adapters follow a
+plugin-like pattern:
 
-1. **Self-contained** — No cross-framework dependencies
-2. **Auto-detection** — Implements `detect()` to determine applicability
-3. **Structured output** — Returns a consistent dictionary schema
-4. **Confidence-aware** — Reports parser-level confidence and discovery method
+1. **Self-contained** — no cross-framework dependencies.
+2. **Auto-detection** — `detect()` determines applicability (AST imports →
+   dependency manifest → config files → regex fallback).
+3. **Structured output** — a consistent artifact dictionary schema.
+4. **Confidence-aware** — reports parser-level confidence and discovery method.
+
+Third-party parsers can also register via the `safeai.parsers` entry-point
+group and the `@register_parser` decorator.
 
 **To add a new framework adapter:**
-1. Create `frameworks/new_framework/parser.py`
-2. Implement `detect()` and `parse()` methods
-3. Register in `engine/scan.py` parsers list
+1. Create `frameworks/new_framework/parser.py`.
+2. Implement `detect()` and `parse()`.
+3. Register it in the orchestrator's parser discovery.
 
 ---
 
@@ -333,8 +321,20 @@ Framework adapters follow a plugin-like pattern. Each adapter:
 
 SafeAI reads configuration from:
 
-1. **Rule YAML files** — `rules/base_rules.yaml` (built-in) + custom via `--rules`
-2. **Dependency manifests** — `requirements.txt`, `pyproject.toml`, `Pipfile`, `package.json`
-3. **Source code** — Python files (`.py`)
-4. **Configuration files** — `.json`, `.yaml`, `.yml`
-5. **CLI arguments** — Output paths, thresholds, custom rules
+1. **Rule YAML files** — `rules/base_rules.yaml` (built-in) + custom via `--rules`.
+2. **Dependency manifests** — `requirements.txt`, `pyproject.toml`, `Pipfile`, `package.json`.
+3. **Source code** — Python files (`.py`).
+4. **Configuration files** — `.json`, `.yaml`, `.yml`.
+5. **KYA config** — `.safeai/policy.yml`, `.safeai/suppressions.yml`.
+6. **CLI arguments** — output paths, thresholds, scorecard and gating flags.
+
+---
+
+## Related Documents
+
+- `RISK_MODEL.md` — trust score model, categories, and score interpretation.
+- `SECURITY_MODEL.md` — threat model and security properties of SafeAI itself.
+- `KYA_MANIFEST.md` — the canonical manifest contract.
+- `REGISTRY.md` — the local/shared KYA registry.
+- `LIMITATIONS.md` — what static analysis cannot verify.
+- `DEVELOPER_GUIDE.md` — local development and GitHub Actions usage.

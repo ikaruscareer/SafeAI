@@ -33,7 +33,7 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 ### PR escalation review
 - ✅ Detect and rank: new shell capability, filesystem write added, external HTTP/API access added, new MCP server bound, MCP read-only → mutation, human approval gate removed, memory scope expanded, new write-capable tool, new external destination — 14 `ESC_*` escalation rules in a data table with subsumption, `--fail-on-escalation`.
 - ✅ `--pr-comment` / `--pr-comment-stdout`: a short, grouped, reviewer-facing summary (never posted by SafeAI) — grouped by tool/server, leads with escalations, suppresses unchanged surface.
-- 🔄 Branch/base auto-detection — **GitHub Actions done**; GitLab CI and Azure Pipelines detection planned.
+- ✅ Branch/base auto-detection — GitHub Actions, GitLab CI, and Azure Pipelines (`safeai/kya/ci_context.py`, `PROVIDERS`).
 - ✅ Risky-combination detection — untrusted input + shell, autonomous planning + broad access, delegation + external side effects (`ESC_COMBO_*`).
 
 ### Surface depth *(the two that matter)*

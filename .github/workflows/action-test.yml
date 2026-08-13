@@ -38,6 +38,10 @@ jobs:
           echo "$WHEEL"
           python scripts/check_wheel.py "$WHEEL"
 
+      # Install the locally built wheel so the composite action can drive it.
+      - name: Install the built SafeAI wheel
+        run: pip install dist/*.whl
+
       # The composite action normally installs SafeAI from PyPI. For this test we
       # have already installed the locally built wheel above, so we skip the
       # action's own PyPI install (SAFEAI_ACTION_SKIP_INSTALL) and let it drive

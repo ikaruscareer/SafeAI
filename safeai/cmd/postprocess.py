@@ -81,7 +81,9 @@ class ScanPostProcessor:
         self._load_baseline()
         self._run_scan()
         self._normalize()
-        self._apply_suppressions()
+        early = self._apply_suppressions()
+        if early is not None:
+            return early
         self._compare_baseline()
         self._evaluate_policy()
         self._resolve_identity()
@@ -133,6 +135,7 @@ class ScanPostProcessor:
             self.args.rules,
             baseline_report=self.baseline_report,
             excluded_paths=excluded_paths,
+            mcp_ide_scopes=getattr(self.args, "mcp_ide_scopes", False),
         )
         self.completed_at = utc_now_iso()
 
@@ -156,6 +159,11 @@ class ScanPostProcessor:
             "path": suppressions_path if suppression_entries else None,
             **suppression_summary,
         }
+        if getattr(self.args, "strict_suppressions", False) and suppression_warnings:
+            print("error: --strict-suppressions is set; expired suppressions detected", file=sys.stderr)
+            self.report["suppressions"]["strict_failure"] = True
+            return 1
+        return None
 
     def _compare_baseline(self):
         from safeai.kya import baseline as kya_baseline
@@ -172,6 +180,12 @@ class ScanPostProcessor:
             policy_doc = kya_policy.load_policy(policy_path)
         except kya_policy.PolicyError as exc:
             self.parser.error(str(exc))
+        profile_name = getattr(self.args, "policy_profile", None)
+        if profile_name:
+            profile = kya_policy.load_profile(profile_name)
+            if profile is None:
+                self.parser.error(f"Unknown policy profile: {profile_name!r}")
+            policy_doc = kya_policy.merge_profile(profile, policy_doc)
         self.policy_decision = kya_policy.evaluate_policy(policy_doc, self.report)
         self.report["policy_decision"] = self.policy_decision
 

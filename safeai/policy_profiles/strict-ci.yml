@@ -1,0 +1,32 @@
+version: "1"
+description: "Strict CI gating. Denies on high+ findings and all escalations."
+default_action: warn
+policies:
+  - id: strict_ci_deny_high
+    when:
+      min_severity: high
+    action: deny
+    message: "High or critical findings block the pipeline."
+  - id: strict_ci_deny_escalation
+    when:
+      finding_ids:
+        - ESC_SHELL_ADDED
+        - ESC_FILESYSTEM_WRITE_ADDED
+        - ESC_EXTERNAL_ACCESS_ADDED
+        - ESC_MCP_SERVER_ADDED
+        - ESC_MCP_READ_TO_MUTATE
+        - ESC_APPROVAL_GATE_REMOVED
+        - ESC_MEMORY_SCOPE_EXPANDED
+        - ESC_WRITE_TOOL_ADDED
+        - ESC_NEW_EXTERNAL_DESTINATION
+        - ESC_AUTONOMY_INCREASED
+        - ESC_COMBO_UNTRUSTED_INPUT_SHELL
+        - ESC_COMBO_AUTONOMY_BROAD_DATA
+        - ESC_COMBO_DELEGATION_EXTERNAL_SIDE_EFFECT
+    action: deny
+    message: "Capability escalations block the pipeline."
+  - id: strict_ci_review_medium
+    when:
+      severity: medium
+    action: require_review
+    message: "Medium findings require review."

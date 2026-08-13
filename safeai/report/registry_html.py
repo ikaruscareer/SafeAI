@@ -58,6 +58,8 @@ def render_agents_list(agents, registry_path=None):
             escape(str(a.get("project_id", "-"))),
             escape(str((a.get("first_seen") or "-")[:10])),
             escape(str((a.get("last_seen") or "-")[:10])),
+            html_kit.freshness_badge(a.get("freshness")),
+            str(a.get("scan_count", 0)),
             html_kit.sev_badge(a.get("policy_outcome") or "warn"),
             escape(str(a.get("risk_score") if a.get("risk_score") is not None else "-")),
         ]
@@ -67,7 +69,7 @@ def render_agents_list(agents, registry_path=None):
     <section class='hero'>{summary}</section>
     <h2>Known Agents</h2>
     {html_kit.data_table(
-        ["Agent ID", "Name", "Framework", "Type", "Project", "First seen", "Last seen", "Policy", "Risk"],
+        ["Agent ID", "Name", "Framework", "Type", "Project", "First seen", "Last seen", "Freshness", "Scans", "Policy", "Risk"],
         rows,
         empty="No agents in the registry yet - run 'safeai scan <dir>' first.",
     )}

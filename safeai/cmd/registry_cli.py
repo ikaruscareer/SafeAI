@@ -56,6 +56,17 @@ def _table(rows, headers):
         print("  ".join(str(cell).ljust(widths[i]) for i, cell in enumerate(row)))
 
 
+def _freshness_label(freshness):
+    """Return a plain-text freshness label for CLI table output."""
+    if not freshness:
+        return "unknown"
+    label = freshness.get("label", "unknown")
+    age = freshness.get("age_days")
+    if age is not None:
+        return f"{label} ({age}d)"
+    return label
+
+
 def cmd_list(args):
     conn = _open_registry(args.registry_path)
     try:
@@ -77,13 +88,15 @@ def cmd_list(args):
             a.get("agent_type") or "-",
             a.get("first_seen", "-")[:10],
             a.get("last_seen", "-")[:10],
+            _freshness_label(a.get("freshness")),
+            a.get("scan_count", 0),
             a.get("policy_outcome") or "-",
             a.get("risk_score") if a.get("risk_score") is not None else "-",
         )
         for a in agents
     ]
     print(f"Known agents ({len(rows)}) - static evidence only")
-    _table(rows, ["AGENT ID", "NAME", "FRAMEWORK", "TYPE", "FIRST SEEN", "LAST SEEN", "POLICY", "RISK"])
+    _table(rows, ["AGENT ID", "NAME", "FRAMEWORK", "TYPE", "FIRST SEEN", "LAST SEEN", "FRESHNESS", "SCANS", "POLICY", "RISK"])
     return 0
 
 

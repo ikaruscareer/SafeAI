@@ -139,9 +139,35 @@ CREATE INDEX IF NOT EXISTS idx_tool_snapshots_agent ON agent_tool_snapshots(agen
 CREATE INDEX IF NOT EXISTS idx_tool_snapshots_key   ON agent_tool_snapshots(tool_key);
 """
 
+# --- Migration 3 (v1.7): component registry persistence -----------------
+#
+# Stores component identity, version/hash, source, findings and usage
+# relationships in the local registry so teams can query "which agents
+# reference this component?" and track component-change diffs.
+_SCHEMA_V3 = """
+CREATE TABLE IF NOT EXISTS component_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id TEXT NOT NULL REFERENCES scans(scan_id),
+    component_type TEXT NOT NULL,
+    component_subtype TEXT,
+    name TEXT,
+    file_path TEXT NOT NULL,
+    source TEXT,
+    line INTEGER,
+    data_json TEXT,
+    first_seen_scan TEXT NOT NULL,
+    last_seen_scan TEXT NOT NULL,
+    UNIQUE(scan_id, component_type, file_path)
+);
+CREATE INDEX IF NOT EXISTS idx_component_snapshots_type ON component_snapshots(component_type);
+CREATE INDEX IF NOT EXISTS idx_component_snapshots_name ON component_snapshots(name);
+CREATE INDEX IF NOT EXISTS idx_component_snapshots_file ON component_snapshots(file_path);
+"""
+
 #: Forward-only migrations, applied in ascending order. Migrations are
 #: additive: no migration drops, rewrites, or reorders an existing row.
 _MIGRATIONS = {
     1: _SCHEMA,
     2: _SCHEMA_V2,
+    3: _SCHEMA_V3,
 }

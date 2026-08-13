@@ -331,6 +331,7 @@ def persist_scan(conn, manifest):
                 )
 
             _persist_tool_surface(conn, manifest, scan_id, stats)
+            _persist_components(conn, manifest, scan_id)
 
             conn.execute(
                 "INSERT OR REPLACE INTO policy_decisions(scan_id, outcome, reasons_json) VALUES (?, ?, ?)",
@@ -352,3 +353,50 @@ def persist_scan(conn, manifest):
         raise RegistryError(f"Failed to persist scan {scan_id}: {exc}") from exc
 
     return stats
+
+
+def _persist_components(conn, manifest, scan_id):
+    """Persist component snapshots from the manifest into the registry.
+
+    Components are stored in the ``component_snapshots`` table (schema v3)
+    with first_seen/last_seen tracking for freshness queries.
+    """
+    components = manifest.get("components") or []
+    if not components:
+        return
+
+    existing = {}
+    for row in conn.execute(
+        "SELECT component_type, file_path, last_seen_scan FROM component_snapshots"
+    ).fetchall():
+        key = (row["component_type"], row["file_path"])
+        existing[key] = row["last_seen_scan"]
+
+    for comp in components:
+        comp_type = comp.get("type") or "unknown"
+        comp_path = comp.get("path") or comp.get("file") or ""
+        comp_name = comp.get("name") or ""
+        comp_subtype = comp.get("subtype") or ""
+        comp_source = comp.get("source") or ""
+        comp_line = comp.get("line")
+        data_json = json.dumps(comp, sort_keys=True, default=str)
+        key = (comp_type, comp_path)
+        first_seen = existing.get(key) or scan_id
+        conn.execute(
+            "INSERT OR REPLACE INTO component_snapshots("
+            "scan_id, component_type, component_subtype, name, file_path, "
+            "source, line, data_json, first_seen_scan, last_seen_scan"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                scan_id,
+                comp_type,
+                comp_subtype,
+                comp_name,
+                comp_path,
+                comp_source,
+                comp_line,
+                data_json,
+                first_seen,
+                scan_id,
+            ),
+        )

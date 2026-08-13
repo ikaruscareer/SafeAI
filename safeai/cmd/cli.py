@@ -67,8 +67,13 @@ def _build_parser():
                            "this severity is detected (requires --baseline)")
     scan.add_argument("--policy",
                       help="Policy-as-code YAML file (default: <scan-root>/.safeai/policy.yml if present)")
+    scan.add_argument("--policy-profile",
+                      choices=["developer", "strict-ci", "mcp", "rag", "production-agent"],
+                      help="Named policy profile to load (extends --policy, does not replace it)")
     scan.add_argument("--suppressions",
                       help="Suppressions YAML file (default: <scan-root>/.safeai/suppressions.yml if present)")
+    scan.add_argument("--strict-suppressions", action="store_true",
+                      help="Fail the scan (exit 1) when expired or moved suppressions are detected")
     # --- SafeAI Security Scorecard ---
     scan.add_argument("--scorecard", dest="scorecard_path",
                       help="Write the SafeAI Security Scorecard Markdown report to PATH")
@@ -85,6 +90,9 @@ def _build_parser():
                       help="Fail the scan when the overall score is below SCORE "
                            "(0-10). This is an additional score-based gate and does "
                            "not change --fail-on/--fail-on-new/--fail-on-escalation.")
+    scan.add_argument("--mcp-ide-scopes", action="store_true",
+                      help="Discover MCP configs in IDE scopes (.cursor/, .windsurf/, "
+                           ".vscode/) in addition to the scanned repo")
 
     registry = sub.add_parser("registry", help="Inspect the local KYA registry")
     reg_sub = registry.add_subparsers(dest="registry_command")

@@ -1,0 +1,38 @@
+version: "1"
+description: "Maximum scrutiny for production agents. Denies on medium+ findings, all escalations, and governance gaps."
+default_action: warn
+policies:
+  - id: production_deny_medium
+    when:
+      min_severity: medium
+    action: deny
+    message: "Medium or higher findings block production deployment."
+  - id: production_deny_all_escalations
+    when:
+      finding_ids:
+        - ESC_SHELL_ADDED
+        - ESC_FILESYSTEM_WRITE_ADDED
+        - ESC_EXTERNAL_ACCESS_ADDED
+        - ESC_MCP_SERVER_ADDED
+        - ESC_MCP_READ_TO_MUTATE
+        - ESC_APPROVAL_GATE_REMOVED
+        - ESC_MEMORY_SCOPE_EXPANDED
+        - ESC_WRITE_TOOL_ADDED
+        - ESC_NEW_EXTERNAL_DESTINATION
+        - ESC_AUTONOMY_INCREASED
+        - ESC_COMBO_UNTRUSTED_INPUT_SHELL
+        - ESC_COMBO_AUTONOMY_BROAD_DATA
+        - ESC_COMBO_DELEGATION_EXTERNAL_SIDE_EFFECT
+    action: deny
+    message: "Any capability escalation blocks production deployment."
+  - id: production_review_governance
+    when:
+      finding_ids:
+        - MCP_MISSING_AUTH
+        - MCP_WEAK_AUTH
+        - MCP_WILDCARD_PERMISSIONS
+        - MCP_INSECURE_TRANSPORT
+        - DEP_UNDECLARED_CAPABILITY
+        - DEP_ORPHANED_TOOL
+    action: require_review
+    message: "Governance findings require explicit review."

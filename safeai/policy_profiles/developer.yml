@@ -1,0 +1,21 @@
+version: "1"
+description: "Balanced defaults for day-to-day development. Warns on medium+ findings, denies on critical escalation."
+default_action: warn
+policies:
+  - id: developer_deny_critical
+    when:
+      min_severity: critical
+    action: deny
+    message: "Critical findings must be resolved before merge."
+  - id: developer_warn_high
+    when:
+      severity: high
+    action: warn
+    message: "High-severity findings should be reviewed."
+  - id: developer_review_shell
+    when:
+      finding_ids:
+        - ESC_SHELL_ADDED
+        - ESC_COMBO_UNTRUSTED_INPUT_SHELL
+    action: require_review
+    message: "Shell capability changes require reviewer approval."

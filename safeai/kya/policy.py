@@ -25,9 +25,91 @@ DEFAULT_POLICY_PATH = os.path.join(".safeai", "policy.yml")
 ACTIONS = ("allow", "warn", "require_review", "deny")
 _ACTION_RANK = {action: index for index, action in enumerate(ACTIONS)}
 
+#: Built-in profile names and their bundled YAML files.
+_BUILTIN_PROFILES = {
+    "developer": "developer.yml",
+    "strict-ci": "strict-ci.yml",
+    "mcp": "mcp.yml",
+    "rag": "rag.yml",
+    "production-agent": "production-agent.yml",
+}
+
 
 class PolicyError(Exception):
     """Raised for invalid policy files."""
+
+
+def load_profile(name):
+    """Load a built-in policy profile by name. Returns the profile dict
+    (with ``policies`` list) or ``None`` if the name is unknown.
+
+    Built-in profiles are bundled in ``safeai/policy_profiles/`` as YAML
+    files. The profile's policies are composable: they extend (not replace)
+    the user's ``.safeai/policy.yml`` policies.
+    """
+    filename = _BUILTIN_PROFILES.get(name)
+    if not filename:
+        return None
+    profile_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "policy_profiles")
+    path = os.path.join(profile_dir, filename)
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as fh:
+            document = yaml.safe_load(fh) or {}
+    except (OSError, yaml.YAMLError) as exc:
+        raise PolicyError(f"Unable to read profile {name!r}: {exc}") from exc
+    if not isinstance(document, dict):
+        raise PolicyError(f"Profile {name!r}: document must be a mapping.")
+    policies = document.get("policies") or []
+    if not isinstance(policies, list):
+        raise PolicyError(f"Profile {name!r}: 'policies' must be a list.")
+    validated = []
+    for index, raw in enumerate(policies, 1):
+        if not isinstance(raw, dict):
+            raise PolicyError(f"Profile {name!r} policy #{index}: entry must be a mapping.")
+        action = str(raw.get("action", "")).lower()
+        if action not in _ACTION_RANK:
+            raise PolicyError(f"Profile {name!r} policy #{index}: invalid action {action!r}.")
+        if not raw.get("id"):
+            raise PolicyError(f"Profile {name!r} policy #{index}: missing required 'id'.")
+        validated.append({
+            "id": str(raw["id"]),
+            "when": raw.get("when") or {},
+            "action": action,
+            "message": raw.get("message") or raw.get("reason") or "",
+        })
+    return {
+        "version": str(document.get("version", "1")),
+        "description": document.get("description") or "",
+        "default_action": str(document.get("default_action", "warn")).lower(),
+        "policies": validated,
+    }
+
+
+def merge_profile(profile, user_policy):
+    """Merge a built-in profile into a user policy document.
+
+    Returns a new policy dict with the profile's policies prepended to the
+    user's policies. The user's ``default_action`` is preserved. Profile
+    policy IDs are prefixed with the profile name to avoid collisions.
+    """
+    if profile is None:
+        return user_policy
+    prefix = profile.get("description", "").split(".")[0].lower().replace(" ", "_")[:16] or "profile"
+    profile_policies = []
+    for pol in profile.get("policies") or []:
+        merged = dict(pol)
+        merged["id"] = f"{prefix}:{pol['id']}"
+        merged["profile"] = True
+        profile_policies.append(merged)
+    user_policies = user_policy.get("policies") if user_policy else []
+    merged_doc = {
+        "version": "1",
+        "default_action": (user_policy or {}).get("default_action", profile.get("default_action", "warn")),
+        "policies": profile_policies + list(user_policies),
+    }
+    return merged_doc
 
 
 def default_policy_path(root):

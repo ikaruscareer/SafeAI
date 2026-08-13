@@ -1,0 +1,29 @@
+version: "1"
+description: "Focused on MCP posture. Denies on insecure transport, wildcard permissions, and unauthenticated remote servers."
+default_action: warn
+policies:
+  - id: mcp_deny_insecure_transport
+    when:
+      finding_ids:
+        - MCP_INSECURE_TRANSPORT
+    action: deny
+    message: "Insecure MCP transport (HTTP without TLS) is not allowed."
+  - id: mcp_deny_wildcard
+    when:
+      finding_ids:
+        - MCP_WILDCARD_PERMISSIONS
+    action: deny
+    message: "Wildcard MCP permissions are not allowed."
+  - id: mcp_require_auth
+    when:
+      finding_ids:
+        - MCP_MISSING_AUTH
+        - MCP_WEAK_AUTH
+    action: require_review
+    message: "MCP authentication issues require review."
+  - id: mcp_review_new_server
+    when:
+      finding_ids:
+        - ESC_MCP_SERVER_ADDED
+    action: require_review
+    message: "New MCP servers require review."

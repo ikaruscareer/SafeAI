@@ -115,6 +115,24 @@ class MCPAnalyzer:
                 caps.append(make_capability(cat, category_name, framework, text[:160], confidence=0.8, source="configuration"))
         return caps
 
+    _IDE_SCOPE_MAP = {
+        ".cursor": "cursor",
+        ".windsurf": "windsurf",
+        ".vscode": "vscode",
+    }
+
+    def _detect_ide_scope(self, path):
+        """Detect the IDE scope from a file path.
+
+        Returns the IDE name (cursor/windsurf/vscode) or ``None`` for
+        repo-local MCP configs.
+        """
+        normalized = path.replace("\\", "/")
+        for dir_name, scope in self._IDE_SCOPE_MAP.items():
+            if f"/{dir_name}/" in normalized:
+                return scope
+        return None
+
     def run(self, file_cache, rules, agent_models=None):
         findings = []
         assets = []
@@ -139,9 +157,12 @@ class MCPAnalyzer:
                     ))
                 continue
 
+            ide_scope = self._detect_ide_scope(path)
+
             asset = {
                 "file": path,
                 "kind": "mcp_config" if isinstance(data, dict) else "mcp_reference",
+                "ide_scope": ide_scope,
                 "schema_version": None,
                 "clients": [],
                 "servers": [],

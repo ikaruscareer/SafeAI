@@ -1,0 +1,27 @@
+version: "1"
+description: "Focused on RAG/data-access risks. Denies on data leakage, broad data access, and credential exposure."
+default_action: warn
+policies:
+  - id: rag_deny_data_leakage
+    when:
+      frameworks:
+        - langchain
+        - llamaindex
+        - haystack
+    min_severity: high
+    action: deny
+    message: "High+ findings in RAG frameworks are blocked."
+  - id: rag_deny_autonomy_broad_data
+    when:
+      finding_ids:
+        - ESC_COMBO_AUTONOMY_BROAD_DATA
+    action: deny
+    message: "Autonomy + broad data access combination is blocked."
+  - id: rag_review_credential
+    when:
+      finding_ids:
+        - DEP_UNDECLARED_CAPABILITY
+        - DATA_LEAKAGE_API_KEY
+        - DATA_LEAKAGE_PASSWORD
+    action: require_review
+    message: "Credential and dependency findings require review."

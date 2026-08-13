@@ -50,6 +50,28 @@ def sev_badge(severity, label=None):
     )
 
 
+def freshness_badge(freshness):
+    """Return a freshness indicator badge from a freshness dict.
+
+    The freshness dict has ``label`` (fresh/aging/stale/never), ``age_days``,
+    and ``color`` (CSS color). See
+    :func:`safeai.kya.registry.queries.compute_freshness`.
+    """
+    if not freshness or freshness.get("label") in ("unknown", None):
+        return "<span class='badge' style='color:#6b7280;background:#f9fafb;border-color:#6b728033'>unknown</span>"
+    label = freshness["label"]
+    color = freshness.get("color", "#6b7280")
+    age = freshness.get("age_days")
+    if age is not None:
+        text = f"{label} ({age}d)"
+    else:
+        text = label
+    return (
+        f"<span class='badge' style='color:{color};background:{color}11;border-color:{color}33'>"
+        f"{escape(text)}</span>"
+    )
+
+
 def card(body, title=None, accent=None, classes=""):
     """Return a styled card. ``accent`` is a CSS color for a top border."""
     head = f"<h3>{escape(title)}</h3>" if title else ""

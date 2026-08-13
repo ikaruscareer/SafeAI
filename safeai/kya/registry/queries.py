@@ -5,6 +5,7 @@ All queries operate on an already-open connection (see
 """
 
 import json
+from datetime import UTC, datetime
 
 
 def list_projects(conn):
@@ -37,6 +38,7 @@ def list_agents(conn, project_id=None):
         latest = _latest_scan_for_agent(conn, row["agent_id"])
         if latest:
             agent["last_scan_id"] = latest["scan_id"]
+            agent["last_scan_completed"] = latest["completed_at"]
             scoped_findings = get_agent_scan_findings(conn, row["agent_id"], latest["scan_id"])
             agent["policy_outcome"] = _agent_policy_outcome(
                 conn,
@@ -54,8 +56,36 @@ def list_agents(conn, project_id=None):
         if snap:
             agent["capability_count"] = snap["capability_count"]
             agent["confidence"] = snap["confidence"]
+        scan_count = conn.execute(
+            "SELECT COUNT(*) as cnt FROM agent_snapshots WHERE agent_id = ?",
+            (row["agent_id"],),
+        ).fetchone()
+        agent["scan_count"] = scan_count["cnt"] if scan_count else 0
+        agent["freshness"] = compute_freshness(agent.get("last_seen"))
         agents.append(agent)
     return agents
+
+
+def compute_freshness(last_seen):
+    """Compute a freshness label from the last_seen timestamp.
+
+    Returns a dict with ``label`` (fresh/aging/stale/never), ``age_days``,
+    and ``color`` (CSS color for display).
+    """
+    if not last_seen:
+        return {"label": "never", "age_days": None, "color": "#6b7280"}
+    try:
+        last = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return {"label": "unknown", "age_days": None, "color": "#6b7280"}
+    now = datetime.now(UTC)
+    delta = now - last
+    age_days = delta.days
+    if age_days <= 7:
+        return {"label": "fresh", "age_days": age_days, "color": "#059669"}
+    if age_days <= 30:
+        return {"label": "aging", "age_days": age_days, "color": "#d97706"}
+    return {"label": "stale", "age_days": age_days, "color": "#dc2626"}
 
 
 def get_agent(conn, agent_id, scan_id=None):
@@ -247,3 +277,59 @@ def latest_scan_id(conn, project_id=None):
             "SELECT scan_id FROM scans ORDER BY completed_at DESC, rowid DESC LIMIT 1"
         ).fetchone()
     return row["scan_id"] if row else None
+
+
+def list_components(conn, scan_id=None, component_type=None):
+    """List component snapshots, optionally filtered by scan_id or type.
+
+    Returns a list of dicts with component metadata including freshness
+    indicators (first_seen_scan, last_seen_scan).
+    """
+    conditions = []
+    params = []
+    if scan_id:
+        conditions.append("scan_id = ?")
+        params.append(scan_id)
+    if component_type:
+        conditions.append("component_type = ?")
+        params.append(component_type)
+    where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+    rows = conn.execute(
+        f"SELECT * FROM component_snapshots{where} ORDER BY component_type, name, file_path",
+        params,
+    ).fetchall()
+    components = []
+    for row in rows:
+        comp = dict(row)
+        if comp.get("data_json"):
+            try:
+                comp["data"] = json.loads(comp["data_json"])
+            except json.JSONDecodeError:
+                comp["data"] = {}
+        components.append(comp)
+    return components
+
+
+def component_history(conn, component_type, file_path):
+    """List all scans that observed a specific component."""
+    rows = conn.execute(
+        "SELECT scan_id, first_seen_scan, last_seen_scan, data_json "
+        "FROM component_snapshots WHERE component_type = ? AND file_path = ? "
+        "ORDER BY scan_id DESC",
+        (component_type, file_path),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_component_agents(conn, component_type, file_path):
+    """Find all agents that reference a component (via scan co-occurrence)."""
+    rows = conn.execute(
+        "SELECT DISTINCT a.agent_id, a.name, a.framework, a.project_id "
+        "FROM agents a "
+        "JOIN agent_snapshots asnap ON asnap.agent_id = a.agent_id "
+        "JOIN component_snapshots cs ON cs.scan_id = asnap.scan_id "
+        "WHERE cs.component_type = ? AND cs.file_path = ? "
+        "ORDER BY a.agent_id",
+        (component_type, file_path),
+    ).fetchall()
+    return [dict(r) for r in rows]

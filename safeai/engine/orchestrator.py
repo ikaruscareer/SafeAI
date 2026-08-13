@@ -251,11 +251,13 @@ class ScanOrchestrator:
     returns the assembled report.
     """
 
-    def __init__(self, directory, rules_dir=None, baseline_report=None, excluded_paths=None):
+    def __init__(self, directory, rules_dir=None, baseline_report=None, excluded_paths=None,
+                 mcp_ide_scopes=False):
         self.directory = os.path.abspath(directory)
         self.rules_dir = rules_dir
         self.baseline_report = baseline_report
         self.excluded_paths = excluded_paths
+        self.mcp_ide_scopes = mcp_ide_scopes
 
         self.skipped_files = {}
         self.files = []
@@ -314,6 +316,9 @@ class ScanOrchestrator:
                     path, content, module_name=module_name
                 )
 
+        if self.mcp_ide_scopes:
+            self._inject_ide_mcp_configs()
+
         self.import_graph = build_import_graph(self.directory, self.files, self.semantic_docs)
         self.scan_ctx = {
             "root": self.directory,
@@ -324,6 +329,35 @@ class ScanOrchestrator:
             "semantic_docs": self.semantic_docs,
             "import_graph": self.import_graph,
         }
+
+    _IDE_MCP_CONFIGS = [
+        (".cursor", "mcp.json"),
+        (".windsurf", "mcp.json"),
+        (".vscode", "mcp.json"),
+    ]
+
+    def _inject_ide_mcp_configs(self):
+        """Inject IDE-specific MCP config files into file_cache.
+
+        When ``--mcp-ide-scopes`` is enabled, known IDE MCP config paths
+        (``.cursor/mcp.json``, ``.windsurf/mcp.json``, ``.vscode/mcp.json``)
+        are read and added to the file cache so the MCP analyzer can discover
+        them. These directories are normally excluded from scanning.
+        """
+        for ide_dir, filename in self._IDE_MCP_CONFIGS:
+            path = os.path.join(self.directory, ide_dir, filename)
+            if not os.path.isfile(path):
+                continue
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    content = fh.read()
+            except Exception as exc:
+                logger.debug("Failed to read IDE MCP config %s: %s", path, exc)
+                continue
+            if path not in self.file_cache:
+                self.file_cache[path] = content
+                self.files.append(path)
+                logger.info("Injected IDE MCP config: %s", path)
 
     def parse_frameworks(self):
         """Stage 3: run all framework parsers on all files, no mutual exclusion."""
@@ -506,6 +540,14 @@ class ScanOrchestrator:
         # access. Requires only agent_models/mcp_assets, so it runs before
         # scoring/counting below.
         self.report["tool_surface"] = build_tool_surface(self.report)
+        # Component-change diffs (CE 1.6): detect changed components and
+        # flag all consuming agents. Runs after component extraction and
+        # before scoring so the diff is available in the report.
+        from safeai.analysis.component_diff import compute_component_diff
+        previous_components = (self.baseline_report or {}).get("components") or []
+        self.report["component_diff"] = compute_component_diff(
+            self.components, previous_components
+        )
         # Dependency-to-capability correlation (CE 1.5): match the
         # env-dependency inventory against the declared tool surface. Findings
         # are appended BEFORE the single count/score/relativize pass so they
@@ -554,11 +596,13 @@ class ScanOrchestrator:
         return self.assemble()
 
 
-def run_scan(directory, rules_dir=None, baseline_report=None, excluded_paths=None):
+def run_scan(directory, rules_dir=None, baseline_report=None, excluded_paths=None,
+             mcp_ide_scopes=False):
     """Scan ``directory`` and return the assembled report (historical API)."""
     return ScanOrchestrator(
         directory,
         rules_dir=rules_dir,
         baseline_report=baseline_report,
         excluded_paths=excluded_paths,
+        mcp_ide_scopes=mcp_ide_scopes,
     ).run()

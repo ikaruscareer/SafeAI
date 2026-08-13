@@ -53,6 +53,26 @@ DECAY = 0.5
 # Maximum number of top findings included in the Markdown report.
 TOP_FINDINGS_LIMIT = 10
 
+
+def _severity_index(sev: str) -> int:
+    """Return the index of *sev* in :data:`SEVERITIES`.
+
+    Unknown severities sort after all known ones so they surface for review
+    rather than silently vanishing.
+    """
+    try:
+        return SEVERITIES.index(sev)
+    except ValueError:
+        return len(SEVERITIES)
+
+
+def _safe_line(line: object) -> int:
+    """Coerce *line* to an ``int``, returning ``0`` on failure."""
+    try:
+        return int(line or 0)
+    except (TypeError, ValueError):
+        return 0
+
 # Category definitions. Rule IDs are mapped to categories by exact rule ID
 # prefix (first match wins). Categories are ordered for display.
 _CATEGORY_MAP = [
@@ -65,7 +85,6 @@ _CATEGORY_MAP = [
     ("PROMPT_FILE_ROLE_OVERRIDE", "Prompt injection"),
     ("PROMPT_FILE_UNTRUSTED_PLACEHOLDER", "Prompt injection"),
     ("CC_SLASH_COMMAND_ARG_INJECTION", "Prompt injection"),
-    ("CC_HOOK_SHELL_EXEC", "Prompt injection"),
     ("DATA_LEAKAGE", "Secrets and credentials"),
     ("SKILL_HARDCODED_SECRET", "Secrets and credentials"),
     ("MCP_RESOURCE_SENSITIVE", "Secrets and credentials"),
@@ -234,10 +253,12 @@ def compute_category_scores(findings: list[dict]) -> list[dict]:
                 severity_counts[sev] += 1
 
         # Compute a per-category score using the same penalty model.
-        category_score = compute_score(category_findings)
+        # Only active (non-suppressed) findings affect the score so that
+        # suppressed findings do not contradict the documented behaviour.
+        active = [f for f in category_findings if f.get("status") != "suppressed"]
+        category_score = compute_score(active)
 
         # Determine status.
-        active = [f for f in category_findings if f.get("status") != "suppressed"]
         if not category_findings:
             status = "not_applicable"
             explanation = "No findings in this category."
@@ -258,10 +279,10 @@ def compute_category_scores(findings: list[dict]) -> list[dict]:
         sorted_findings = sorted(
             active,
             key=lambda f: (
-                SEVERITIES.index(f.get("severity", "medium")),
+                _severity_index(f.get("severity", "medium")),
                 f.get("rule_id", ""),
                 f.get("file", ""),
-                int(f.get("line") or 0),
+                _safe_line(f.get("line")),
             ),
             reverse=True,
         )[:3]
@@ -271,7 +292,7 @@ def compute_category_scores(findings: list[dict]) -> list[dict]:
                 "severity": f.get("severity"),
                 "message": str(f.get("message", "")).split("\n")[0][:120],
                 "file": f.get("file"),
-                "line": int(f.get("line") or 0),
+                "line": _safe_line(f.get("line")),
                 "fingerprint": f.get("fingerprint"),
                 "status": f.get("status"),
             }
@@ -312,7 +333,8 @@ def build_scorecard(report: dict, scan_meta: dict, policy_decision: dict,
             severity_counts[sev] += 1
 
     # Score and status.
-    overall_score = compute_score(findings)
+    # Only active (non-suppressed) findings affect the numeric score.
+    overall_score = compute_score(active)
     policy_outcome = policy_decision.get("outcome", "warn")
     fail_on = scan_args.get("fail_on", "critical")
     threshold_index = SEVERITIES.index(fail_on)
@@ -342,10 +364,10 @@ def build_scorecard(report: dict, scan_meta: dict, policy_decision: dict,
     top_sorted = sorted(
         active,
         key=lambda f: (
-            SEVERITIES.index(f.get("severity", "medium")),
+            _severity_index(f.get("severity", "medium")),
             f.get("rule_id", ""),
             f.get("file", ""),
-            int(f.get("line") or 0),
+            _safe_line(f.get("line")),
         ),
         reverse=True,
     )[:TOP_FINDINGS_LIMIT]
@@ -355,7 +377,7 @@ def build_scorecard(report: dict, scan_meta: dict, policy_decision: dict,
             "severity": f.get("severity"),
             "message": redact_secrets(str(f.get("message", "")).split("\n")[0][:120]),
             "file": f.get("file"),
-            "line": int(f.get("line") or 0),
+            "line": _safe_line(f.get("line")),
             "remediation": f.get("remediation"),
             "fingerprint": f.get("fingerprint"),
             "status": f.get("status"),

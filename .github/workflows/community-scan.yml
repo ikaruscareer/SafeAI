@@ -27,9 +27,15 @@ on:
   schedule:
     - cron: '0 3 * * 6'
 
+# Prevent duplicate scans when a cron and manual dispatch overlap.
+# ``cancel-in-progress: false`` avoids leaving partial artifacts from a
+# mid-flight scan.
+concurrency:
+  group: community-scan-${{ github.event.inputs.target || 'scheduled' }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   resolve-targets:
@@ -74,15 +80,19 @@ jobs:
     env:
       MATRIX_TARGET: ${{ matrix.target }}
       SAFEAI_ACTION_COMMIT: ${{ github.sha }}
+    timeout-minutes: 30
     permissions:
       contents: read
-      security-events: write
     steps:
       - name: Checkout SafeAI
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
 
+      # The token is only explicitly forwarded to the metadata step; however,
+      # GITHUB_TOKEN is automatically present in every step's environment.
+      # Because this workflow only requests ``contents: read`` (no write
+      # permissions), the blast radius of an accidental leak is bounded.
       - name: Resolve target metadata
         id: meta
         env:
@@ -179,6 +189,11 @@ jobs:
                        "safeai_score": None, "sensitive_count": 0}, open(p, "w"), indent=2)
             PY
           fi
+      # NOTE: GitHub Actions artifact permissions are per-run, not per-artifact.
+      # Any collaborator who can view this workflow run can download both the
+      # "private" and "public" artifact sets.  The naming convention alone does
+      # not enforce access control.  If true isolation is required, use a
+      # separate mechanism (e.g. encrypted upload to external storage).
       - name: Upload private artifacts
         if: always()
         uses: actions/upload-artifact@65462800fd760344b1a7b438efe1201a664fcaab  # v4.3.1

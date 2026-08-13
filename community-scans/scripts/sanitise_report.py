@@ -20,11 +20,16 @@ from typing import Any
 _SECRET_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9]{20,}"),
     re.compile(r"AKIA[0-9A-Z]{16}"),
+    re.compile(r"ASIA[0-9A-Z]{16}"),
     re.compile(r"gh[pousr]_[A-Za-z0-9]{36,}"),
-    re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}"),
+    re.compile(r"github_pat_[A-Za-z0-9_]{20,}"),
+    re.compile(r"ghr_[A-Za-z0-9]{36,}"),
+    re.compile(r"glpat-[A-Za-z0-9\-_]{20,}"),
+    re.compile(r"xox[baprs]-[A-Za-z0-9\-]{10,}"),
     re.compile(r"(?i)bearer\s+[A-Za-z0-9._-]{20,}"),
     re.compile(r"(?i)api[_-]?key[\"'=:\s]+[A-Za-z0-9._-]{16,}"),
-    re.compile(r"[A-Za-z0-9+/]{40,}={0,2}"),
+    re.compile(r"-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+)?PRIVATE\s+KEY-----"),
+    re.compile(r"(?:mongodb|postgres(?:ql)?|mysql|redis)://\S+"),
 ]
 
 _SENSITIVE_KEYWORDS = [
@@ -82,13 +87,15 @@ def sanitize_location(loc: Any) -> Any:
     """Return a safe location dict or ``None``.
 
     Only relative source paths using a safe character set and small integer
-    line numbers are preserved; anything else is dropped.
+    line numbers are preserved; anything else is dropped.  Secrets embedded
+    in the path (e.g. ``src/sk-abcdef…py``) are redacted.
     """
     if not isinstance(loc, dict):
         return None
     raw_file = str(loc.get("file", "") or "")
     if not re.match(rf"^[\w./\-]{{1,{MAX_PATH_LEN}}}$", raw_file):
         return {"file": "[REDACTED_PATH]", "line": None}
+    raw_file = redact_secret(raw_file)
     line = loc.get("line")
     if isinstance(line, int) and 0 < line < 10_000_000:
         safe_line = line
@@ -169,7 +176,7 @@ def sanitise_report(report: dict[str, Any]) -> dict[str, Any]:
         "safeai_version": sanitize_text(report.get("safeai_version"), 32),
         "scan_timestamp_utc": sanitize_text(report.get("scan_timestamp_utc"), 32),
         "scope": sanitize_text(report.get("scope"), 64),
-        "safeai_score": score,
+        "safeai_score": sanitize_text(score, 16) if isinstance(score, str) else score,
         "status": sanitize_text(report.get("status", "REVIEW"), 16),
         "finding_counts": counts,
         "review_count": counts["review_recommended"],

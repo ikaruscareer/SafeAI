@@ -165,12 +165,16 @@ def set_output(name, value):
     Each output is written independently so a missing value cannot clobber a
     neighbouring output (the previous ``write_outputs`` overload required
     callers to pass positional empty strings, which was error-prone).
+
+    Newline characters in *value* would allow an attacker to inject arbitrary
+    output keys, so they are stripped before writing.
     """
     out_file = os.environ.get("GITHUB_OUTPUT")
     if not out_file:
         return
+    safe_value = str(value).replace("\n", " ").replace("\r", "")
     with open(out_file, "a", encoding="utf-8") as fh:
-        fh.write(f"{name}={value}\n")
+        fh.write(f"{name}={safe_value}\n")
 
 
 def get_safeai_version():

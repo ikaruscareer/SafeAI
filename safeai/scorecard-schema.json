@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SafeAI Security Scorecard",
+  "type": "object",
+  "required": ["safeai_security_scorecard"],
+  "properties": {
+    "safeai_security_scorecard": {
+      "type": "object",
+      "required": ["schema_version", "tool", "scan", "summary", "severity_counts", "categories"],
+      "properties": {
+        "schema_version": { "type": "integer", "enum": [1] },
+        "tool": {
+          "type": "object",
+          "required": ["name", "version", "report_type"],
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "report_type": { "type": "string", "enum": ["safeai-security-scorecard"] }
+          }
+        },
+        "scan": {
+          "type": "object",
+          "required": ["target", "commit"],
+          "properties": {
+            "target": { "type": "string" },
+            "commit": { "type": "string" },
+            "generated_at": { "type": ["string", "null"] },
+            "duration_seconds": { "type": ["number", "null"] },
+            "baseline_used": { "type": "boolean" }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "required": ["score", "status", "findings_total", "blocking_findings"],
+          "properties": {
+            "score": { "type": "number", "minimum": 0, "maximum": 10 },
+            "status": { "type": "string", "enum": ["pass", "warn", "fail"] },
+            "findings_total": { "type": "integer", "minimum": 0 },
+            "blocking_findings": { "type": "integer", "minimum": 0 },
+            "suppressed_findings": { "type": "integer", "minimum": 0 },
+            "new_findings": { "type": "integer", "minimum": 0 },
+            "resolved_findings": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "severity_counts": {
+          "type": "object",
+          "properties": {
+            "critical": { "type": "integer", "minimum": 0 },
+            "high": { "type": "integer", "minimum": 0 },
+            "medium": { "type": "integer", "minimum": 0 },
+            "low": { "type": "integer", "minimum": 0 },
+            "info": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "findings", "severity_counts", "score", "status", "explanation"],
+            "properties": {
+              "name": { "type": "string" },
+              "findings": { "type": "integer", "minimum": 0 },
+              "severity_counts": {
+                "type": "object",
+                "properties": {
+                  "critical": { "type": "integer", "minimum": 0 },
+                  "high": { "type": "integer", "minimum": 0 },
+                  "medium": { "type": "integer", "minimum": 0 },
+                  "low": { "type": "integer", "minimum": 0 },
+                  "info": { "type": "integer", "minimum": 0 }
+                }
+              },
+              "score": { "type": "number", "minimum": 0, "maximum": 10 },
+              "status": { "type": "string", "enum": ["pass", "warn", "fail", "not_applicable"] },
+              "explanation": { "type": "string" },
+              "top_findings": {
+                "type": "array",
+                "maxItems": 3,
+                "items": { "$ref": "#/$defs/finding" }
+              }
+            }
+          }
+        },
+        "top_findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "analyzers_run": { "type": "array", "items": { "type": "string" } },
+            "analyzers_skipped": { "type": "array", "items": { "type": "string" } },
+            "limitations": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "policy": {
+          "type": "object",
+          "properties": {
+            "outcome": { "type": "string" },
+            "fail_on": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["rule_id", "severity"],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "severity": { "type": "string" },
+        "message": { "type": "string" },
+        "file": { "type": "string" },
+        "line": { "type": "integer" },
+        "remediation": { "type": "string" },
+        "fingerprint": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    }
+  }
+}

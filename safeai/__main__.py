@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import sys
 
-from safeai import __version__
 from safeai.version import print_version, version_requested
+from safeai import __version__
 
 
 if __name__ == "__main__":

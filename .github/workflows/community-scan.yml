@@ -31,22 +31,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  prepare:
+    name: Prepare target matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - name: Validate and select targets
+        id: targets
+        env:
+          REQUESTED_TARGET: ${{ inputs.target || 'all' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$REQUESTED_TARGET" in
+            all)
+              echo 'matrix={"target":["n8n","langchain","llamaindex","crewai","langgraph"]}' >> "$GITHUB_OUTPUT"
+              ;;
+            n8n|langchain|llamaindex|crewai|langgraph)
+              printf 'matrix={"target":["%s"]}\n' "$REQUESTED_TARGET" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Unknown target: $REQUESTED_TARGET"
+              exit 2
+              ;;
+          esac
+
   scan:
     name: Scan ${{ matrix.target }}
-    if: inputs.target == 'all' || inputs.target == matrix.target
+    needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        target:
-          - n8n
-          - langchain
-          - llamaindex
-          - crewai
-          - langgraph
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     env:
       MATRIX_TARGET: ${{ matrix.target }}
       SAFEAI_ACTION_REF: ikaruscareer/SafeAI@v1.6

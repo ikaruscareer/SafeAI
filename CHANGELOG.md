@@ -97,12 +97,38 @@ only partially implemented) during the v1.7.0 architectural review.
   `json_report.py` to aggregate external-network capabilities into explicit
   buckets (Database, Object Storage, SaaS APIs) as a first-class report view.
 
+### Planned — Workstream 3: Detection Depth (analysis hardening)
+
+- **Prompt risk depth** — move beyond single-line regex in `PROMPT_*` /
+  `PROMPT_FILE_*` rules: multi-line prompt concatenation detection, cross-file
+  prompt interpolation (prompt file read and interpolated into code), indirect
+  injection via tool calls embedded in prompts, XML/HTML tag injection
+  (`<system>`, `</system>`) in prompts, template variable injection in `.md`
+  files.
+- **Data leakage depth** — expand `DATA_LEAKAGE` beyond the 4 basic patterns:
+  private keys (`-----BEGIN RSA PRIVATE KEY-----`), JWT tokens (`eyJ...`),
+  AWS access keys (`AKIA...`), connection strings (`mongodb://`, `postgres://`),
+  base64-encoded secrets, hex-encoded secrets. Per-pattern severity
+  differentiation (private keys = critical, connection strings = high).
+- **Cross-component analysis** — new `safeai/analysis/component_graph.py` that
+  analyzes relationships between components: skill X references tool Y with
+  shell access, workflow step calls dangerous tool, MCP server exposes tool used
+  by workflow, model config sets unsafe temperature AND workflow has no approval,
+  subagent has shell access AND parent has no approval.
+
 ### Definition of done
 
 - All CE 1.4 and CE 1.5 items in ROADMAP.md can be confidently marked ✅ shipped.
-- A PR reviewer can see who owns an agent, that its suppressions are bound to
-  exact code fingerprints, and that its declared tools map to local code
-  implementations — unblocking CE 2.0 (Plugin SDK & Static IaC Correlation).
+- Prompt injection detection covers multi-line, cross-file, and indirect
+  injection patterns; data leakage covers private keys, JWT, AWS keys, and
+  connection strings with per-pattern severity.
+- Cross-component relationships (skill→tool→workflow→MCP→model) are analyzed
+  and surfaced in reports.
+- A reviewer can see, for any tool or MCP server, where it is declared and
+  where it is implemented, and SafeAI flags mismatches. Suppressions are
+  provably valid against the current code, and every finding carries its
+  longitudinal history — unblocking CE 2.0 (Plugin SDK & Static IaC
+  Correlation).
 
 ## [1.9.0] - Unreleased
 

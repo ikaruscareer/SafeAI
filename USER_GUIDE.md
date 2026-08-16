@@ -302,6 +302,10 @@ SafeAI computes a deterministic risk score across 7 categories:
 
 ## Reports
 
+> For a complete guide to interpreting each output format, triaging findings,
+> and understanding confidence vs. severity, see
+> [REPORTING_GUIDE.md](./REPORTING_GUIDE.md).
+
 ### Terminal Summary
 
 Printed to stdout. Includes:

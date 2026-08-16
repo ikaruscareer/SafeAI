@@ -51,7 +51,7 @@ safeai scan /path/to/project --scorecard scorecard.md --scorecard-fail-under 7.0
 
 ## v1.8.0 (Curated scope — Unreleased: "True Authority & Complete Lifecycle")
 
-A curated release bundling the remaining CE 1.4 and CE 1.5 gaps into two
+A curated release bundling the remaining CE 1.4 and CE 1.5 gaps into three
 cohesive workstreams — the gate for starting CE 2.0. Confirmed
 not-yet-implemented in the v1.7.0 architectural review.
 
@@ -64,6 +64,15 @@ not-yet-implemented in the v1.7.0 architectural review.
   Mapping (orphan detection); Command-Aware MCP Resolution (`assurance: resolved`
   vs `unresolved-command`); Target Taxonomy Engine aggregating external-network
   capabilities into Database / Object Storage / SaaS API buckets.
+- **Workstream 3 — Detection Depth**: Prompt risk depth (multi-line, cross-file,
+  indirect injection, XML/HTML injection); Data leakage depth (private keys, JWT,
+  AWS keys, connection strings, base64/hex); Cross-component analysis
+  (`component_graph.py` — skill→tool→workflow→MCP→model relationships).
+
+**Exit criterion:** a reviewer can see, for any tool or MCP server, where it is
+declared and where it is implemented, and SafeAI flags mismatches. Suppressions
+are provably valid against the current code, and every finding carries its
+longitudinal history.
 
 ## v1.9.0 (Curated scope — Unreleased: "Component Depth & Ecosystem Foundations")
 

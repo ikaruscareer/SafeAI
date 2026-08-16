@@ -331,6 +331,10 @@ python -m safeai registry export --format json --output safeai-kya-inventory.jso
 
 ## Example Output
 
+> See [REPORTING_GUIDE.md](./REPORTING_GUIDE.md) for a complete guide to
+> interpreting each output format (HTML, JSON, SARIF, PR comments, scorecard,
+> registry) and triaging findings.
+
 ### Terminal
 
 ```

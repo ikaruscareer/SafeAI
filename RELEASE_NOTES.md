@@ -73,9 +73,21 @@ architectural review.
 - **Target Taxonomy Engine** — aggregate external-network capabilities into
   explicit buckets (Database, Object Storage, SaaS APIs) in HTML/JSON reports.
 
+### Workstream 3 — Detection Depth (analysis hardening)
+
+- **Prompt risk depth** — multi-line concatenation, cross-file interpolation,
+  indirect injection via tool calls, XML/HTML tag injection, template variable
+  injection in `.md` files.
+- **Data leakage depth** — private keys, JWT tokens, AWS access keys,
+  connection strings, base64/hex-encoded secrets; per-pattern severity.
+- **Cross-component analysis** — `component_graph.py` analyzes skill→tool→
+  workflow→MCP→model relationships and flags dangerous combinations.
+
 **Definition of done:** all CE 1.4 and CE 1.5 roadmap items marked ✅ shipped;
-a reviewer can see agent ownership, fingerprint-bound suppressions, and
-declared-tool → code mapping — unblocking CE 2.0.
+a reviewer can see, for any tool or MCP server, where it is declared and where
+it is implemented, and SafeAI flags mismatches. Suppressions are provably valid
+against the current code, and every finding carries its longitudinal history —
+unblocking CE 2.0.
 
 ---
 

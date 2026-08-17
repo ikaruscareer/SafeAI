@@ -55,6 +55,17 @@ def test_minimal_project_still_extracts_named_tools():
     assert "tool:grep" in surface_keys(report)
 
 
+def test_compatibility_fixture_detects_claude_code_project_surfaces():
+    """Validate the common Claude Code project files in one deterministic fixture."""
+    report = scan("compatibility")
+
+    assert "claude_code" in report["detected_frameworks"]
+    assert "mcp_server:docs" in surface_keys(report)
+    assert "tool:read" in surface_keys(report)
+    assert any(model["file"] == "CLAUDE.md" for model in report["agent_models"])
+    assert any(f["rule_id"] == "MCP_ASSETS_DISCOVERED" for f in report["findings"])
+
+
 # --- permissive ----------------------------------------------------------
 
 

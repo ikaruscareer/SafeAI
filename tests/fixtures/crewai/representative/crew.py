@@ -2,7 +2,6 @@ from crewai import LLM, Agent, Crew, Task
 from crewai.memory import Memory
 from crewai.tools import Tool
 
-
 lookup_ticket = Tool(name="lookup_ticket")
 
 model = LLM(model="synthetic-model")

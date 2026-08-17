@@ -1,8 +1,8 @@
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.core.agent import ReActAgent
 from llama_index.core.tools import FunctionTool
-from llama_index.llms.openai import OpenAI
 from llama_index.core.utilities.sql_wrapper import SQLDatabase
+from llama_index.llms.openai import OpenAI
 
 
 def lookup_ticket(ticket_id: str) -> str:

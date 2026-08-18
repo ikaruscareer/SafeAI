@@ -568,6 +568,21 @@ class ScanOrchestrator:
 
         self.report["dependency_inventory"] = self.env_inventory
         self.report["dependency_correlation"] = self.dependency_correlation
+        # Tool ↔ implementation mapping (CE 1.5): correlate declared tools
+        # with their implementations and surface orphan states.
+        from safeai.analysis.tool_implementation import map_tool_implementations
+
+        impl_findings, tool_impl_summary = map_tool_implementations(self.report)
+        if impl_findings:
+            for finding in impl_findings:
+                self.findings.append(finding)
+            self.findings.sort(key=lambda f: (
+                str(f.get("file") or ""),
+                int(f.get("line") or 0),
+                str(f.get("rule_id") or ""),
+            ))
+            self.report["findings"] = self.findings
+        self.report["tool_implementation"] = tool_impl_summary
         # Single pass: counts, trust score, and relative paths, all over the
         # complete finding set (core + component + correlation).
         self._count_severities()

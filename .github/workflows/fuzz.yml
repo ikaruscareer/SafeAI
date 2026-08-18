@@ -28,7 +28,7 @@ jobs:
           # atheris==2.3.0 publishes/supports CPython through 3.11.
           python-version: '3.11'
       - name: Install fuzz dependencies
-        run: python -m pip install --only-binary=:all: -r fuzz/requirements.txt
+        run: "python -m pip install --only-binary=:all: -r fuzz/requirements.txt"
       - name: Fuzz public report sanitisation
         run: |
           timeout 60s python fuzz/fuzz_sanitise_report.py || test "$?" -eq 124

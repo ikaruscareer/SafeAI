@@ -83,6 +83,13 @@ architectural review.
 - **Cross-component analysis** — `component_graph.py` analyzes skill→tool→
   workflow→MCP→model relationships and flags dangerous combinations.
 
+### Workstream 4 — Community & Onboarding
+
+- **Community scans expansion** — new framework and library targets for the
+  community scan programme, expanding coverage beyond the initial pilot.
+- **First-time user experience** — Getting Started walkthrough, improved
+  terminal output for new users, scorecard interpretation tips.
+
 **Definition of done:** all CE 1.4 and CE 1.5 roadmap items marked ✅ shipped;
 a reviewer can see, for any tool or MCP server, where it is declared and where
 it is implemented, and SafeAI flags mismatches. Suppressions are provably valid
@@ -104,6 +111,8 @@ Carries the remaining depth items not in v1.8.0.
 - **CE 2.0 foundations** — `safeai init`; custom rule authoring scaffold; OWASP
   Agentic / OWASP LLM / NIST AI RMF control mappings (taxonomy only); portable
   registry import; per-scan plugin / rule-pack versions.
+- **Remote repository scanning** — scan GitHub, Bitbucket, and other remote
+  repositories directly without local checkout.
 
 ---
 

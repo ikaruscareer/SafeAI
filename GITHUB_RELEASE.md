@@ -51,7 +51,7 @@ safeai scan /path/to/project --scorecard scorecard.md --scorecard-fail-under 7.0
 
 ## v1.8.0 (Curated scope — Unreleased: "True Authority & Complete Lifecycle")
 
-A curated release bundling the remaining CE 1.4 and CE 1.5 gaps into three
+A curated release bundling the remaining CE 1.4 and CE 1.5 gaps into four
 cohesive workstreams — the gate for starting CE 2.0. Confirmed
 not-yet-implemented in the v1.7.0 architectural review.
 
@@ -68,6 +68,9 @@ not-yet-implemented in the v1.7.0 architectural review.
   indirect injection, XML/HTML injection); Data leakage depth (private keys, JWT,
   AWS keys, connection strings, base64/hex); Cross-component analysis
   (`component_graph.py` — skill→tool→workflow→MCP→model relationships).
+- **Workstream 4 — Community & Onboarding**: Community scans expansion (new
+  framework targets); first-time user experience (Getting Started guide,
+  improved terminal output, scorecard interpretation tips).
 
 **Exit criterion:** a reviewer can see, for any tool or MCP server, where it is
 declared and where it is implemented, and SafeAI flags mismatches. Suppressions
@@ -84,6 +87,8 @@ longitudinal history.
 - **CE 2.0 foundations** — `safeai init`; custom rule authoring scaffold; OWASP
   Agentic / OWASP LLM / NIST AI RMF control mappings (taxonomy only); portable
   registry import; per-scan plugin / rule-pack versions.
+- **Remote repository scanning** — scan GitHub, Bitbucket, and other remote
+  repositories directly without local checkout.
 
 ### What It Detects
 

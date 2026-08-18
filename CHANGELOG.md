@@ -73,7 +73,7 @@ Thanks to @adnqcr7-code for these contributions.
 ## [1.8.0] - Unreleased
 
 **Curated theme — "True Authority & Complete Lifecycle."** This release bundles
-the remaining CE 1.4 and CE 1.5 gaps into two cohesive workstreams and is the
+the remaining CE 1.4 and CE 1.5 gaps into four cohesive workstreams and is the
 gate for starting CE 2.0. Items below were confirmed as not-yet-implemented (or
 only partially implemented) during the v1.7.0 architectural review.
 
@@ -125,6 +125,15 @@ only partially implemented) during the v1.7.0 architectural review.
   by workflow, model config sets unsafe temperature AND workflow has no approval,
   subagent has shell access AND parent has no approval.
 
+### Planned — Workstream 4: Community & Onboarding
+
+- **Community scans expansion** — add new framework and library targets to the
+  community scan programme (`community-scans/`), expanding coverage beyond the
+  initial pilot targets.
+- **First-time user experience** — improve onboarding with a Getting Started
+  walkthrough, improved terminal output for new users, and scorecard
+  interpretation tips in `REPORTING_GUIDE.md`.
+
 ### Definition of done
 
 - All CE 1.4 and CE 1.5 items in ROADMAP.md can be confidently marked ✅ shipped.
@@ -172,6 +181,13 @@ remaining depth items not in v1.8.0.
 - **Portable registry import** — complement the existing `registry export`.
 - **Per-scan plugin / rule-pack versions** — record parser/plugin versions
   alongside the already-recorded ruleset version.
+
+### Planned — Remote repository scanning
+
+- **GitHub and Bitbucket repo scanning** — scan remote repositories directly
+  without local checkout, supporting GitHub and Bitbucket as sources. Clone or
+  fetch the repo, scan it, and produce reports — enabling quick assessment of
+  third-party agents and frameworks.
 
 ## [1.6.0] - 2026-08-13
 

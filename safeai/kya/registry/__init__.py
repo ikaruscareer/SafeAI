@@ -47,6 +47,7 @@ from safeai.kya.registry.queries import (
     finding_lifecycle,
     finding_lifecycle_summary,
     get_agent,
+    get_agent_metadata,
     get_agent_scan_findings,
     get_component_agents,
     get_scan_findings,
@@ -57,6 +58,7 @@ from safeai.kya.registry.queries import (
     list_projects,
     recurring_risks,
     resolve_scan_ref,
+    set_agent_metadata,
 )
 from safeai.kya.registry.schema import _MIGRATIONS
 
@@ -73,6 +75,7 @@ __all__ = [
     "finding_lifecycle",
     "finding_lifecycle_summary",
     "get_agent",
+    "get_agent_metadata",
     "get_agent_scan_findings",
     "get_component_agents",
     "get_scan_findings",
@@ -88,5 +91,6 @@ __all__ = [
     "recurring_risks",
     "registry_exists",
     "resolve_scan_ref",
+    "set_agent_metadata",
     "shared_registry_path",
 ]

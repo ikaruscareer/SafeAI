@@ -332,6 +332,48 @@ def cmd_export(args):
     return 0
 
 
+def cmd_metadata(args):
+    conn = _open_registry(args.registry_path)
+    try:
+        from safeai.kya.registry import get_agent_metadata, set_agent_metadata
+        subcmd = getattr(args, "metadata_command", None)
+        if subcmd == "set":
+            result = set_agent_metadata(
+                conn,
+                args.agent_id,
+                owner=getattr(args, "owner", None),
+                environment=getattr(args, "environment", None),
+                purpose=getattr(args, "purpose", None),
+                lifecycle_status=getattr(args, "lifecycle_status", None),
+            )
+            if args.format == "json":
+                _print_json(result)
+            else:
+                print(f"Metadata updated for agent {args.agent_id}:")
+                for key, value in (result or {}).items():
+                    if key != "agent_id" and value is not None:
+                        print(f"  {key}: {value}")
+            return 0
+        elif subcmd == "get":
+            result = get_agent_metadata(conn, args.agent_id)
+            if not result:
+                print(f"No metadata found for agent {args.agent_id}")
+                return 0
+            if args.format == "json":
+                _print_json(result)
+            else:
+                print(f"Metadata for agent {args.agent_id}:")
+                for key, value in result.items():
+                    if key != "agent_id" and value is not None:
+                        print(f"  {key}: {value}")
+            return 0
+        else:
+            print("error: metadata requires a subcommand: set, get", file=sys.stderr)
+            return 2
+    finally:
+        conn.close()
+
+
 def resolve_registry_arg(args, scan_root=None):
     """Resolve which registry database a command should read.
 
@@ -358,6 +400,7 @@ def run_registry_command(args):
             "history": cmd_history,
             "diff": cmd_diff,
             "export": cmd_export,
+            "metadata": cmd_metadata,
         }[args.registry_command]
         return handler(args)
     except RegistryError as exc:

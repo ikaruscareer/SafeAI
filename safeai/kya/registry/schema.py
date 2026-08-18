@@ -186,6 +186,14 @@ CREATE TABLE IF NOT EXISTS finding_lifecycle (
 CREATE INDEX IF NOT EXISTS idx_finding_lifecycle_fp ON finding_lifecycle(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_finding_lifecycle_event ON finding_lifecycle(event);
 CREATE INDEX IF NOT EXISTS idx_finding_lifecycle_scan ON finding_lifecycle(scan_id);
+CREATE TABLE IF NOT EXISTS agent_metadata (
+    agent_id TEXT PRIMARY KEY REFERENCES agents(agent_id),
+    owner TEXT,
+    environment TEXT,
+    purpose TEXT,
+    lifecycle_status TEXT DEFAULT 'active',
+    updated_at TEXT NOT NULL
+);
 """
 
 #: Forward-only migrations, applied in ascending order. Migrations are

@@ -132,6 +132,20 @@ def _build_parser():
     reg_export.add_argument("--include-history", action="store_true")
     reg_export.add_argument("--include-suppressed", action="store_true")
 
+    reg_meta = reg_sub.add_parser("metadata", help="View or set agent metadata (owner, environment)")
+    _common(reg_meta)
+    reg_meta_sub = reg_meta.add_subparsers(dest="metadata_command")
+    meta_set = reg_meta_sub.add_parser("set", help="Set metadata for an agent")
+    meta_set.add_argument("agent_id")
+    meta_set.add_argument("--owner", help="Business or technical owner")
+    meta_set.add_argument("--environment", help="Deployment environment (e.g. production, staging)")
+    meta_set.add_argument("--purpose", help="Intended purpose of the agent")
+    meta_set.add_argument("--lifecycle", dest="lifecycle_status",
+                          choices=["active", "staging", "retired", "deprecated"],
+                          help="Lifecycle status")
+    meta_get = reg_meta_sub.add_parser("get", help="Show metadata for an agent")
+    meta_get.add_argument("agent_id")
+
     return parser
 
 
@@ -171,7 +185,7 @@ def main(argv=None):
 
     if args.command == "registry":
         if not getattr(args, "registry_command", None):
-            parser.error("registry requires a subcommand: list|show|history|diff|export")
+            parser.error("registry requires a subcommand: list|show|history|diff|export|metadata")
         from safeai.cmd.registry_cli import run_registry_command
         return run_registry_command(args)
 

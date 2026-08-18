@@ -7,6 +7,8 @@ All queries operate on an already-open connection (see
 import json
 from datetime import UTC, datetime
 
+from safeai.kya.util import utc_now_iso
+
 
 def list_projects(conn):
     rows = conn.execute(
@@ -369,3 +371,40 @@ def recurring_risks(conn):
         "ORDER BY fl.created_at DESC"
     ).fetchall()
     return [dict(r) for r in rows]
+
+
+# --- Agent enrichment queries (schema v4) -----------------------------------
+
+
+def get_agent_metadata(conn, agent_id):
+    """Return metadata for an agent, or None if not set."""
+    row = conn.execute(
+        "SELECT agent_id, owner, environment, purpose, lifecycle_status, updated_at "
+        "FROM agent_metadata WHERE agent_id = ?",
+        (agent_id,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def set_agent_metadata(conn, agent_id, owner=None, environment=None, purpose=None,
+                       lifecycle_status=None):
+    """Create or update agent metadata. Only provided fields are changed."""
+    existing = get_agent_metadata(conn, agent_id)
+    now = utc_now_iso()
+    if existing:
+        owner = owner if owner is not None else existing.get("owner")
+        environment = environment if environment is not None else existing.get("environment")
+        purpose = purpose if purpose is not None else existing.get("purpose")
+        lifecycle_status = lifecycle_status if lifecycle_status is not None else existing.get("lifecycle_status")
+        conn.execute(
+            "UPDATE agent_metadata SET owner=?, environment=?, purpose=?, "
+            "lifecycle_status=?, updated_at=? WHERE agent_id=?",
+            (owner, environment, purpose, lifecycle_status, now, agent_id),
+        )
+    else:
+        conn.execute(
+            "INSERT INTO agent_metadata(agent_id, owner, environment, purpose, "
+            "lifecycle_status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (agent_id, owner, environment, purpose, lifecycle_status or "active", now),
+        )
+    return get_agent_metadata(conn, agent_id)

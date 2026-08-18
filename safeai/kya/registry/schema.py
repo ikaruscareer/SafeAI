@@ -164,10 +164,35 @@ CREATE INDEX IF NOT EXISTS idx_component_snapshots_name ON component_snapshots(n
 CREATE INDEX IF NOT EXISTS idx_component_snapshots_file ON component_snapshots(file_path);
 """
 
+# --- Migration 4 (v1.8): finding lifecycle events ------------------------
+#
+# Tracks longitudinal state transitions on existing fingerprints:
+# introduced -> persisting -> resolved -> reopened.  When a previously
+# resolved finding reappears, ESC_RECURRING_RISK fires.
+_SCHEMA_V4 = """
+CREATE TABLE IF NOT EXISTS finding_lifecycle (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fingerprint TEXT NOT NULL REFERENCES findings(fingerprint),
+    scan_id TEXT NOT NULL REFERENCES scans(scan_id),
+    event TEXT NOT NULL,
+    previous_event TEXT,
+    rule_id TEXT,
+    severity TEXT,
+    file_path TEXT,
+    line INTEGER,
+    message TEXT,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_finding_lifecycle_fp ON finding_lifecycle(fingerprint);
+CREATE INDEX IF NOT EXISTS idx_finding_lifecycle_event ON finding_lifecycle(event);
+CREATE INDEX IF NOT EXISTS idx_finding_lifecycle_scan ON finding_lifecycle(scan_id);
+"""
+
 #: Forward-only migrations, applied in ascending order. Migrations are
 #: additive: no migration drops, rewrites, or reorders an existing row.
 _MIGRATIONS = {
     1: _SCHEMA,
     2: _SCHEMA_V2,
     3: _SCHEMA_V3,
+    4: _SCHEMA_V4,
 }

@@ -333,3 +333,39 @@ def get_component_agents(conn, component_type, file_path):
         (component_type, file_path),
     ).fetchall()
     return [dict(r) for r in rows]
+
+
+# --- Finding lifecycle queries (schema v4) ---------------------------------
+
+
+def finding_lifecycle(conn, fingerprint):
+    """Return the full lifecycle history for a finding, newest first."""
+    rows = conn.execute(
+        "SELECT id, fingerprint, scan_id, event, previous_event, rule_id, "
+        "severity, file_path, line, message, created_at "
+        "FROM finding_lifecycle WHERE fingerprint = ? ORDER BY id DESC",
+        (fingerprint,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def finding_lifecycle_summary(conn):
+    """Return lifecycle event counts across all findings."""
+    rows = conn.execute(
+        "SELECT event, COUNT(*) as count FROM finding_lifecycle "
+        "GROUP BY event ORDER BY count DESC"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def recurring_risks(conn):
+    """Return all findings that were reopened after being resolved."""
+    rows = conn.execute(
+        "SELECT fl.fingerprint, fl.rule_id, fl.severity, fl.message, "
+        "fl.file_path, fl.line, fl.created_at "
+        "FROM finding_lifecycle fl "
+        "WHERE fl.event = 'reopened' "
+        "AND fl.previous_event = 'resolved' "
+        "ORDER BY fl.created_at DESC"
+    ).fetchall()
+    return [dict(r) for r in rows]

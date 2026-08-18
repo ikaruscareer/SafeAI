@@ -1,5 +1,5 @@
 jinja2==3.1.6
-jsonschema==4.22.0
+jsonschema==4.26.0
 PyYAML==6.0.3
 urllib3==2.7.0
 # referencing (jsonschema) needs typing-extensions on Python < 3.13; pin it

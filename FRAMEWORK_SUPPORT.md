@@ -1,5 +1,9 @@
 # SafeAI — Framework Support Reference
 
+> **Current release: v1.7.0** (2026-08-16) — multi-source MCP discovery,
+> named policy profiles, registry freshness, component persistence, and
+> community-contributed framework test fixtures.
+
 This document details the detection approach, discovered artifacts, capabilities, and limitations for each supported AI agent framework.
 
 ## Maturity Categories
@@ -422,6 +426,23 @@ SafeAI detects:
 - Framework: `azure_foundry`
 - Tools from `tools` array
 - Models from `model`/`llm` keys
+
+---
+
+## Test Fixtures (v1.7.0)
+
+Representative test fixtures and validation tests verify that SafeAI correctly
+detects each framework's artifacts and capabilities. These were contributed by
+the community and cover the most common patterns for each framework.
+
+| Framework | Test File | Fixture | What It Validates |
+|-----------|-----------|---------|-------------------|
+| LangGraph | `tests/test_langgraph_framework.py` | `tests/fixtures/langgraph/representative/graph.py` | `StateGraph`, `add_edge`, `add_node`, tool binding, model detection |
+| LlamaIndex | `tests/test_llamaindex_framework.py` | `tests/fixtures/llamaindex/representative/agent.py` | Agent, tool, index, and model detection |
+| CrewAI | `tests/test_crewai_framework.py` | `tests/fixtures/crewai/representative/crew.py` | `Agent`, `Task`, tool, and model detection |
+| Claude Code | `tests/test_claude_code_deep.py` | `tests/fixtures/claude_code/compatibility/` | `.claude/settings.json`, `.mcp.json`, `CLAUDE.md` parsing |
+
+Thanks to @adnqcr7-code for these contributions (PRs #59, #61, #62, #63).
 
 ---
 

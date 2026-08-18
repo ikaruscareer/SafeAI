@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": ["Read(docs/**)", "mcp__docs__search"],
+    "deny": ["Bash(*)"]
+  },
+  "subagents": {
+    "researcher": {
+      "description": "Read-only documentation researcher",
+      "tools": ["Read", "Grep", "mcp__docs__search"]
+    }
+  }
+}

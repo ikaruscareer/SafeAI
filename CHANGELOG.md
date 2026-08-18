@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.7.0] - Unreleased
+## [1.7.0] - 2026-08-16
 
 ### Added — Multi-source MCP discovery
 
@@ -56,6 +56,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   flagged via the `component_diff` section in the JSON report and HTML output.
   The diff is computed against the baseline scan; with no baseline, all current
   components are reported as newly added.
+
+### Added — Framework compatibility test fixtures (community)
+
+- LangGraph detection validation test and representative fixture (`tests/test_langgraph_framework.py`, `tests/fixtures/langgraph/representative/graph.py`). [#63]
+- LlamaIndex detection validation test and representative fixture (`tests/test_llamaindex_framework.py`, `tests/fixtures/llamaindex/representative/agent.py`). [#61]
+- CrewAI detection validation test and representative fixture (`tests/test_crewai_framework.py`, `tests/fixtures/crewai/representative/crew.py`). [#62]
+- Claude Code project compatibility test and fixture (`tests/test_claude_code_deep.py`, `tests/fixtures/claude_code/compatibility/`). [#59]
+
+Thanks to @adnqcr7-code for these contributions.
 
 ### Changed
 

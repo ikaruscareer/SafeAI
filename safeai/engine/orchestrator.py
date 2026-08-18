@@ -583,6 +583,12 @@ class ScanOrchestrator:
             ))
             self.report["findings"] = self.findings
         self.report["tool_implementation"] = tool_impl_summary
+        # Target taxonomy engine (CE 1.5): aggregate external-network
+        # capabilities into destination buckets (Database, Object Storage,
+        # SaaS APIs, Cloud Services, Messaging).
+        from safeai.analysis.target_taxonomy import build_target_taxonomy
+
+        self.report["target_taxonomy"] = build_target_taxonomy(self.report)
         # Single pass: counts, trust score, and relative paths, all over the
         # complete finding set (core + component + correlation).
         self._count_severities()

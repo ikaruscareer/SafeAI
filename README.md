@@ -3,6 +3,7 @@
 [![CI](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml/badge.svg)](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ikaruscareer/SafeAI/badge)](https://scorecard.dev/viewer/?uri=github.com/ikaruscareer/SafeAI)
 [![Website](https://img.shields.io/badge/web-safeai--analyzer.ikaruscareer.com-0f766e)](https://safeai-analyzer.ikaruscareer.com)
+[![Latest Release](https://img.shields.io/badge/latest-v1.7.0-0f766e)](https://github.com/ikaruscareer/SafeAI/releases/tag/v1.7.0)
 
 **SafeAI** is a static analysis tool that scans AI application source code for security risks, capability exposure, and governance gaps. It runs entirely offline, never executes agents or calls LLMs, and integrates into CI/CD pipelines.
 
@@ -154,6 +155,17 @@ Maturity is on the scale defined in [`FRAMEWORK_SUPPORT.md`](FRAMEWORK_SUPPORT.m
 common patterns; **Experimental** = detection and basic artifact discovery with
 limited framework-specific analysis. No framework is rated fully **Supported**
 yet — SafeAI is in early preview and deliberately does not overclaim coverage.
+
+### Framework Test Coverage (v1.7.0)
+
+Representative test fixtures and validation tests for framework detection:
+
+| Framework | Test | Fixture | Contributor |
+|-----------|------|---------|-------------|
+| LangGraph | `test_langgraph_framework.py` | `fixtures/langgraph/representative/graph.py` | @adnqcr7-code [#63] |
+| LlamaIndex | `test_llamaindex_framework.py` | `fixtures/llamaindex/representative/agent.py` | @adnqcr7-code [#61] |
+| CrewAI | `test_crewai_framework.py` | `fixtures/crewai/representative/crew.py` | @adnqcr7-code [#62] |
+| Claude Code | `test_claude_code_deep.py` | `fixtures/claude_code/compatibility/` | @adnqcr7-code [#59] |
 
 ---
 

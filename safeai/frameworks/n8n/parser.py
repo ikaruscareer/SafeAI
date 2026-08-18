@@ -115,12 +115,20 @@ class N8nParser:
                 if isinstance(targets, dict):
                     for target_type, target_list in targets.items():
                         if isinstance(target_list, list):
-                            for target in target_list:
-                                result["relationships"].append({
-                                    "source": source,
-                                    "target": target.get("node", ""),
-                                    "type": target_type,
-                                })
+                            for target_group in target_list:
+                                targets = (
+                                    target_group
+                                    if isinstance(target_group, list)
+                                    else [target_group]
+                                )
+                                for target in targets:
+                                    if not isinstance(target, dict):
+                                        continue
+                                    result["relationships"].append({
+                                        "source": source,
+                                        "target": target.get("node", ""),
+                                        "type": target_type,
+                                    })
 
     def _parse_python(self, content, result, caps):
         for m in re.finditer(r"n8n", content, re.IGNORECASE):

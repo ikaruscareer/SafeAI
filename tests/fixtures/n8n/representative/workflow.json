@@ -1,0 +1,36 @@
+{
+  "name": "Support triage",
+  "nodes": [
+    {
+      "name": "Incoming webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": { "path": "support-triage" }
+    },
+    {
+      "name": "Classify request",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "parameters": { "model": "synthetic-model" }
+    },
+    {
+      "name": "Load ticket context",
+      "type": "n8n-nodes-base.postgres",
+      "parameters": { "operation": "select", "credential": "postgres-placeholder" }
+    },
+    {
+      "name": "Run local check",
+      "type": "n8n-nodes-base.executeCommand",
+      "parameters": { "command": "printf synthetic-check" }
+    }
+  ],
+  "connections": {
+    "Incoming webhook": {
+      "main": [[{ "node": "Classify request", "type": "main", "index": 0 }]]
+    },
+    "Classify request": {
+      "main": [[{ "node": "Load ticket context", "type": "main", "index": 0 }]]
+    },
+    "Load ticket context": {
+      "main": [[{ "node": "Run local check", "type": "main", "index": 0 }]]
+    }
+  }
+}

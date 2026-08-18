@@ -154,6 +154,38 @@ def apply_suppressions(findings, entries):
     return {"suppressed": suppressed_count, "applied": applied}
 
 
+def detect_stale_suppressions(entries, findings):
+    """Detect suppressions whose fingerprint no longer matches any current finding.
+
+    A fingerprint-bound suppression is considered *stale* when the
+    underlying code has materially shifted — the fingerprint changed
+    because the line, context, or code around it was modified.  This
+    means the suppression no longer targets the exact code it was
+    written for.
+
+    Returns a list of stale suppression dicts for CI failure reporting.
+    Rule-id-based suppressions are not checked (they match by rule, not
+    by exact code location).
+    """
+    current_fps = {f.get("fingerprint") for f in findings if f.get("fingerprint")}
+    stale = []
+    for entry in entries:
+        fp = entry.get("fingerprint")
+        if not fp:
+            continue
+        if entry.get("expired"):
+            continue
+        if fp not in current_fps:
+            stale.append({
+                "fingerprint": fp,
+                "rule_id": entry.get("rule_id"),
+                "owner": entry.get("owner"),
+                "reason": entry.get("reason"),
+                "created": entry.get("created").isoformat() if entry.get("created") else None,
+            })
+    return stale
+
+
 def suppression_template(finding):
     """Return a YAML suppression template snippet for a finding."""
     today = datetime.now(UTC).date().isoformat()

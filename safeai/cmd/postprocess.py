@@ -159,8 +159,23 @@ class ScanPostProcessor:
             "path": suppressions_path if suppression_entries else None,
             **suppression_summary,
         }
-        if getattr(self.args, "strict_suppressions", False) and suppression_warnings:
-            print("error: --strict-suppressions is set; expired suppressions detected", file=sys.stderr)
+        # Stale suppression guard: fingerprint-bound suppressions whose
+        # fingerprint no longer matches any current finding indicate that the
+        # underlying code has materially shifted.
+        stale = kya_suppressions.detect_stale_suppressions(
+            suppression_entries, self.report["findings"]
+        )
+        if stale:
+            self.report["suppressions"]["stale"] = stale
+            for s in stale:
+                print(
+                    f"warning: suppression for {s.get('fingerprint', '?')} "
+                    f"(rule {s.get('rule_id', '?')}) no longer matches any "
+                    f"current finding — the code has shifted",
+                    file=sys.stderr,
+                )
+        if getattr(self.args, "strict_suppressions", False) and (suppression_warnings or stale):
+            print("error: --strict-suppressions is set; expired or stale suppressions detected", file=sys.stderr)
             self.report["suppressions"]["strict_failure"] = True
             return 1
         return None

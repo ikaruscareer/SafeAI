@@ -12,7 +12,6 @@ findings for:
 """
 
 import json
-import os
 import re
 
 import yaml
@@ -108,7 +107,16 @@ class MCPAnalyzer:
 
         If the command references a local script (e.g. ``node build/index.js``
         or ``python server.py``), check whether the target file exists in the
-        scanned codebase.  Returns ``"resolved"`` or ``"unresolved-command"``.
+        scanned codebase.  Returns one of:
+
+        - ``"resolved"`` — local script found in the scanned codebase
+        - ``"unresolved-command"`` — local script not found
+        - ``"external-package"`` — command references a remote/packaged
+          entrypoint (``npx``, ``uvx``, ``docker run``) that cannot be
+          resolved statically without network access
+
+        External packages are not considered unresolved; they reference
+        entrypoints outside the repo by design.
         """
         if not command:
             return "unresolved-command"
@@ -116,6 +124,13 @@ class MCPAnalyzer:
         parts = str(command).split()
         if len(parts) < 2:
             return "unresolved-command"
+
+        # Detect external package managers: npx, uvx, docker run
+        executable = parts[0].lower()
+        if executable in ("npx", "uvx"):
+            return "external-package"
+        if executable == "docker" and len(parts) >= 2 and parts[1].lower() == "run":
+            return "external-package"
 
         script = parts[-1]
         if script.startswith(("-", "--")):

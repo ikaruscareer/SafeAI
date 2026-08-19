@@ -9,6 +9,11 @@ server with unresolved commands).
 
 from collections import defaultdict
 
+# Empirical threshold: small repos rarely share >5 tools across both skills
+# and workflows without intentional shared infrastructure.  This value may
+# become configurable via policy in a future release (v1.9.0+).
+_TOOL_COUPLING_THRESHOLD = 5
+
 
 def _extract_skill_refs(component):
     """Extract tool and prompt references from a skill component."""
@@ -195,7 +200,7 @@ def analyze_component_health(components):
             skill_tools.add(edge["to"])
 
     tools_used_by_both = workflow_tools & skill_tools
-    if len(tools_used_by_both) > 5:
+    if len(tools_used_by_both) > _TOOL_COUPLING_THRESHOLD:
         findings.append({
             "rule_id": "COMPONENT_TOOL_COUPLING",
             "severity": "low",

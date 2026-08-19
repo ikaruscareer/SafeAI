@@ -559,12 +559,6 @@ class ScanOrchestrator:
             for finding in correlation_findings:
                 finding["file"] = _relativize(finding.get("file"), self.directory)
                 self.findings.append(finding)
-            self.findings.sort(key=lambda f: (
-                str(f.get("file") or ""),
-                int(f.get("line") or 0),
-                str(f.get("rule_id") or ""),
-            ))
-            self.report["findings"] = self.findings
 
         self.report["dependency_inventory"] = self.env_inventory
         self.report["dependency_correlation"] = self.dependency_correlation
@@ -576,12 +570,6 @@ class ScanOrchestrator:
         if impl_findings:
             for finding in impl_findings:
                 self.findings.append(finding)
-            self.findings.sort(key=lambda f: (
-                str(f.get("file") or ""),
-                int(f.get("line") or 0),
-                str(f.get("rule_id") or ""),
-            ))
-            self.report["findings"] = self.findings
         self.report["tool_implementation"] = tool_impl_summary
         # Cross-component relationship graph (CE 1.8): analyze
         # skill→tool→workflow→MCP→model relationships, surface orphaned
@@ -593,12 +581,6 @@ class ScanOrchestrator:
             for finding in graph_findings:
                 finding["file"] = _relativize(finding.get("file"), self.directory)
                 self.findings.append(finding)
-            self.findings.sort(key=lambda f: (
-                str(f.get("file") or ""),
-                int(f.get("line") or 0),
-                str(f.get("rule_id") or ""),
-            ))
-            self.report["findings"] = self.findings
         self.report["component_graph"] = component_graph
         # Target taxonomy engine (CE 1.5): aggregate external-network
         # capabilities into destination buckets (Database, Object Storage,
@@ -608,6 +590,13 @@ class ScanOrchestrator:
         self.report["target_taxonomy"] = build_target_taxonomy(self.report)
         # Single pass: counts, trust score, and relative paths, all over the
         # complete finding set (core + component + correlation).
+        # Sort once after all findings are appended.
+        self.findings.sort(key=lambda f: (
+            str(f.get("file") or ""),
+            int(f.get("line") or 0),
+            str(f.get("rule_id") or ""),
+        ))
+        self.report["findings"] = self.findings
         self._count_severities()
         self.trust_score = score_report(self.findings)
         self.report["counts"] = self.counts

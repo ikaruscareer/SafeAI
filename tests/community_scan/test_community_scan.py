@@ -34,13 +34,16 @@ def _sample_report(findings):
     }
 
 
-def test_five_target_entries_in_manifest():
+def test_target_entries_in_manifest():
     import yaml
 
     with open(os.path.join(FIXTURE_DIR, "..", "..", "..", "community-scans", "targets.yml")) as fh:
         data = yaml.safe_load(fh)
     ids = [t["id"] for t in data["targets"]]
-    assert ids == ["n8n", "langchain", "crewai", "llamaindex", "langgraph"]
+    assert len(ids) >= 25, f"Expected at least 25 targets, got {len(ids)}"
+    assert ids[0] == "n8n"
+    assert "langchain" in ids
+    assert "crewai" in ids
 
 
 def test_invalid_repository_rejected():

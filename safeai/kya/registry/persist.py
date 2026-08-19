@@ -513,6 +513,23 @@ def _persist_finding_lifecycle(conn, findings, scan_id, known_fps, previous_fps)
                 # Fallback: we cannot fabricate values, skip this fingerprint
                 continue
 
+            # Get the last known location from scan_findings
+            loc = conn.execute(
+                "SELECT path, line FROM scan_findings "
+                "WHERE fingerprint = ? ORDER BY scan_id DESC LIMIT 1",
+                (fp,),
+            ).fetchone()
+            file_path = loc["path"] if loc else None
+            line = loc["line"] if loc else None
+
+            # Get the actual previous lifecycle event (not hardcoded)
+            prev_event_row = conn.execute(
+                "SELECT event FROM finding_lifecycle "
+                "WHERE fingerprint = ? ORDER BY id DESC LIMIT 1",
+                (fp,),
+            ).fetchone()
+            previous_event = prev_event_row["event"] if prev_event_row else None
+
             conn.execute(
                 "INSERT INTO finding_lifecycle("
                 "fingerprint, scan_id, event, previous_event, rule_id, "
@@ -522,11 +539,11 @@ def _persist_finding_lifecycle(conn, findings, scan_id, known_fps, previous_fps)
                     fp,
                     scan_id,
                     "resolved",
-                    "persisting",
+                    previous_event,
                     rule_id,
                     severity,
-                    None,
-                    None,
+                    file_path,
+                    line,
                     message,
                     utc_now_iso(),
                 ),

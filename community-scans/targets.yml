@@ -42,7 +42,7 @@ targets:
     display_name: Composio
     ecosystem: python
     category: workflow-and-agent-platform
-    default_ref: master
+    default_ref: next
     upstream_url: https://github.com/ComposioHQ/composio
     security_policy_url: https://github.com/ComposioHQ/composio/security/policy
 
@@ -171,7 +171,7 @@ targets:
     display_name: txtai
     ecosystem: python
     category: rag-and-agent-framework
-    default_ref: main
+    default_ref: master
     upstream_url: https://github.com/neuml/txtai
     security_policy_url: https://github.com/neuml/txtai/security/policy
 

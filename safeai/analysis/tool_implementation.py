@@ -13,7 +13,6 @@ Both states are informational; they help reviewers understand the gap
 between what an agent *says* it uses and what the code actually provides.
 """
 
-from safeai.analysis.tool_identity import tool_key
 
 
 def _tool_keys_from_surface(tool_surface):
@@ -120,13 +119,29 @@ def map_tool_implementations(report):
     for key in sorted(surface_keys - mcp_keys):
         if key not in declared_keys and not key.startswith("mcp_server:"):
             # Only flag if it's a non-MCP tool that seems unused
-            pass  # This is informational and lower priority; skip for now
+            findings.append({
+                "rule_id": "TOOL_ORPHAN_IMPLEMENTED",
+                "severity": "low",
+                "owasp_llm": "LLM06",
+                "risk_category": "Capability",
+                "affected_capability": "Tool",
+                "message": f"Tool '{key}' is implemented but not declared in any skill, workflow, or MCP configuration",
+                "confidence": 0.6,
+                "source": "tool_implementation_mapping",
+                "file": "",
+                "line": 0,
+                "remediation": (
+                    "Declare the tool in the relevant skill/workflow configuration, "
+                    "or remove the dead implementation if it is no longer used."
+                ),
+            })
 
     summary = {
         "declared_tools": len(declared_keys),
         "implemented_tools": len(implementation_keys),
         "mcp_tools": len(mcp_keys),
         "orphaned_declared": sum(1 for f in findings if f["rule_id"] == "TOOL_ORPHAN_DECLARED"),
+        "orphaned_implemented": sum(1 for f in findings if f["rule_id"] == "TOOL_ORPHAN_IMPLEMENTED"),
     }
 
     return findings, summary

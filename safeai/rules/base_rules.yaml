@@ -292,3 +292,13 @@
   description: Declared capability lacks a matching credential/config reference
   severity: low
   owasp_llm: LLM06
+
+- id: TOOL_ORPHAN_DECLARED
+  description: Tool declared in configuration but no implementation found
+  severity: medium
+  owasp_llm: LLM06
+
+- id: TOOL_ORPHAN_IMPLEMENTED
+  description: Tool implemented but not declared in any skill, workflow, or MCP configuration
+  severity: low
+  owasp_llm: LLM06

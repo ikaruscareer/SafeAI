@@ -132,6 +132,22 @@ def _build_parser():
     reg_export.add_argument("--include-history", action="store_true")
     reg_export.add_argument("--include-suppressed", action="store_true")
 
+    reg_meta = reg_sub.add_parser("metadata", help="View or set agent metadata (owner, environment)")
+    _common(reg_meta)
+    reg_meta_sub = reg_meta.add_subparsers(dest="metadata_command")
+    meta_set = reg_meta_sub.add_parser("set", help="Set metadata for an agent")
+    meta_set.add_argument("agent_id")
+    meta_set.add_argument("--owner", help="Business or technical owner")
+    meta_set.add_argument("--environment", help="Deployment environment (e.g. production, staging)")
+    meta_set.add_argument("--purpose", help="Intended purpose of the agent")
+    meta_set.add_argument("--lifecycle", dest="lifecycle_status",
+                          choices=["active", "staging", "retired", "deprecated"],
+                          help="Lifecycle status")
+    meta_get = reg_meta_sub.add_parser("get", help="Show metadata for an agent")
+    meta_get.add_argument("agent_id")
+
+    sub.add_parser("welcome", help="Guided first-run experience for new users")
+
     return parser
 
 
@@ -161,6 +177,79 @@ def _configure_stdout():
         pass
 
 
+def _run_welcome():
+    """Guided first-run experience for new SafeAI users.
+
+    Displays recommended rules, suggests a first scan command, and links
+    to documentation.
+    """
+    print("=" * 60)
+    print("  SafeAI — Know Your Agent")
+    print("=" * 60)
+    print()
+    print("Welcome to SafeAI! Here is a quick-start guide.")
+    print()
+
+    print("1. RECOMMENDED RULES")
+    print("-" * 40)
+    print("  SafeAI ships with built-in rules covering OWASP LLM Top 10,")
+    print("  agent lifecycle, prompt injection, data leakage, and more.")
+    print("  To use custom rules, create a rules directory:")
+    print()
+    print("    mkdir -p .safeai/rules")
+    print("    cp <safeai-repo>/safeai/rules/base_rules.yaml .safeai/rules/")
+    print()
+
+    print("2. YOUR FIRST SCAN")
+    print("-" * 40)
+    print("  Scan the current directory:")
+    print()
+    print("    safeai scan .")
+    print()
+    print("  Scan with all outputs:")
+    print()
+    print("    safeai scan . --sarif report.sarif --json report.json --html report.html")
+    print()
+    print("  Scan with a named policy profile:")
+    print()
+    print("    safeai scan . --policy-profile strict-ci")
+    print()
+
+    print("3. UNDERSTANDING RESULTS")
+    print("-" * 40)
+    print("  Findings are classified by severity (critical > high > medium > low)")
+    print("  and tagged with OWASP LLM references (LLM01, LLM02, etc.).")
+    print()
+    print("  Use --fail-on <level> to enforce quality gates in CI:")
+    print()
+    print("    safeai scan . --fail-on high    # fail on critical + high")
+    print("    safeai scan . --fail-on medium  # fail on critical + high + medium")
+    print()
+
+    print("4. REGISTRY (KYA)")
+    print("-" * 40)
+    print("  Every scan persists to a local SQLite registry by default.")
+    print("  Inspect your agents over time:")
+    print()
+    print("    safeai registry list")
+    print("    safeai registry show <agent-id>")
+    print("    safeai registry history <agent-id>")
+    print()
+
+    print("5. DOCUMENTATION")
+    print("-" * 40)
+    print("  README:            https://github.com/ikaruscareer/SafeAI#readme")
+    print("  User Guide:        https://github.com/ikaruscareer/SafeAI/blob/main/USER_GUIDE.md")
+    print("  Reporting Guide:   https://github.com/ikaruscareer/SafeAI/blob/main/REPORTING_GUIDE.md")
+    print("  Framework Support: https://github.com/ikaruscareer/SafeAI/blob/main/FRAMEWORK_SUPPORT.md")
+    print("  Roadmap:           https://github.com/ikaruscareer/SafeAI/blob/main/ROADMAP.md")
+    print()
+    print("=" * 60)
+    print("  Run 'safeai scan .' to get started!")
+    print("=" * 60)
+    return 0
+
+
 def main(argv=None):
     _configure_stdout()
     parser = _build_parser()
@@ -171,9 +260,12 @@ def main(argv=None):
 
     if args.command == "registry":
         if not getattr(args, "registry_command", None):
-            parser.error("registry requires a subcommand: list|show|history|diff|export")
+            parser.error("registry requires a subcommand: list|show|history|diff|export|metadata")
         from safeai.cmd.registry_cli import run_registry_command
         return run_registry_command(args)
+
+    if args.command == "welcome":
+        return _run_welcome()
 
     parser.print_help()
     return 0

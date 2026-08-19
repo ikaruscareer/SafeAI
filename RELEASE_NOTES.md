@@ -83,14 +83,10 @@ architectural review.
 - **Cross-component analysis** — `component_graph.py` analyzes skill→tool→
   workflow→MCP→model relationships and flags dangerous combinations.
 
-### Workstream 4 — Community & Onboarding
+**Community scans:** expanded from 5 to 25 AI tool targets across all categories.
+**First-time UX:** `safeai welcome` guided first-run command.
 
-- **Community scans expansion** — new framework and library targets for the
-  community scan programme, expanding coverage beyond the initial pilot.
-- **First-time user experience** — Getting Started walkthrough, improved
-  terminal output for new users, scorecard interpretation tips.
-
-**Definition of done:** all CE 1.4 and CE 1.5 roadmap items marked ✅ shipped;
+**Definition of done:** all CE 1.4, CE 1.5, and CE 1.8 roadmap items marked ✅ shipped;
 a reviewer can see, for any tool or MCP server, where it is declared and where
 it is implemented, and SafeAI flags mismatches. Suppressions are provably valid
 against the current code, and every finding carries its longitudinal history —

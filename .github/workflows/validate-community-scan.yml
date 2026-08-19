@@ -51,8 +51,11 @@ jobs:
           schema = json.load(open("community-scans/targets-schema.json"))
           jsonschema.validate(manifest, schema)
           ids = [t["id"] for t in manifest["targets"]]
-          assert ids == ["n8n", "langchain", "crewai", "llamaindex", "langgraph"], ids
-          print("Target manifest schema validation passed for:", ids)
+          assert len(ids) >= 25, f"Expected at least 25 targets, got {len(ids)}"
+          assert ids[0] == "n8n"
+          assert "langchain" in ids
+          assert "crewai" in ids
+          print("Target manifest schema validation passed for:", len(ids), "targets")
           PY
 
       - name: Validate provenance manifest schema

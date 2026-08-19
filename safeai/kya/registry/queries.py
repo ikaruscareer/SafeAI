@@ -7,6 +7,8 @@ All queries operate on an already-open connection (see
 import json
 from datetime import UTC, datetime
 
+from safeai.kya.util import utc_now_iso
+
 
 def list_projects(conn):
     rows = conn.execute(
@@ -333,3 +335,76 @@ def get_component_agents(conn, component_type, file_path):
         (component_type, file_path),
     ).fetchall()
     return [dict(r) for r in rows]
+
+
+# --- Finding lifecycle queries (schema v4) ---------------------------------
+
+
+def finding_lifecycle(conn, fingerprint):
+    """Return the full lifecycle history for a finding, newest first."""
+    rows = conn.execute(
+        "SELECT id, fingerprint, scan_id, event, previous_event, rule_id, "
+        "severity, file_path, line, message, created_at "
+        "FROM finding_lifecycle WHERE fingerprint = ? ORDER BY id DESC",
+        (fingerprint,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def finding_lifecycle_summary(conn):
+    """Return lifecycle event counts across all findings."""
+    rows = conn.execute(
+        "SELECT event, COUNT(*) as count FROM finding_lifecycle "
+        "GROUP BY event ORDER BY count DESC"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def recurring_risks(conn):
+    """Return all findings that were reopened after being resolved."""
+    rows = conn.execute(
+        "SELECT fl.fingerprint, fl.rule_id, fl.severity, fl.message, "
+        "fl.file_path, fl.line, fl.created_at "
+        "FROM finding_lifecycle fl "
+        "WHERE fl.event = 'reopened' "
+        "AND fl.previous_event = 'resolved' "
+        "ORDER BY fl.created_at DESC"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+# --- Agent enrichment queries (schema v4) -----------------------------------
+
+
+def get_agent_metadata(conn, agent_id):
+    """Return metadata for an agent, or None if not set."""
+    row = conn.execute(
+        "SELECT agent_id, owner, environment, purpose, lifecycle_status, updated_at "
+        "FROM agent_metadata WHERE agent_id = ?",
+        (agent_id,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def set_agent_metadata(conn, agent_id, owner=None, environment=None, purpose=None,
+                       lifecycle_status=None):
+    """Create or update agent metadata. Only provided fields are changed."""
+    existing = get_agent_metadata(conn, agent_id)
+    now = utc_now_iso()
+    if existing:
+        owner = owner if owner is not None else existing.get("owner")
+        environment = environment if environment is not None else existing.get("environment")
+        purpose = purpose if purpose is not None else existing.get("purpose")
+        lifecycle_status = lifecycle_status if lifecycle_status is not None else existing.get("lifecycle_status")
+        conn.execute(
+            "UPDATE agent_metadata SET owner=?, environment=?, purpose=?, "
+            "lifecycle_status=?, updated_at=? WHERE agent_id=?",
+            (owner, environment, purpose, lifecycle_status, now, agent_id),
+        )
+    else:
+        conn.execute(
+            "INSERT INTO agent_metadata(agent_id, owner, environment, purpose, "
+            "lifecycle_status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (agent_id, owner, environment, purpose, lifecycle_status or "active", now),
+        )
+    return get_agent_metadata(conn, agent_id)

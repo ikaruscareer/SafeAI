@@ -73,70 +73,67 @@ Thanks to @adnqcr7-code for these contributions.
 ## [1.8.0] - Unreleased
 
 **Curated theme — "True Authority & Complete Lifecycle."** This release bundles
-the remaining CE 1.4 and CE 1.5 gaps into four cohesive workstreams and is the
-gate for starting CE 2.0. Items below were confirmed as not-yet-implemented (or
-only partially implemented) during the v1.7.0 architectural review.
+the remaining CE 1.4, CE 1.5, and CE 1.8 gaps into four cohesive workstreams
+and is the gate for starting CE 2.0.
 
-### Planned — Workstream 1: Lifecycle & Ownership (CE 1.4 completion)
+### Shipped — Workstream 1: Lifecycle & Ownership (CE 1.4 completion)
 
-- **Finding Lifecycle Event Engine** — add a `finding_lifecycle` table (registry
+- **Finding Lifecycle Event Engine** — `finding_lifecycle` table (registry
   schema v4) tracking state transitions on existing fingerprints: `introduced` →
-  `persisting` → `resolved` → `reopened`. Add an `ESC_RECURRING_RISK` rule that
+  `persisting` → `resolved` → `reopened`. `ESC_RECURRING_RISK` escalation rule
   fires when a previously resolved finding is reintroduced.
-- **Stale Suppression Guard** — extend `safeai/kya/suppressions.py` to compare a
-  suppression's fingerprint against the current AST/location; fail
-  `--strict-suppressions` when a waiver exists but the underlying code has
-  materially shifted (not just moved).
+- **Stale Suppression Guard** — `detect_stale_suppressions()` in
+  `safeai/kya/suppressions.py` compares a suppression's fingerprint against the
+  current AST/location; `--strict-suppressions` fails when a waiver exists but
+  the underlying code has materially shifted.
 - **Agent Enrichment Schema** — `safeai registry metadata set <agent_id>
   --owner "platform-sec" --env "production"` stored in a dedicated
   `agent_metadata` table, decoupled from automated scan snapshots and rendered in
   the HTML report.
 
-### Planned — Workstream 2: Code-Level Authority (CE 1.5 completion)
+### Shipped — Workstream 2: Code-Level Authority (CE 1.5 completion)
 
 - **Tool ↔ Implementation Mapping** — a correlator in `safeai/analysis/` that
   bridges `tool_def` findings with skill/capabilities and surfaces orphan states
-  in reports: "Tool 'SlackSend' declared in configuration but no implementation
-  found."
+  in reports with full declaration/implementation provenance (path, line, source).
 - **Command-Aware MCP Resolution** — extend `safeai/analyzers/mcp/analyzer.py` to
   statically resolve a local MCP server `command` (e.g. `node build/index.js`,
   depth-capped, never executed), attempt static extraction on the target, and
-  label output `assurance: resolved` vs `assurance: unresolved-command`.
+  label output `assurance: resolved` vs `assurance: unresolved-command` vs
+  `assurance: external-package` (for `npx`/`uvx`/`docker run`).
 - **Target Taxonomy Engine** — extend `safeai/report/html_kit.py` and
   `json_report.py` to aggregate external-network capabilities into explicit
   buckets (Database, Object Storage, SaaS APIs) as a first-class report view.
 
-### Planned — Workstream 3: Detection Depth (analysis hardening)
+### Shipped — Workstream 3: Detection Depth (analysis hardening)
 
 - **Prompt risk depth** — move beyond single-line regex in `PROMPT_*` /
   `PROMPT_FILE_*` rules: multi-line prompt concatenation detection, cross-file
   prompt interpolation (prompt file read and interpolated into code), indirect
   injection via tool calls embedded in prompts, XML/HTML tag injection
   (`<system>`, `</system>`) in prompts, template variable injection in `.md`
-  files.
+  files. Heuristic detectors use hedged language to avoid overclaiming.
 - **Data leakage depth** — expand `DATA_LEAKAGE` beyond the 4 basic patterns:
   private keys (`-----BEGIN RSA PRIVATE KEY-----`), JWT tokens (`eyJ...`),
   AWS access keys (`AKIA...`), connection strings (`mongodb://`, `postgres://`),
   base64-encoded secrets, hex-encoded secrets. Per-pattern severity
   differentiation (private keys = critical, connection strings = high).
 - **Cross-component analysis** — new `safeai/analysis/component_graph.py` that
-  analyzes relationships between components: skill X references tool Y with
-  shell access, workflow step calls dangerous tool, MCP server exposes tool used
-  by workflow, model config sets unsafe temperature AND workflow has no approval,
-  subagent has shell access AND parent has no approval.
+  analyzes relationships between components with deterministic output (sorted
+  edges, adjacency lists, and summary keys).
 
-### Planned — Workstream 4: Community & Onboarding
+### Shipped — Workstream 4: Community & Onboarding
 
-- **Community scans expansion** — add new framework and library targets to the
-  community scan programme (`community-scans/`), expanding coverage beyond the
-  initial pilot targets.
-- **First-time user experience** — improve onboarding with a Getting Started
-  walkthrough, improved terminal output for new users, and scorecard
-  interpretation tips in `REPORTING_GUIDE.md`.
+- **Community scans expansion** — expanded from 5 to 25 AI tool targets across
+  all categories (workflow platforms, LLM frameworks, multi-agent, RAG, stateful
+  orchestration).
+- **First-time user experience** — `safeai welcome` guided first-run command
+  displaying recommended rules, first scan instructions, result interpretation,
+  registry commands, and documentation links.
 
 ### Definition of done
 
-- All CE 1.4 and CE 1.5 items in ROADMAP.md can be confidently marked ✅ shipped.
+- All CE 1.4, CE 1.5, and CE 1.8 items in ROADMAP.md can be confidently marked ✅ shipped.
 - Prompt injection detection covers multi-line, cross-file, and indirect
   injection patterns; data leakage covers private keys, JWT, AWS keys, and
   connection strings with per-pattern severity.
@@ -147,6 +144,19 @@ only partially implemented) during the v1.7.0 architectural review.
   provably valid against the current code, and every finding carries its
   longitudinal history — unblocking CE 2.0 (Plugin SDK & Static IaC
   Correlation).
+
+### Fixes (post-review)
+
+- **Lifecycle provenance** — resolved lifecycle rows now preserve last-known
+  `file_path` and `line` from `scan_findings`; `previous_event` uses actual
+  history instead of hardcoded value.
+- **Tool provenance** — orphan findings now include declaration/implementation
+  source path and line when available; summary includes deterministic mappings.
+- **Deterministic output** — component graph and target taxonomy output is
+  deterministic independent of input ordering (sorted edges, adjacency, buckets).
+- **Heuristic wording** — prompt detectors use hedged language ("pattern detected",
+  "may enable") to avoid overstating confidence; severity adjusted for
+  `PROMPT_INDIRECT_INJECTION` (high→medium) and `PROMPT_XML_INJECTION` (medium→low).
 
 ## [1.9.0] - Unreleased
 

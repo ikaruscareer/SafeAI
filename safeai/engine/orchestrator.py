@@ -559,17 +559,44 @@ class ScanOrchestrator:
             for finding in correlation_findings:
                 finding["file"] = _relativize(finding.get("file"), self.directory)
                 self.findings.append(finding)
-            self.findings.sort(key=lambda f: (
-                str(f.get("file") or ""),
-                int(f.get("line") or 0),
-                str(f.get("rule_id") or ""),
-            ))
-            self.report["findings"] = self.findings
 
         self.report["dependency_inventory"] = self.env_inventory
         self.report["dependency_correlation"] = self.dependency_correlation
+        # Tool ↔ implementation mapping (CE 1.5): correlate declared tools
+        # with their implementations and surface orphan states.
+        from safeai.analysis.tool_implementation import map_tool_implementations
+
+        impl_findings, tool_impl_summary = map_tool_implementations(self.report)
+        if impl_findings:
+            for finding in impl_findings:
+                self.findings.append(finding)
+        self.report["tool_implementation"] = tool_impl_summary
+        # Cross-component relationship graph (CE 1.8): analyze
+        # skill→tool→workflow→MCP→model relationships, surface orphaned
+        # references and unhealthy coupling patterns.
+        from safeai.analysis.component_graph import analyze_component_health
+
+        graph_findings, component_graph = analyze_component_health(self.components)
+        if graph_findings:
+            for finding in graph_findings:
+                finding["file"] = _relativize(finding.get("file"), self.directory)
+                self.findings.append(finding)
+        self.report["component_graph"] = component_graph
+        # Target taxonomy engine (CE 1.5): aggregate external-network
+        # capabilities into destination buckets (Database, Object Storage,
+        # SaaS APIs, Cloud Services, Messaging).
+        from safeai.analysis.target_taxonomy import build_target_taxonomy
+
+        self.report["target_taxonomy"] = build_target_taxonomy(self.report)
         # Single pass: counts, trust score, and relative paths, all over the
         # complete finding set (core + component + correlation).
+        # Sort once after all findings are appended.
+        self.findings.sort(key=lambda f: (
+            str(f.get("file") or ""),
+            int(f.get("line") or 0),
+            str(f.get("rule_id") or ""),
+        ))
+        self.report["findings"] = self.findings
         self._count_severities()
         self.trust_score = score_report(self.findings)
         self.report["counts"] = self.counts

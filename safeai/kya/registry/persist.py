@@ -333,6 +333,12 @@ def persist_scan(conn, manifest):
             _persist_tool_surface(conn, manifest, scan_id, stats)
             _persist_components(conn, manifest, scan_id)
 
+            recurring_risks = _persist_finding_lifecycle(
+                conn, manifest.get("findings") or [], scan_id,
+                known_fps, previous_fps,
+            )
+            stats["recurring_risks"] = recurring_risks
+
             conn.execute(
                 "INSERT OR REPLACE INTO policy_decisions(scan_id, outcome, reasons_json) VALUES (?, ?, ?)",
                 (scan_id, policy.get("outcome"), json.dumps(policy.get("reasons") or [])),
@@ -400,3 +406,153 @@ def _persist_components(conn, manifest, scan_id):
                 scan_id,
             ),
         )
+
+
+def _persist_finding_lifecycle(conn, findings, scan_id, known_fps, previous_fps):
+    """Track finding lifecycle events and return recurring-risk escalations.
+
+    For each finding, emits a lifecycle event into the ``finding_lifecycle``
+    table and returns a list of ``ESC_RECURRING_RISK`` escalation dicts for
+    findings that were previously resolved and have reappeared.
+
+    Lifecycle events:
+    - ``introduced`` — fingerprint seen for the first time
+    - ``persisting`` — fingerprint seen in the previous scan and still present
+    - ``resolved`` — fingerprint was in the previous scan but is absent now
+    - ``reopened`` — fingerprint was absent in the previous scan but seen earlier
+    """
+    recurring_risks = []
+    current_fps = set()
+    for finding in findings or []:
+        fp = finding.get("fingerprint")
+        if not fp:
+            continue
+        current_fps.add(fp)
+        status = finding.get("status", "new")
+        location = finding.get("location") or {}
+        if status == "regressed":
+            # Was absent in previous scan but seen earlier — reopened
+            event = "reopened"
+            # Check if the finding was previously resolved
+            prev = conn.execute(
+                "SELECT event FROM finding_lifecycle WHERE fingerprint = ? "
+                "ORDER BY id DESC LIMIT 1",
+                (fp,),
+            ).fetchone()
+            previous_event = prev["event"] if prev else None
+            if previous_event == "resolved":
+                recurring_risks.append({
+                    "fingerprint": fp,
+                    "rule_id": finding.get("rule_id"),
+                    "severity": finding.get("severity"),
+                    "message": finding.get("message"),
+                    "file": location.get("path"),
+                    "line": location.get("line_start"),
+                })
+        elif status == "existing":
+            event = "persisting"
+            previous_event = None
+        elif fp not in known_fps:
+            event = "introduced"
+            previous_event = None
+        else:
+            # Known fingerprint with status not matching above branches;
+            # treat as persisting (defensive fallback for unexpected statuses).
+            event = "persisting"
+            previous_event = None
+
+        conn.execute(
+            "INSERT INTO finding_lifecycle("
+            "fingerprint, scan_id, event, previous_event, rule_id, "
+            "severity, file_path, line, message, created_at"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                fp,
+                scan_id,
+                event,
+                previous_event,
+                finding.get("rule_id"),
+                finding.get("severity"),
+                location.get("path"),
+                location.get("line_start"),
+                finding.get("message"),
+                utc_now_iso(),
+            ),
+        )
+
+        # Update findings table status for lifecycle tracking
+        if event == "reopened":
+            conn.execute(
+                "UPDATE findings SET status = 'reopened' WHERE fingerprint = ?",
+                (fp,),
+            )
+
+    # Emit resolved events for fingerprints that were in the previous scan
+    # but are absent from the current scan.
+    if previous_fps is not None:
+        resolved_fps = previous_fps - current_fps
+        for fp in sorted(resolved_fps):
+            # Get the last known finding details from the findings table
+            last = conn.execute(
+                "SELECT rule_id, severity, title, message FROM findings "
+                "WHERE fingerprint = ? ORDER BY last_seen_scan DESC LIMIT 1",
+                (fp,),
+            ).fetchone()
+            if not last:
+                # Try to get from the most recent lifecycle row
+                last = conn.execute(
+                    "SELECT rule_id, severity, message FROM finding_lifecycle "
+                    "WHERE fingerprint = ? ORDER BY id DESC LIMIT 1",
+                    (fp,),
+                ).fetchone()
+            if last:
+                rule_id = last["rule_id"]
+                severity = last["severity"]
+                message = last["message"]
+            else:
+                # Fallback: we cannot fabricate values, skip this fingerprint
+                continue
+
+            # Get the last known location from scan_findings
+            loc = conn.execute(
+                "SELECT path, line FROM scan_findings "
+                "WHERE fingerprint = ? ORDER BY scan_id DESC LIMIT 1",
+                (fp,),
+            ).fetchone()
+            file_path = loc["path"] if loc else None
+            line = loc["line"] if loc else None
+
+            # Get the actual previous lifecycle event (not hardcoded)
+            prev_event_row = conn.execute(
+                "SELECT event FROM finding_lifecycle "
+                "WHERE fingerprint = ? ORDER BY id DESC LIMIT 1",
+                (fp,),
+            ).fetchone()
+            previous_event = prev_event_row["event"] if prev_event_row else None
+
+            conn.execute(
+                "INSERT INTO finding_lifecycle("
+                "fingerprint, scan_id, event, previous_event, rule_id, "
+                "severity, file_path, line, message, created_at"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    fp,
+                    scan_id,
+                    "resolved",
+                    previous_event,
+                    rule_id,
+                    severity,
+                    file_path,
+                    line,
+                    message,
+                    utc_now_iso(),
+                ),
+            )
+
+            # Update findings table status
+            conn.execute(
+                "UPDATE findings SET status = 'resolved' WHERE fingerprint = ?",
+                (fp,),
+            )
+
+    return recurring_risks

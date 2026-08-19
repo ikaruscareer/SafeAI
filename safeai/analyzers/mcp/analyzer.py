@@ -102,6 +102,54 @@ class MCPAnalyzer:
                 return True
         return bool(path.lower().endswith(("mcp.json", "mcp.yaml", "mcp.yml")))
 
+    def _resolve_command(self, command, args, file_cache):
+        """Statically resolve a local MCP server command.
+
+        If the command references a local script (e.g. ``node build/index.js``
+        or ``python server.py``), check whether the target file exists in the
+        scanned codebase.  Returns one of:
+
+        - ``"resolved"`` — local script found in the scanned codebase
+        - ``"unresolved-command"`` — local script not found
+        - ``"external-package"`` — command references a remote/packaged
+          entrypoint (``npx``, ``uvx``, ``docker run``) that cannot be
+          resolved statically without network access
+
+        External packages are not considered unresolved; they reference
+        entrypoints outside the repo by design.
+        """
+        if not command:
+            return "unresolved-command"
+
+        parts = str(command).split()
+        if len(parts) < 2:
+            return "unresolved-command"
+
+        # Detect external package managers: npx, uvx, docker run
+        executable = parts[0].lower()
+        if executable in ("npx", "uvx"):
+            return "external-package"
+        if executable == "docker" and len(parts) >= 2 and parts[1].lower() == "run":
+            return "external-package"
+
+        script = parts[-1]
+        if script.startswith(("-", "--")):
+            if len(parts) >= 3:
+                script = parts[-2]
+            else:
+                return "unresolved-command"
+
+        script = script.replace("\\", "/")
+
+        for cached_path in file_cache:
+            normalized = cached_path.replace("\\", "/")
+            if normalized.endswith(script) or normalized == script:
+                return "resolved"
+            if script.startswith("./") and normalized.endswith(script[2:]):
+                return "resolved"
+
+        return "unresolved-command"
+
     def _find_capabilities(self, text, framework="mcp"):
         low = text.lower()
         caps = []
@@ -214,6 +262,30 @@ class MCPAnalyzer:
                 asset["endpoints"] = endpoints if isinstance(endpoints, list) else [endpoints]
                 asset["auth"] = auth
                 asset["permissions"] = permissions
+
+                # Command-aware MCP resolution: resolve server commands statically
+                for server in asset["servers"]:
+                    if isinstance(server, dict):
+                        command = server.get("command") or server.get("cmd")
+                        args = server.get("args") or server.get("arguments") or []
+                        assurance = self._resolve_command(command, args, file_cache)
+                        server["assurance"] = assurance
+                        if assurance == "unresolved-command" and command:
+                            findings.append(_base_finding(
+                                "MCP_UNRESOLVED_COMMAND",
+                                "medium",
+                                f"MCP server command could not be resolved: {command}",
+                                path,
+                                1,
+                                capability="MCP",
+                                evidence=f"command={command}",
+                                reason="Unresolved server commands prevent static analysis of the server's true capability surface.",
+                                remediation="Ensure the command script exists in the scanned repository, or vendor it locally.",
+                                score_contribution=8,
+                                schema_version=schema_version,
+                                validation_rule="command_resolution",
+                                affected_object="servers",
+                            ))
 
                 if not auth:
                     findings.append(_base_finding(

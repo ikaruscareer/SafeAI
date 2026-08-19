@@ -11,7 +11,7 @@ executed tool calls, or production behavior.
 
 MANIFEST_SCHEMA_VERSION = "1.2"
 MANIFEST_TYPE = "safeai.kya"
-REGISTRY_SCHEMA_VERSION = 3
+REGISTRY_SCHEMA_VERSION = 4
 
 STATIC_ANALYSIS_DISCLAIMER = (
     "SafeAI results are static analysis evidence and do not verify "

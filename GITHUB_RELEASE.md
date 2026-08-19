@@ -49,11 +49,10 @@ safeai scan /path/to/project --scorecard scorecard.md --scorecard-fail-under 7.0
 
 ---
 
-## v1.8.0 (Curated scope — Unreleased: "True Authority & Complete Lifecycle")
+## v1.8.0 (Curated scope — Shipped: "True Authority & Complete Lifecycle")
 
-A curated release bundling the remaining CE 1.4 and CE 1.5 gaps into four
-cohesive workstreams — the gate for starting CE 2.0. Confirmed
-not-yet-implemented in the v1.7.0 architectural review.
+A curated release bundling the remaining CE 1.4, CE 1.5, and CE 1.8 gaps into
+four cohesive workstreams — the gate for starting CE 2.0.
 
 - **Workstream 1 — Lifecycle & Ownership (CE 1.4)**: `finding_lifecycle` table
   (schema v4) with `introduced → persisting → resolved → reopened` and an
@@ -68,9 +67,8 @@ not-yet-implemented in the v1.7.0 architectural review.
   indirect injection, XML/HTML injection); Data leakage depth (private keys, JWT,
   AWS keys, connection strings, base64/hex); Cross-component analysis
   (`component_graph.py` — skill→tool→workflow→MCP→model relationships).
-- **Workstream 4 — Community & Onboarding**: Community scans expansion (new
-  framework targets); first-time user experience (Getting Started guide,
-  improved terminal output, scorecard interpretation tips).
+- **Workstream 4 — Community & Onboarding**: Expanded community scan targets
+  from 5 to 25; `safeai welcome` guided first-run experience.
 
 **Exit criterion:** a reviewer can see, for any tool or MCP server, where it is
 declared and where it is implemented, and SafeAI flags mismatches. Suppressions

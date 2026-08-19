@@ -130,23 +130,24 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             # --- v1.8 deepened detections ---
 
             # Multi-line prompt concatenation
-            if "+" in line and any(kw in line.lower() for kw in ("prompt", "system", "message", "instruction")):
-                if _has_multiline_concat(lines, i - 1):
-                    findings.append({
-                        "rule_id": "PROMPT_MULTI_LINE_CONCAT",
-                        "severity": "medium",
-                        "message": "Multi-line prompt concatenation detected",
-                        "file": path,
-                        "line": i,
-                        "owasp_llm": "LLM01",
-                        "evidence": line.strip(),
-                        "reason": "Multi-line string concatenation in prompts can obscure injected content.",
-                        "risk_category": "Safety",
-                        "affected_framework": framework,
-                        "affected_capability": "Prompts",
-                        "score_contribution": 10,
-                        "remediation": "Use prompt templates or message arrays instead of string concatenation.",
-                    })
+            if ("+" in line
+                    and any(kw in line.lower() for kw in ("prompt", "system", "message", "instruction"))
+                    and _has_multiline_concat(lines, i - 1)):
+                findings.append({
+                    "rule_id": "PROMPT_MULTI_LINE_CONCAT",
+                    "severity": "medium",
+                    "message": "Multi-line prompt concatenation detected",
+                    "file": path,
+                    "line": i,
+                    "owasp_llm": "LLM01",
+                    "evidence": line.strip(),
+                    "reason": "Multi-line string concatenation in prompts can obscure injected content.",
+                    "risk_category": "Safety",
+                    "affected_framework": framework,
+                    "affected_capability": "Prompts",
+                    "score_contribution": 10,
+                    "remediation": "Use prompt templates or message arrays instead of string concatenation.",
+                })
 
             # Cross-file prompt interpolation (reading a file into a prompt)
             if _PROMPT_FILE_INTERP.search(line) and any(kw in line.lower() for kw in ("prompt", "system", "message")):
@@ -203,23 +204,24 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
                 })
 
             # Template variable injection in .md files
-            if path.endswith((".md", ".txt", ".prompt", ".prompt.md", ".prompt.txt")):
-                if _TEMPLATE_VAR.search(line) and any(kw in line.lower() for kw in ("system", "prompt", "instruction", "ignore")):
-                    findings.append({
-                        "rule_id": "PROMPT_TEMPLATE_INJECTION",
-                        "severity": "medium",
-                        "message": "Template variable in prompt file may enable injection",
-                        "file": path,
-                        "line": i,
-                        "owasp_llm": "LLM01",
-                        "evidence": line.strip(),
-                        "reason": "Template variables in prompt files can be exploited to inject instructions.",
-                        "risk_category": "Safety",
-                        "affected_framework": framework,
-                        "affected_capability": "Prompts",
-                        "score_contribution": 10,
-                        "remediation": "Validate template variables; avoid user-controlled values in system prompts.",
-                    })
+            if (path.endswith((".md", ".txt", ".prompt", ".prompt.md", ".prompt.txt"))
+                    and _TEMPLATE_VAR.search(line)
+                    and any(kw in line.lower() for kw in ("system", "prompt", "instruction", "ignore"))):
+                findings.append({
+                    "rule_id": "PROMPT_TEMPLATE_INJECTION",
+                    "severity": "medium",
+                    "message": "Template variable in prompt file may enable injection",
+                    "file": path,
+                    "line": i,
+                    "owasp_llm": "LLM01",
+                    "evidence": line.strip(),
+                    "reason": "Template variables in prompt files can be exploited to inject instructions.",
+                    "risk_category": "Safety",
+                    "affected_framework": framework,
+                    "affected_capability": "Prompts",
+                    "score_contribution": 10,
+                    "remediation": "Validate template variables; avoid user-controlled values in system prompts.",
+                })
 
     except Exception:
         return findings

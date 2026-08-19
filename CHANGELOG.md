@@ -73,20 +73,19 @@ Thanks to @adnqcr7-code for these contributions.
 ## [1.8.0] - Unreleased
 
 **Curated theme — "True Authority & Complete Lifecycle."** This release bundles
-the remaining CE 1.4 and CE 1.5 gaps into four cohesive workstreams and is the
-gate for starting CE 2.0. Items below were confirmed as not-yet-implemented (or
-only partially implemented) during the v1.7.0 architectural review.
+the remaining CE 1.4, CE 1.5, and CE 1.8 gaps into four cohesive workstreams
+and is the gate for starting CE 2.0.
 
-### Planned — Workstream 1: Lifecycle & Ownership (CE 1.4 completion)
+### Shipped — Workstream 1: Lifecycle & Ownership (CE 1.4 completion)
 
-- **Finding Lifecycle Event Engine** — add a `finding_lifecycle` table (registry
+- **Finding Lifecycle Event Engine** — `finding_lifecycle` table (registry
   schema v4) tracking state transitions on existing fingerprints: `introduced` →
-  `persisting` → `resolved` → `reopened`. Add an `ESC_RECURRING_RISK` rule that
+  `persisting` → `resolved` → `reopened`. `ESC_RECURRING_RISK` escalation rule
   fires when a previously resolved finding is reintroduced.
-- **Stale Suppression Guard** — extend `safeai/kya/suppressions.py` to compare a
-  suppression's fingerprint against the current AST/location; fail
-  `--strict-suppressions` when a waiver exists but the underlying code has
-  materially shifted (not just moved).
+- **Stale Suppression Guard** — `detect_stale_suppressions()` in
+  `safeai/kya/suppressions.py` compares a suppression's fingerprint against the
+  current AST/location; `--strict-suppressions` fails when a waiver exists but
+  the underlying code has materially shifted.
 - **Agent Enrichment Schema** — `safeai registry metadata set <agent_id>
   --owner "platform-sec" --env "production"` stored in a dedicated
   `agent_metadata` table, decoupled from automated scan snapshots and rendered in
@@ -106,7 +105,7 @@ only partially implemented) during the v1.7.0 architectural review.
   `json_report.py` to aggregate external-network capabilities into explicit
   buckets (Database, Object Storage, SaaS APIs) as a first-class report view.
 
-### Planned — Workstream 3: Detection Depth (analysis hardening)
+### Shipped — Workstream 3: Detection Depth (analysis hardening)
 
 - **Prompt risk depth** — move beyond single-line regex in `PROMPT_*` /
   `PROMPT_FILE_*` rules: multi-line prompt concatenation detection, cross-file
@@ -125,18 +124,18 @@ only partially implemented) during the v1.7.0 architectural review.
   by workflow, model config sets unsafe temperature AND workflow has no approval,
   subagent has shell access AND parent has no approval.
 
-### Planned — Workstream 4: Community & Onboarding
+### Shipped — Workstream 4: Community & Onboarding
 
-- **Community scans expansion** — add new framework and library targets to the
-  community scan programme (`community-scans/`), expanding coverage beyond the
-  initial pilot targets.
-- **First-time user experience** — improve onboarding with a Getting Started
-  walkthrough, improved terminal output for new users, and scorecard
-  interpretation tips in `REPORTING_GUIDE.md`.
+- **Community scans expansion** — expanded from 5 to 25 AI tool targets across
+  all categories (workflow platforms, LLM frameworks, multi-agent, RAG, stateful
+  orchestration).
+- **First-time user experience** — `safeai welcome` guided first-run command
+  displaying recommended rules, first scan instructions, result interpretation,
+  registry commands, and documentation links.
 
 ### Definition of done
 
-- All CE 1.4 and CE 1.5 items in ROADMAP.md can be confidently marked ✅ shipped.
+- All CE 1.4, CE 1.5, and CE 1.8 items in ROADMAP.md can be confidently marked ✅ shipped.
 - Prompt injection detection covers multi-line, cross-file, and indirect
   injection patterns; data leakage covers private keys, JWT, AWS keys, and
   connection strings with per-pattern severity.

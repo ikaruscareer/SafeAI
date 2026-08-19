@@ -418,13 +418,16 @@ def _persist_finding_lifecycle(conn, findings, scan_id, known_fps, previous_fps)
     Lifecycle events:
     - ``introduced`` — fingerprint seen for the first time
     - ``persisting`` — fingerprint seen in the previous scan and still present
+    - ``resolved`` — fingerprint was in the previous scan but is absent now
     - ``reopened`` — fingerprint was absent in the previous scan but seen earlier
     """
     recurring_risks = []
+    current_fps = set()
     for finding in findings or []:
         fp = finding.get("fingerprint")
         if not fp:
             continue
+        current_fps.add(fp)
         status = finding.get("status", "new")
         location = finding.get("location") or {}
         if status == "regressed":
@@ -453,6 +456,8 @@ def _persist_finding_lifecycle(conn, findings, scan_id, known_fps, previous_fps)
             event = "introduced"
             previous_event = None
         else:
+            # Known fingerprint with status not matching above branches;
+            # treat as persisting (defensive fallback for unexpected statuses).
             event = "persisting"
             previous_event = None
 
@@ -479,6 +484,57 @@ def _persist_finding_lifecycle(conn, findings, scan_id, known_fps, previous_fps)
         if event == "reopened":
             conn.execute(
                 "UPDATE findings SET status = 'reopened' WHERE fingerprint = ?",
+                (fp,),
+            )
+
+    # Emit resolved events for fingerprints that were in the previous scan
+    # but are absent from the current scan.
+    if previous_fps is not None:
+        resolved_fps = previous_fps - current_fps
+        for fp in sorted(resolved_fps):
+            # Get the last known finding details from the findings table
+            last = conn.execute(
+                "SELECT rule_id, severity, title, message FROM findings "
+                "WHERE fingerprint = ? ORDER BY last_seen_scan DESC LIMIT 1",
+                (fp,),
+            ).fetchone()
+            if not last:
+                # Try to get from the most recent lifecycle row
+                last = conn.execute(
+                    "SELECT rule_id, severity, message FROM finding_lifecycle "
+                    "WHERE fingerprint = ? ORDER BY id DESC LIMIT 1",
+                    (fp,),
+                ).fetchone()
+            if last:
+                rule_id = last["rule_id"]
+                severity = last["severity"]
+                message = last["message"]
+            else:
+                # Fallback: we cannot fabricate values, skip this fingerprint
+                continue
+
+            conn.execute(
+                "INSERT INTO finding_lifecycle("
+                "fingerprint, scan_id, event, previous_event, rule_id, "
+                "severity, file_path, line, message, created_at"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    fp,
+                    scan_id,
+                    "resolved",
+                    "persisting",
+                    rule_id,
+                    severity,
+                    None,
+                    None,
+                    message,
+                    utc_now_iso(),
+                ),
+            )
+
+            # Update findings table status
+            conn.execute(
+                "UPDATE findings SET status = 'resolved' WHERE fingerprint = ?",
                 (fp,),
             )
 

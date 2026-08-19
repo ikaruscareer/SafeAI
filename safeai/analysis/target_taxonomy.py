@@ -80,9 +80,11 @@ def build_target_taxonomy(report):
         tool_key = entry.get("tool_key", "")
         for cap in entry.get("capabilities") or []:
             bucket = _classify_capability(cap)
-            # Only include external-network related capabilities
+            # Include external-network buckets and the catch-all "other"
+            # bucket. Unmatched capabilities are retained in "other" rather
+            # than silently dropped.
             if bucket in ("database", "object_storage", "saas_api",
-                          "cloud_service", "messaging"):
+                          "cloud_service", "messaging", "other"):
                 cap_key = (tool_key, cap.get("name"))
                 if cap_key not in seen:
                     seen.add(cap_key)
@@ -98,7 +100,7 @@ def build_target_taxonomy(report):
     for cap in report.get("mcp_capabilities") or []:
         bucket = _classify_capability(cap)
         if bucket in ("database", "object_storage", "saas_api",
-                       "cloud_service", "messaging"):
+                       "cloud_service", "messaging", "other"):
             cap_key = ("mcp", cap.get("name"))
             if cap_key not in seen:
                 seen.add(cap_key)

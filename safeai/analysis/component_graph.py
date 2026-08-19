@@ -15,6 +15,29 @@ from collections import defaultdict
 _TOOL_COUPLING_THRESHOLD = 5
 
 
+# Canonical component key.  Shared by ``build_component_graph`` (to build the
+# node set and edge sources) and ``analyze_component_health`` (to map an
+# orphaned target's referencing component back to its file/line).  Keeping a
+# single source of truth prevents the two from drifting apart.
+_TYPE_KEY_PREFIX = {
+    "skill": "skill",
+    "tool": "tool",
+    "workflow": "workflow",
+    "prompt": "prompt",
+    "model_config": "model",
+}
+
+
+def _component_key(comp):
+    """Return the stable graph key for a component dict."""
+    ctype = comp.get("type", "")
+    name = comp.get("name") or comp.get("file", "")
+    subtype = comp.get("subtype", "")
+    if ctype in _TYPE_KEY_PREFIX:
+        return f"{_TYPE_KEY_PREFIX[ctype]}:{name}"
+    return f"{subtype or ctype}:{name}"
+
+
 def _extract_skill_refs(component):
     """Extract tool and prompt references from a skill component."""
     refs = {"tools": [], "prompts": []}
@@ -77,41 +100,12 @@ def build_component_graph(components):
     adjacency = defaultdict(list)
     reverse_adjacency = defaultdict(list)
 
-    known_keys = set()
-    for comp in components:
-        ctype = comp.get("type", "")
-        name = comp.get("name") or comp.get("file", "")
-        subtype = comp.get("subtype", "")
-        if ctype == "skill":
-            key = f"skill:{name}"
-        elif ctype == "tool":
-            key = f"tool:{name}"
-        elif ctype == "workflow":
-            key = f"workflow:{name}"
-        elif ctype == "prompt":
-            key = f"prompt:{name}"
-        elif ctype == "model_config":
-            key = f"model:{name}"
-        else:
-            key = f"{subtype or ctype}:{name}"
-        known_keys.add(key)
+    known_keys = {_component_key(comp) for comp in components}
 
     for comp in components:
         ctype = comp.get("type", "")
-        name = comp.get("name") or comp.get("file", "")
         subtype = comp.get("subtype", "")
-        if ctype == "skill":
-            src_key = f"skill:{name}"
-        elif ctype == "tool":
-            src_key = f"tool:{name}"
-        elif ctype == "workflow":
-            src_key = f"workflow:{name}"
-        elif ctype == "prompt":
-            src_key = f"prompt:{name}"
-        elif ctype == "model_config":
-            src_key = f"model:{name}"
-        else:
-            src_key = f"{subtype or ctype}:{name}"
+        src_key = _component_key(comp)
 
         if ctype == "skill":
             refs = _extract_skill_refs(comp)
@@ -177,17 +171,30 @@ def analyze_component_health(components):
     and unhealthy relationship chains.
     """
     graph = build_component_graph(components)
+    # Map each component back to its graph key so an orphaned target's
+    # referencing component(s) can supply actionable file/line provenance.
+    key_to_comp = {_component_key(c): c for c in components}
     findings = []
 
     for orphan in graph["orphaned_refs"]:
+        sources = graph["reverse_adjacency"].get(orphan, [])
+        src_comp = None
+        for src_key in sources:
+            comp = key_to_comp.get(src_key)
+            if comp and (comp.get("path") or comp.get("file")):
+                src_comp = comp
+                break
+        file_loc = (src_comp.get("path") or src_comp.get("file") or "") if src_comp else ""
+        line_loc = src_comp.get("line", 0) if src_comp else 0
+        ref_label = f" (referenced by {sources[0]})" if sources else ""
         findings.append({
             "rule_id": "COMPONENT_ORPHANED_REF",
             "severity": "medium",
-            "message": f"Component references non-existent target: {orphan}",
-            "file": "",
-            "line": 0,
+            "message": f"Component references non-existent target: {orphan}{ref_label}",
+            "file": file_loc,
+            "line": line_loc,
             "owasp_llm": "LLM06",
-            "evidence": orphan,
+            "evidence": (orphan + " referenced by " + ", ".join(sources)) if sources else orphan,
             "reason": "A component references a target that does not exist in the scanned codebase.",
             "risk_category": "Integrity",
             "affected_framework": "generic",

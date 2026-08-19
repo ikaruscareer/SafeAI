@@ -171,17 +171,17 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if _INDIRECT_INJECTION.search(line) and any(kw in line.lower() for kw in ("prompt", "system", "message", "user")):
                 findings.append({
                     "rule_id": "PROMPT_INDIRECT_INJECTION",
-                    "severity": "high",
-                    "message": "Tool call within prompt context may enable indirect injection",
+                    "severity": "medium",
+                    "message": "Tool call pattern detected near prompt context",
                     "file": path,
                     "line": i,
                     "owasp_llm": "LLM01",
                     "evidence": line.strip(),
-                    "reason": "Tool calls embedded in prompt content can execute arbitrary actions.",
+                    "reason": "Heuristic: tool calls near prompt content may enable indirect injection if user-controlled.",
                     "risk_category": "Safety",
                     "affected_framework": framework,
                     "affected_capability": "Prompts",
-                    "score_contribution": 14,
+                    "score_contribution": 10,
                     "remediation": "Separate tool execution from prompt construction; validate tool arguments.",
                 })
 
@@ -189,17 +189,17 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if _XML_TAG_INJECTION.search(line):
                 findings.append({
                     "rule_id": "PROMPT_XML_INJECTION",
-                    "severity": "medium",
-                    "message": "XML/HTML tag injection pattern in prompt",
+                    "severity": "low",
+                    "message": "XML/HTML tag pattern detected in prompt context",
                     "file": path,
                     "line": i,
                     "owasp_llm": "LLM01",
                     "evidence": line.strip(),
-                    "reason": "XML tags in prompts can override system instructions or inject role markers.",
+                    "reason": "Heuristic: XML tags in prompts may override system instructions if user-controlled.",
                     "risk_category": "Safety",
                     "affected_framework": framework,
                     "affected_capability": "Prompts",
-                    "score_contribution": 10,
+                    "score_contribution": 6,
                     "remediation": "Escape or strip XML/HTML tags from user-controlled prompt content.",
                 })
 

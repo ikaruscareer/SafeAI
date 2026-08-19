@@ -158,7 +158,7 @@ def map_tool_implementations(report):
     all_keys = sorted(set(declared_refs.keys()) | set(implementation_refs.keys()))
 
     for key in all_keys:
-        if key.startswith("mcp:") or key.startswith("mcp_server:"):
+        if key.startswith(("mcp:", "mcp_server:")):
             continue
 
         decl = declared_refs.get(key)

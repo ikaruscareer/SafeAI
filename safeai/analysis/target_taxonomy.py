@@ -115,11 +115,21 @@ def build_target_taxonomy(report):
     }
     summary["total"] = sum(summary.values())
 
+    # Make output deterministic: sort entries in each bucket and sort summary keys
+    sorted_buckets = {}
+    for bucket_id in list(_TAXONOMY.keys()) + ["other"]:
+        entries = taxonomy.get(bucket_id, [])
+        entries.sort(key=lambda e: (str(e.get("tool_key")), str(e.get("capability")), str(e.get("access_mode")), str(e.get("category"))))
+        sorted_buckets[bucket_id] = entries
+
+    sorted_summary = dict(sorted(summary.items()))
+    sorted_display_names = dict(sorted({
+        bucket_id: bucket["display_name"]
+        for bucket_id, bucket in _TAXONOMY.items()
+    }.items()))
+
     return {
-        "buckets": taxonomy,
-        "summary": summary,
-        "bucket_display_names": {
-            bucket_id: bucket["display_name"]
-            for bucket_id, bucket in _TAXONOMY.items()
-        },
+        "buckets": sorted_buckets,
+        "summary": sorted_summary,
+        "bucket_display_names": sorted_display_names,
     }

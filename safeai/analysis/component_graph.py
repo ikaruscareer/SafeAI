@@ -151,16 +151,22 @@ def build_component_graph(components):
     for edge in edges:
         kind_counts[edge["kind"]] += 1
 
+    # Make output deterministic: sort edges, adjacency lists, and summary keys
+    edges.sort(key=lambda e: (e["from"], e["to"], e["kind"]))
+    sorted_adjacency = {k: sorted(v) for k, v in sorted(adjacency.items())}
+    sorted_reverse_adj = {k: sorted(v) for k, v in sorted(reverse_adjacency.items())}
+    sorted_summary = dict(sorted({
+        "total_edges": len(edges),
+        "orphaned_refs": len(orphaned),
+        **dict(kind_counts),
+    }.items()))
+
     return {
         "edges": edges,
-        "adjacency": dict(adjacency),
-        "reverse_adjacency": dict(reverse_adjacency),
+        "adjacency": sorted_adjacency,
+        "reverse_adjacency": sorted_reverse_adj,
         "orphaned_refs": sorted(orphaned),
-        "summary": {
-            "total_edges": len(edges),
-            "orphaned_refs": len(orphaned),
-            **dict(kind_counts),
-        },
+        "summary": sorted_summary,
     }
 
 

@@ -42,7 +42,8 @@ def test_representative_n8n_workflow_is_detected_and_parsed():
 
 def test_representative_n8n_fixture_has_no_credential_values_or_private_endpoints():
     workflow_path = os.path.join(FIXTURE, "workflow.json")
-    workflow_text = open(workflow_path, encoding="utf-8").read()
+    with open(workflow_path, encoding="utf-8") as f:
+        workflow_text = f.read()
     workflow = json.loads(workflow_text)
 
     assert "credential" in workflow_text

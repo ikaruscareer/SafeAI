@@ -27,7 +27,7 @@ we deliberately do not overclaim coverage.
 |-----------|-----------------|----------------|---------------------|---------------|----------|
 | LangGraph | AST + regex | Nodes, edges, tools, models, memory | Shell, filesystem, memory, planner | Partial | Partial |
 | CrewAI | AST + regex | Agents, tasks, tools, models, memory | Shell, memory, delegations | Partial | Partial |
-| AutoGen | AST + regex | Agents, tools, models | Multi-agent, delegation | Minimal | Experimental |
+| AutoGen | AST + regex | Agents, tools, models | Shell, filesystem, external APIs | Minimal | Experimental |
 | LangChain | AST + metadata + regex | Agents, chains, tools, memory, models | Shell, memory, planner | Partial | Partial |
 | Semantic Kernel | AST + metadata + regex | Workflows, plugins, memory, models, skills | Shell, memory, planner | Partial | Partial |
 | OpenAI Agents SDK | AST + metadata + regex | Agents, tools, handoffs, MCP | Multi-agent, delegation, MCP | Partial | Partial |
@@ -41,7 +41,6 @@ we deliberately do not overclaim coverage.
 | LlamaIndex | AST + imports | Agents, tools, indexes, models | RAG, databases, external APIs | Minimal | Experimental |
 | Dify | YAML/JSON + references | Workflows, agents, tools, models | Shell, databases, external APIs | Minimal | Experimental |
 | n8n | Workflow JSON + references | Workflows, nodes, connections | Shell, databases, email, external APIs | Minimal | Experimental |
-| AutoGen | ✔️ | Partial | Minimal | Minimal | Experimental |
 
 ---
 
@@ -144,11 +143,17 @@ SafeAI detects:
 
 ### Detection Approach
 
-**Priority:** AST → regex fallback
+**Priority:** AST → regex fallback (`safeai/frameworks/autogen/parser.py`)
 
-- **Imports:** Detects `autogen` in Python import statements (e.g., `from autogen import AssistantAgent`)
-- **AST:** Parses `AssistantAgent()`, `UserProxyAgent()`, `register_for_llm()`, `register_function()` calls
-- **Regex fallback:** `AssistantAgent(`, `UserProxyAgent(`, `register_for_llm`, `register_function`
+- **Python only:** non-`.py` paths are ignored
+- **Imports:** import paths that start with `autogen` (for example `from autogen import AssistantAgent`)
+- **Class usage:** `AssistantAgent(` / `UserProxyAgent(` instantiations (word-boundary; not a bare `"autogen"` substring)
+- **Registration:** `register_for_llm` or `register_function` in file content
+- **AST:** parses `AssistantAgent()`, `UserProxyAgent()`, `register_for_llm()`, and `register_function()` calls
+- **Regex fallback:** `AssistantAgent(`, `UserProxyAgent(`, `register_for_llm(`, `register_function(` when AST found no agents or tools
+- **Parse gate:** `parse()` returns no framework result unless at least one agent or registered tool is found — an import-only file is not advertised as an AutoGen project
+
+Detection evidence recorded on a successful parse: `imports:autogen`, `ast:calls`. Parser confidence is 0.85 (`discovery_method: ast+regex_fallback`).
 
 ### Artifacts Discovered
 
@@ -156,13 +161,15 @@ SafeAI detects:
 |----------|-----------|-----------|-------------|
 | Agents | AST `AssistantAgent()`, `UserProxyAgent()` | 0.85 | AutoGen agent definitions |
 | Tools | AST `register_for_llm()`, `register_function()` | 0.80 | Tool registrations |
-| Models | AST model constructor calls | 0.80 | LLM provider references |
+| Models | AST calls whose names include `openai`, `azure`, `bedrock`, or `anthropic` | 0.80 | LLM provider references |
 
 ### Capabilities Discovered
 
-- **Multi-Agent** — Multiple `Agent()` instances with delegation
-- **Delegation** — Agent-to-agent conversation patterns
-- **External APIs** — Model references
+- **External APIs** — model constructor calls matching OpenAI, Azure, Bedrock, or Anthropic (`confidence=0.8`)
+- **Shell** — resolved call names containing `subprocess`, `os.system`, or `popen` (`confidence=0.9`)
+- **Filesystem** — resolved call names containing `open`, `pathlib`, `os.remove`, or `os.write` (`confidence=0.85`)
+
+The adapter does not emit first-class Multi-Agent or Delegation capabilities. `GroupChat` / `GroupChatManager`, `code_execution_config`, and AutoGen 0.4+ `autogen-agentchat` APIs are not extracted as dedicated artifacts.
 
 ### Detection Example
 
@@ -175,8 +182,17 @@ user_proxy = UserProxyAgent("user_proxy", code_execution_config=False)
 
 SafeAI detects:
 - Framework: `autogen`
-- Agents: `assistant`, `user_proxy`
-- Multi-agent delegation pattern
+- Agents: `AssistantAgent`, `UserProxyAgent` (names taken from the call)
+
+### Limitations
+
+- Detection is Python-only and does not read `requirements.txt` / `pyproject.toml` for an `autogen` dependency
+- A file that only imports AutoGen (no agent instantiation or tool registration) is not reported as an AutoGen project
+- `ConversableAgent`, `GroupChat`, `GroupChatManager`, Swarm, and `autogen_agentchat` AgentChat 0.4+ types have no dedicated matchers (a class still named `AssistantAgent` / `UserProxyAgent` will match)
+- `code_execution_config` is not interpreted; code-execution risk is only inferred if shell or filesystem call names appear
+- Shell and filesystem capabilities are heuristic name matches on resolved call identifiers, not AutoGen tool-schema analysis
+- `register_for_llm` / `register_function` detection uses a content substring and can fire on comments or unrelated identifiers
+- Framework-specific risk analysis is minimal (Experimental maturity), consistent with the README Supported Frameworks table
 
 ---
 

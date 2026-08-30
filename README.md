@@ -49,7 +49,7 @@ SafeAI sits before runtime guardrails and red-teaming tools in the security life
 
 | Feature | Description |
 |---------|-------------|
-| **Framework Detection** | Detects and parses 15 AI agent frameworks (AST + config + regex, no mutual exclusion) |
+| **Framework Detection** | Detects and parses 16 AI agent frameworks (AST + config + regex, no mutual exclusion) |
 | **Tool Identity & Access Modes** | Capabilities attributed to named tools (agent / MCP server / skill / tool / workflow node) on an access scale `none < read < write < mutate < execute`; inferred modes are flagged, never overstated |
 | **Capability Discovery** | Maps 19 capability categories (shell, filesystem, network, database, memory, MCP, ...) with evidence, confidence, and provenance |
 | **Capability Escalation Detection** | Per-tool authority diffs between scans (new shell, read→write widening, new MCP server, removed approval gate, ...) — 14 rules, including gating-aware subsumption |
@@ -85,7 +85,7 @@ File Collection — Python, YAML, JSON, .prompt, and .claude configs;
                  prunes VCS, caches, oversized files, and SafeAI's own artifacts
     │
     ▼
-Framework Detection — 15 parsers (AST + config + regex), all run on all files;
+Framework Detection — 16 parsers (AST + config + regex), all run on all files;
                      import graph and dependency manifests
     │
     ▼
@@ -134,14 +134,13 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 | LlamaIndex | ✔ | Partial | Minimal | Minimal | Experimental |
 | Dify | ✔ | Minimal | Minimal | Minimal | Experimental |
 | n8n | ✔ | Partial | Minimal | Minimal | Experimental |
-| AutoGen | ✔️ | Partial | Minimal | Minimal | Experimental |
 
 
 ### Framework Support Details
 
 - **LangGraph** — detects `StateGraph`, `add_edge`, `bind_tools`, nodes, models
 - **CrewAI** — detects `Agent`, `Task`, tools, models
-- **AutoGen** — detects `AssistantAgent`, `UserProxyAgent`, `register_for_llm`, agent delegation
+- **AutoGen** — detects `AssistantAgent`, `UserProxyAgent`, `register_for_llm`, `register_function`, models
 - **LangChain** — detects `AgentExecutor`, `Chain`, `Tool`, `PromptTemplate`, models
 - **Semantic Kernel** — detects `Kernel.invoke`, plugins, functions, skills, memory
 - **OpenAI Agents SDK** — detects `Agent`, tools, handoffs, MCP references

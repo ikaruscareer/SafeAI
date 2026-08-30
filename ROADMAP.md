@@ -65,6 +65,7 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 
 ### Trust and honesty
 - ✅ **Mandatory machine-readable assurance boundary block** in every report and manifest — what was verified (declared tools, prompt files, MCP servers, workflow structure, configuration) versus what cannot be verified statically (IAM permissions, runtime identity, deployed network policy, actual behaviour) — `assurance_boundary`.
+- 📋 **Telemetry transparency** — the assurance boundary block will include a `telemetry_active` boolean field reflecting whether opt-in telemetry was enabled for that scan (Phase 2 of telemetry implementation).
 - ✅ **Governance signal detection** — timeout, retry policy, approval workflow, audit logging, rate limiting, circuit breaker, backpressure, health check. **Shipped in v1.9.0** (8 `GOV_*` rules, `GovernanceAnalyzer`, per-tool dedup, scoped source confirmation).
 - ✅ **Better terminal output** — severity-grouped summary, clear layout, improved signal-to-noise (v1.4-b).
 - ✅ **Severity-weighted trust score** — 7-category weighted scoring keyed on `safeai/severity.py`.
@@ -143,6 +144,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - ✅ **Control mappings** — OWASP Top 10 for Agentic Applications, OWASP Top 10 for LLM Applications, NIST AI RMF 1.0 (NIST AI 100-1) — presented as taxonomy, policy selection and prioritisation aid, explicitly **not** as coverage or compliance claims. **Shipped in v1.9.0**.
 - 🔄 Plugin and rule-pack versions recorded in every scan — the **ruleset version** is recorded on every scan (manifest + registry); per-parser/plugin versions are not yet recorded.
 - 🔄 **Portable registry export/import** — `registry export` (portable KYA inventory JSON, source- and secret-safe, `--include-history`/`--include-suppressed`) **shipped**; `import` is not yet implemented.
+- ⏳ **Opt-in usage telemetry** — anonymous, opt-in, local-first usage signal (SafeAI version, Python version, OS family, invocation context). Disabled by default; CI auto-disable; `DO_NOT_TRACK` respected; never transmits scan content. Two-phase: Phase 1 (documentation + PRIVACY.md) → Phase 2 (client implementation). **Phase 1 planned for v2.0.0.**
 
 ### Static authority correlation *(the community's Phase 3, offline)*
 - ⏳ Parse in-repo IaC — Terraform, CloudFormation, Helm, Kubernetes manifests, serverless configs.
@@ -190,6 +192,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 ## CE permanent guarantees
 
 - ✅ **Local by default** — no account, server, daemon, telemetry or external network calls.
+- **Amended 2026-08-30:** SafeAI remains local-by-default and offline-by-default. An **opt-in only** usage-telemetry mechanism was added in v2.0.0; it is disabled unless a user explicitly enables it, is auto-disabled in CI, never transmits scan content, and can be permanently disabled with one command or one environment variable. See `PRIVACY.md` for the full data contract.
 - ✅ **Source-private by default** — references and evidence, not raw source.
 - ✅ **Static truth only** — detected evidence always distinguished from unknown runtime state.
 - ✅ **No compliance certification claims** — mappings and evidence, never a declaration that an agent is safe or compliant.

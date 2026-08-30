@@ -168,6 +168,13 @@ def _build_parser():
 
     sub.add_parser("welcome", help="Guided first-run experience for new users")
 
+    telemetry = sub.add_parser("telemetry", help="Manage opt-in usage telemetry")
+    telemetry.add_argument(
+        "telemetry_command",
+        choices=["status", "on", "off"],
+        help="Telemetry subcommand: status, on, or off",
+    )
+
     return parser
 
 
@@ -403,31 +410,68 @@ def _run_init(args):
     return 0
 
 
+def _run_telemetry(args):
+    """Handle `safeai telemetry on/off/status` commands."""
+    from safeai.telemetry.config import (
+        get_status_text,
+        set_telemetry_enabled,
+    )
+
+    cmd = getattr(args, "telemetry_command", None)
+
+    if cmd == "status":
+        print(get_status_text())
+        return 0
+
+    if cmd == "on":
+        set_telemetry_enabled(True)
+        print("Telemetry enabled.")
+        print("Auto-disabled in CI unless SAFEAI_TELEMETRY_IN_CI=1 is also set.")
+        print("See PRIVACY.md for the full data contract.")
+        return 0
+
+    if cmd == "off":
+        set_telemetry_enabled(False)
+        print("Telemetry disabled.")
+        print("No data will be sent.")
+        return 0
+
+    print("Usage: safeai telemetry {status|on|off}")
+    return 1
+
+
 def main(argv=None):
     _configure_stdout()
     parser = _build_parser()
     args = parser.parse_args(argv)
 
+    exit_code = 0
+
     if args.command == "scan":
-        return _run_scan_command(args, parser)
-
-    if args.command == "init":
-        return _run_init(args)
-
-    if args.command == "registry":
+        exit_code = _run_scan_command(args, parser)
+    elif args.command == "init":
+        exit_code = _run_init(args)
+    elif args.command == "registry":
         if not getattr(args, "registry_command", None):
             parser.error(
                 "registry requires a subcommand: "
                 "list|show|history|components|diff|export|metadata",
             )
         from safeai.cmd.registry_cli import run_registry_command
-        return run_registry_command(args)
+        exit_code = run_registry_command(args)
+    elif args.command == "welcome":
+        exit_code = _run_welcome()
+    elif args.command == "telemetry":
+        exit_code = _run_telemetry(args)
+    else:
+        parser.print_help()
 
-    if args.command == "welcome":
-        return _run_welcome()
+    # Fire telemetry after command execution, before exit
+    if args.command and args.command != "telemetry":
+        from safeai.telemetry.client import send_telemetry
+        send_telemetry(args.command)
 
-    parser.print_help()
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

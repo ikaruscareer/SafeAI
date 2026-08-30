@@ -87,11 +87,10 @@ No network call is made unless telemetry is explicitly enabled and the endpoint 
 
 ## Retention and deletion
 
-TODO(maintainer): Define the retention period for telemetry data. Suggested defaults:
-
-- Raw events: no longer than 30 days
-- Aggregated statistics: up to 90 days
-- No raw event is retained past the retention period
+- **Raw events:** No longer than 30 days. Individual event records are deleted after 30 days.
+- **Aggregated statistics:** Up to 90 days. Aggregated data (e.g., "X scans used v2.0.0") may be retained for up to 90 days to track adoption trends.
+- No raw event is retained past the 30-day period.
+- Users can request deletion of their installation's data by opening an issue with their `install_id` (visible via `safeai telemetry status`).
 
 ---
 

@@ -194,6 +194,13 @@ def build_assurance_boundary(report):
             "access mode was inferred in this scan"
         )
 
+    # Telemetry transparency: reflect whether opt-in telemetry was active
+    try:
+        from safeai.telemetry.config import is_telemetry_enabled
+        telemetry_active = is_telemetry_enabled()
+    except Exception:
+        telemetry_active = False
+
     return {
         "schema_version": _SCHEMA_VERSION,
         "verified_statically": list(VERIFIED_STATICALLY),
@@ -201,4 +208,5 @@ def build_assurance_boundary(report):
         "coverage_notes": coverage_notes,
         "inferred_value_count": inferred_count,
         "summary": BOUNDARY_SENTENCE,
+        "telemetry_active": telemetry_active,
     }

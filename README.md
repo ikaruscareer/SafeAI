@@ -276,6 +276,12 @@ pip install -e ".[dev]"
 
 ---
 
+## Privacy & Telemetry
+
+SafeAI collects no data by default. Usage telemetry is opt-in, anonymous, and fully documented in [`PRIVACY.md`](PRIVACY.md). If you do nothing, nothing is ever sent. See `PRIVACY.md` for the complete data contract, what is never collected, and how to disable telemetry.
+
+---
+
 ## CLI Usage
 
 ```bash

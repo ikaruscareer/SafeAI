@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2026-08-30
+
+Post-release fixes for v1.9.0.
+
+### Fixed
+
+- **AGENTIC04 mojibake** — removed CJK fragment from English description in
+  `safeai/controls/catalogs.py`.
+- **Scoped governance source suppression** — suppression now scoped to tool
+  line ±10 window, avoiding masking missing controls in poly-tool modules.
+- **Removed unused regex patterns** — `_TOOL_TIMEOUT_RE`, `_TOOL_RETRY_RE`,
+  `FUNCTION_PARAM_RE` cleaned up from `safeai/analyzers/governance/analyzer.py`.
+- **Hardened LangGraph detection** — `detect()` now requires an import or
+  `StateGraph(` call, not a bare substring match.
+- **Browser rule enrichment** — added `CAP_browser_playwright`,
+  `CAP_browser_selenium`, `CAP_browser_use` to `RULE_MAPPINGS` in
+  `safeai/controls/mappings.py`.
+
 ## [1.9.0] - 2026-08-28
 
 **Curated theme — "Component Depth & Ecosystem Foundations."** Carries the

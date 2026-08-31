@@ -57,7 +57,7 @@ jobs:
       SAFEAI_ACTION_COMMIT: fef9781e3a68ba591448aa18e9d2f299b3869589
       SCAN_MODE: ${{ inputs.mode || 'private' }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -76,7 +76,7 @@ jobs:
           echo "$META"
           python -c 'import json,sys; d=json.load(sys.stdin); print("repository="+d["repository"]); print("requested_ref="+d["requested_ref"]); print("resolved_sha="+d["resolved_commit_sha"]); print("security_policy_url="+d.get("security_policy_url", ""))' <<< "$META" >> "$GITHUB_OUTPUT"
       - name: Check out target at resolved commit
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ${{ steps.meta.outputs.repository }}
           ref: ${{ steps.meta.outputs.resolved_sha }}

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-SAFEAI_VERSION = "1.9.0"
+SAFEAI_VERSION = "1.9.1"
 VERSION_FLAGS = ("--version", "-V")
 
 

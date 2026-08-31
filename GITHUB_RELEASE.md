@@ -1,5 +1,32 @@
 # SafeAI — GitHub Release
 
+## v1.9.1
+
+Static AI Capability & Risk Analyzer for AI agents and workflows. Post-release
+fixes for v1.9.0: mojibake correction, scoped governance suppression, hardened
+LangGraph detection, and browser rule enrichment mappings.
+
+### Installation
+
+```bash
+pip install SafeAI-Static-Analyzer
+```
+
+### What's Fixed in 1.9.1
+
+- **AGENTIC04 mojibake** — removed CJK fragment from English description in `safeai/controls/catalogs.py`.
+- **Scoped governance source suppression** — suppression now scoped to tool line ±10 window, avoiding masking missing controls in poly-tool modules.
+- **Removed unused regex patterns** — `_TOOL_TIMEOUT_RE`, `_TOOL_RETRY_RE`, `FUNCTION_PARAM_RE` cleaned up.
+- **Hardened LangGraph detection** — `detect()` now requires an import or `StateGraph(` call, not a bare substring match.
+- **Browser rule enrichment** — added `CAP_browser_playwright`, `CAP_browser_selenium`, `CAP_browser_use` to `RULE_MAPPINGS` in `safeai/controls/mappings.py`.
+
+### Links
+
+- [Source Code](https://github.com/ikaruscareer/SafeAI/tree/v1.9.1)
+- [Issue Tracker](https://github.com/ikaruscareer/SafeAI/issues)
+
+---
+
 ## v1.9.0
 
 Static AI Capability & Risk Analyzer for AI agents and workflows. Detects

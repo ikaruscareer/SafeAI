@@ -533,6 +533,7 @@ MCP-related rules are generated dynamically by the MCP analyzer and are document
 | `MCP_ENDPOINT_EXPOSURE` | Potentially exposed MCP endpoint | High |
 | `MCP_HARDCODED_SECRET` | Hardcoded secret in MCP configuration | Critical |
 | `MCP_DANGEROUS_TOOL` | MCP tool may allow unrestricted execution | High |
+| `MCP_TOOL_DESCRIPTION_INJECTION` | Hidden instructions in an MCP tool description (tool poisoning, LLM01) | High |
 | `MCP_ASSETS_DISCOVERED` | Scanner metadata: MCP discovery summary | Info |
 
 ---

@@ -170,6 +170,11 @@
   severity: high
   owasp_llm: LLM06
 
+- id: MCP_TOOL_DESCRIPTION_INJECTION
+  description: MCP tool description contains patterns that may be hidden instructions
+  severity: high
+  owasp_llm: LLM01
+
 - id: MCP_RESOURCE_SENSITIVE
   description: MCP resource exposes sensitive data patterns
   severity: high

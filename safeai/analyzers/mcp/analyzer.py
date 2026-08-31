@@ -23,6 +23,51 @@ from safeai.analyzers.mcp.compatibility import (
 )
 from safeai.analyzers.mcp.validators import validate_mcp_schema
 
+# --- Tool-description poisoning patterns (LLM01) ---------------------------
+# An MCP tool's `description` is injected verbatim into the agent's context,
+# so text here is an injection sink. Patterns are deliberately narrow: a
+# description legitimately explains what a tool does, and words like "act as"
+# or "disregard" appear in benign prose, so each pattern requires the
+# surrounding structure that makes it an instruction rather than a
+# description.
+_TOOL_INSTRUCTION_OVERRIDE = re.compile(
+    r"""(?:ignore|disregard|forget)\s+(?:all\s+|any\s+)?(?:the\s+)?"""
+    r"""(?:previous|prior|above|earlier|preceding)\s+"""
+    r"""(?:instructions?|prompts?|messages?|context|rules?)"""
+    r"""|you\s+are\s+now\b"""
+    r"""|new\s+instructions?\s*:"""
+    r"""|(?:reveal|print|output|repeat|show|dump)\s+(?:your\s+|the\s+)?system\s+prompt""",
+    re.IGNORECASE,
+)
+_TOOL_DELIMITER_INJECTION = re.compile(
+    r"""<\s*/?\s*(?:system|instructions?|prompt|assistant)\s*>"""
+    r"""|\[/?INST\]"""
+    r"""|<</?SYS>>"""
+    r"""|<\|[^|>]{1,40}\|>""",
+    re.IGNORECASE,
+)
+_TOOL_ROLE_MANIPULATION = re.compile(
+    r"""pretend\s+(?:to\s+be|you(?:'re|\s+are))"""
+    r"""|roleplay\s+as"""
+    r"""|from\s+now\s+on[,\s]+you\b"""
+    r"""|act\s+as\s+(?:a\s+|an\s+|the\s+)?(?:system|admin(?:istrator)?|root|superuser|developer\s+mode|DAN)\b""",
+    re.IGNORECASE,
+)
+
+_TOOL_POISON_CHECKS = (
+    ("instruction override", _TOOL_INSTRUCTION_OVERRIDE),
+    ("prompt delimiter", _TOOL_DELIMITER_INJECTION),
+    ("role manipulation", _TOOL_ROLE_MANIPULATION),
+)
+
+
+def _detect_tool_description_injection(text):
+    """Return the list of poisoning categories present in a tool description."""
+    if not text:
+        return []
+    return [label for label, pattern in _TOOL_POISON_CHECKS if pattern.search(text)]
+
+
 
 def _base_finding(
     rule_id,
@@ -401,6 +446,34 @@ class MCPAnalyzer:
                         tool_name = tool_def
 
                     full_tool_text = f"{tool_name} {tool_desc} {tool_params}"
+
+                    # Tool-description poisoning: hidden instructions in text
+                    # that is injected straight into the agent's context.
+                    poison_kinds = _detect_tool_description_injection(tool_desc)
+                    if poison_kinds:
+                        findings.append(_base_finding(
+                            "MCP_TOOL_DESCRIPTION_INJECTION",
+                            "high",
+                            f"MCP tool '{tool_name}' description contains hidden instructions ({', '.join(poison_kinds)})",
+                            path,
+                            1,
+                            capability="MCP",
+                            evidence=tool_desc[:200],
+                            reason=(
+                                "MCP tool descriptions are injected into the agent's context. "
+                                "Instruction-like text here can hijack the agent (tool poisoning)."
+                            ),
+                            remediation=(
+                                "Treat tool descriptions as untrusted input. Remove instruction text, "
+                                "prompt delimiters and role directives, and pin trusted server versions."
+                            ),
+                            score_contribution=15,
+                            schema_version=schema_version,
+                            validation_rule="tool_description_injection",
+                            affected_object=tool_name,
+                        ))
+                        findings[-1]["owasp_llm"] = "LLM01"
+                        findings[-1]["risk_category"] = "Prompt Injection"
 
                     # Overly broad tool: wildcards or unrestricted patterns
                     if re.search(r"\*|all|any|unrestricted|no.limit|bypass", tool_params, flags=re.IGNORECASE):

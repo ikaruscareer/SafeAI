@@ -125,3 +125,46 @@ class TestControlMappings:
             for framework, control_id in mappings:
                 assert framework in {"owasp_llm", "owasp_agentic", "nist_ai_rmf"}
                 assert isinstance(control_id, str)
+
+
+class TestRuleCoverageSummary:
+    def test_unmapped_rules_are_visible(self):
+        """Issue #89: coverage must surface gaps, not just a mapped count."""
+        from safeai.controls.mappings import rule_coverage_summary
+        summary = rule_coverage_summary()
+
+        by_category = {entry["category"]: entry for entry in summary}
+        # PROMPT_DELIMITER etc. are not in RULE_MAPPINGS as of this test.
+        assert by_category["PROMPT"]["unmapped_count"] >= 1
+        assert "PROMPT_DELIMITER" in by_category["PROMPT"]["unmapped_rules"]
+
+    def test_gov_and_dataflow_are_fully_mapped(self):
+        from safeai.controls.mappings import rule_coverage_summary
+        summary = rule_coverage_summary()
+
+        by_category = {entry["category"]: entry for entry in summary}
+        assert by_category["GOV"]["unmapped_count"] == 0
+        assert by_category["DATAFLOW"]["unmapped_count"] == 0
+
+    def test_counts_match_the_rule_lists(self):
+        from safeai.controls.mappings import rule_coverage_summary
+        for entry in rule_coverage_summary():
+            assert entry["unmapped_count"] == len(entry["unmapped_rules"])
+
+    def test_no_compliance_claim_field(self):
+        """This is informational only -- no field should imply a pass/fail claim."""
+        from safeai.controls.mappings import rule_coverage_summary
+        for entry in rule_coverage_summary():
+            assert set(entry) == {
+                "category", "mapped_count", "unmapped_count", "unmapped_rules",
+            }
+
+    def test_deterministic_and_sorted(self):
+        from safeai.controls.mappings import rule_coverage_summary
+        summary = rule_coverage_summary()
+        categories = [entry["category"] for entry in summary]
+        assert categories == sorted(categories)
+        for entry in summary:
+            assert entry["unmapped_rules"] == sorted(entry["unmapped_rules"])
+        # Calling it twice must produce identical output.
+        assert rule_coverage_summary() == summary

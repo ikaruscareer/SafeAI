@@ -734,10 +734,19 @@ See [ROADMAP.md](./ROADMAP.md) for the detailed roadmap.
 SafeAI is built by and for the AI security community. Thank you to all
 contributors who have helped make AI safer:
 
-- **[@Aming9303](https://github.com/Aming9303)** — `safeai registry components`
-  CLI ([#82](https://github.com/ikaruscareer/SafeAI/pull/82)),
-  `safeai init` command ([#83](https://github.com/ikaruscareer/SafeAI/pull/83)),
-  GitHub Actions workflow example ([#84](https://github.com/ikaruscareer/SafeAI/pull/84)).
+| Contributor | Key Contributions |
+|-------------|-------------------|
+| [@i-safonoff](https://github.com/i-safonoff) | `.cursorrules` framework adapter, `rule_coverage_summary()`, RULES_REFERENCE.md, dataflow casing fix |
+| [@ARAVIND281](https://github.com/ARAVIND281) | Claude Code permission evaluation order, interprocedural data-flow tracking |
+| [@Solarthis](https://github.com/Solarthis) | MCP tool description injection detection |
+| [@Aming9303](https://github.com/Aming9303) | `safeai registry components` CLI, `safeai init` command, GitHub Actions example |
+| [@adnqcr7-code](https://github.com/adnqcr7-code) | Framework detection tests (LangGraph, CrewAI, LlamaIndex, n8n, Claude Code), CI/SARIF docs |
+| [@hadbiaghiles](https://github.com/hadbiaghiles) | AutoGen framework documentation |
+| [@D05TL3](https://github.com/D05TL3) | GitHub Actions scanning example |
+| [@mikemikimike](https://github.com/mikemikimike) | Adapter negative detection tests |
+| [@mah](https://github.com/mahirhir) | Claude Code deep analysis documentation |
+| [@asarakhatun17-lgtm](https://github.com/asarakhatun17-lgtm) | Supported frameworks consistency fix |
+| [@yugaaank](https://github.com/yugaaank) | Capability detectors (Docker, Kubernetes, Redis, S3, GCP, Slack, Jira, browser) |
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get involved.
 

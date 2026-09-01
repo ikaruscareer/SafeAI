@@ -23,6 +23,36 @@ Post-release fixes for v1.9.0.
   `CAP_browser_selenium`, `CAP_browser_use` to `RULE_MAPPINGS` in
   `safeai/controls/mappings.py`.
 
+### Community contributors
+
+Thank you to the following community members for their contributions to
+SafeAI v1.9.1:
+
+- **[@i-safonoff](https://github.com/i-safonoff)** — filled missing entries
+  in RULES_REFERENCE.md (PR [#108](https://github.com/ikaruscareer/SafeAI/pull/108))
+  and fixed dataflow rule ID casing mismatch (PR
+  [#109](https://github.com/ikaruscareer/SafeAI/pull/109)).
+- **[@Solarthis](https://github.com/Solarthis)** — added MCP tool
+  description injection detection (PR
+  [#107](https://github.com/ikaruscareer/SafeAI/pull/107)).
+- **[@ARAVIND281](https://github.com/ARAVIND281)** — implemented
+  interprocedural data-flow tracking within a single file (PR
+  [#110](https://github.com/ikaruscareer/SafeAI/pull/110)) and resolved
+  Claude Code permission evaluation order (PR
+  [#111](https://github.com/ikaruscareer/SafeAI/pull/111)).
+- **[@hadbiaghiles](https://github.com/hadbiaghiles)** — added AutoGen
+  to supported frameworks documentation (PR
+  [#98](https://github.com/ikaruscareer/SafeAI/pull/98)).
+- **[@mikemikimike](https://github.com/mikemikimike)** — added adapter
+  negative detection tests (PR
+  [#90](https://github.com/ikaruscareer/SafeAI/pull/90)).
+- **[@asarakhatun17-lgtm](https://github.com/asarakhatun17-lgtm)** —
+  fixed supported frameworks consistency (PR
+  [#91](https://github.com/ikaruscareer/SafeAI/pull/91)).
+- **[@mah](https://github.com/mahirhir)** — documented Claude Code deep
+  analysis fixtures and detection approach (PR
+  [#92](https://github.com/ikaruscareer/SafeAI/pull/92)).
+
 ## [1.9.0] - 2026-08-28
 
 **Curated theme — "Component Depth & Ecosystem Foundations."** Carries the
@@ -113,8 +143,8 @@ SafeAI v1.9.0:
 - **[@Aming9303](https://github.com/Aming9303)** — `safeai registry components`
   CLI (PR [#82](https://github.com/ikaruscareer/SafeAI/pull/82)) and
   `safeai init` command (PR [#83](https://github.com/ikaruscareer/SafeAI/pull/83)).
-- **[@Aming9303](https://github.com/Aming9303)** — GitHub Actions workflow
-  example (PR [#84](https://github.com/ikaruscareer/SafeAI/pull/84)).
+- **[@D05TL3](https://github.com/D05TL3)** — GitHub Actions scanning example
+  (PR [#84](https://github.com/ikaruscareer/SafeAI/pull/84)).
 
 ## [1.7.0] - 2026-08-16
 

@@ -1,5 +1,48 @@
 # SafeAI — Release Notes
 
+## v1.9.1 (2026-08-30)
+
+**SafeAI 1.9.1 is a post-release hardening release for v1.9.0.** Fixes
+AGENTIC04 mojibake, scoped governance source suppression, hardened LangGraph
+detection, browser rule enrichment, and removes unused regex patterns.
+
+### Community contributors
+
+Thank you to the following community members for their contributions:
+
+- **[@i-safonoff](https://github.com/i-safonoff)** — filled missing entries
+  in RULES_REFERENCE.md (PR [#108](https://github.com/ikaruscareer/SafeAI/pull/108))
+  and fixed dataflow rule ID casing mismatch (PR
+  [#109](https://github.com/ikaruscareer/SafeAI/pull/109)).
+- **[@Solarthis](https://github.com/Solarthis)** — added MCP tool
+  description injection detection (PR
+  [#107](https://github.com/ikaruscareer/SafeAI/pull/107)).
+- **[@ARAVIND281](https://github.com/ARAVIND281)** — implemented
+  interprocedural data-flow tracking (PR
+  [#110](https://github.com/ikaruscareer/SafeAI/pull/110)) and resolved
+  Claude Code permission evaluation order (PR
+  [#111](https://github.com/ikaruscareer/SafeAI/pull/111)).
+- **[@hadbiaghiles](https://github.com/hadbiaghiles)** — added AutoGen
+  to supported frameworks documentation (PR
+  [#98](https://github.com/ikaruscareer/SafeAI/pull/98)).
+- **[@mikemikimike](https://github.com/mikemikimike)** — added adapter
+  negative detection tests (PR
+  [#90](https://github.com/ikaruscareer/SafeAI/pull/90)).
+- **[@asarakhatun17-lgtm](https://github.com/asarakhatun17-lgtm)** —
+  fixed supported frameworks consistency (PR
+  [#91](https://github.com/ikaruscareer/SafeAI/pull/91)).
+- **[@mah](https://github.com/mahirhir)** — documented Claude Code deep
+  analysis fixtures and detection approach (PR
+  [#92](https://github.com/ikaruscareer/SafeAI/pull/92)).
+
+### Verification Snapshot
+
+- 641 tests passing, 1 skipped.
+- Lint passing (`ruff check safeai/ tests/`).
+- 76 built-in rules in `safeai/rules/base_rules.yaml`.
+
+---
+
 ## v1.7.0 (Superseded by v1.8.0)
 
 **SafeAI 1.7.0 completes the CE 1.4 and CE 1.6 roadmap milestones.** Adds

@@ -6,7 +6,7 @@ This document indexes **29 beginner-friendly issues** designed for first-time co
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
-> **17 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
+> **25 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
 
 ---
 
@@ -171,6 +171,7 @@ These issues have been implemented by community contributors and are now part of
 | 5 | Add n8n workflow detector | ikaruscareer |
 | 6 | Improve CrewAI parser — extract tool definitions | ikaruscareer |
 | 8 | Add Dify detector | ikaruscareer |
+| — | Add `.cursorrules` config-file adapter | @i-safonoff (PR #113) |
 
 ### Capability Detection
 
@@ -184,6 +185,7 @@ These issues have been implemented by community contributors and are now part of
 | 17 | Detect Slack integration | @yugaaank (PR #2) |
 | 18 | Detect Jira integration | @yugaaank (PR #2) |
 | 19 | Detect browser automation capability | @yugaaank (PR #2) |
+| — | Detect hidden instructions in MCP tool descriptions | @Solarthis (PR #107) |
 
 ### Reports, Output & Scoring
 
@@ -192,6 +194,14 @@ These issues have been implemented by community contributors and are now part of
 | 16 | Improve terminal output readability | SafeAI (v1.4) |
 | 17 | Improve HTML report — add filtering and search | SafeAI (v1.4-b) |
 | 23 | Tune trust score weighting for critical/high findings | SafeAI (v1.4) |
+| — | Add `rule_coverage_summary()` for control-mapping gaps | @i-safonoff (PR #112) |
+
+### Data-Flow & Governance
+
+| # | Issue | Contributor |
+|---|-------|-------------|
+| — | Interprocedural data-flow tracking (follow taint one call deep) | @ARAVIND281 (PR #110) |
+| — | Resolve Claude Code permission evaluation order | @ARAVIND281 (PR #111) |
 
 ---
 

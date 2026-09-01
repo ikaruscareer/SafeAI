@@ -59,6 +59,7 @@ def discover_parsers(include_external=True):
     from safeai.frameworks.bedrock_agent.parser import BedrockAgentParser  # noqa: F401
     from safeai.frameworks.claude_code.parser import ClaudeCodeParser  # noqa: F401
     from safeai.frameworks.crewai.parser import CrewAIParser  # noqa: F401
+    from safeai.frameworks.cursorrules.parser import CursorRulesParser  # noqa: F401
     from safeai.frameworks.dify.parser import DifyParser  # noqa: F401
     from safeai.frameworks.google_adk.parser import GoogleADKParser  # noqa: F401
     from safeai.frameworks.haystack.parser import HaystackParser  # noqa: F401

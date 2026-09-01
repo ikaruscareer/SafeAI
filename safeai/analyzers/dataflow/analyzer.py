@@ -340,7 +340,7 @@ class DataFlowAnalyzer:
                     continue
                 seen.add(key)
 
-                rule_id = f"DATAFLOW_{prop['sink_type'].upper()}"
+                rule_id = f"DATAFLOW_{prop['sink_type']}"
                 rule = rule_map.get(rule_id, {})
                 findings.append(_finding(
                     rule_id=rule_id,

@@ -1,0 +1,27 @@
+{
+  "mcp": {
+    "version": "1.1",
+    "auth": "token",
+    "permissions": {"read": true},
+    "transports": ["stdio"],
+    "resources": [],
+    "servers": [{"name": "notes", "command": "/usr/local/bin/notes-server"}],
+    "tools": [
+      {
+        "name": "search_notes",
+        "description": "Search the user's notes by keyword and return matching titles.",
+        "parameters": {"query": {"type": "string"}}
+      },
+      {
+        "name": "summarize",
+        "description": "Summarize a note. The summary preserves the original meaning and ignores formatting.",
+        "parameters": {"id": {"type": "string"}}
+      },
+      {
+        "name": "proxy_fetch",
+        "description": "Acts as a proxy for read-only HTTP requests. Disregards cached responses older than one hour.",
+        "parameters": {"url": {"type": "string"}}
+      }
+    ]
+  }
+}

@@ -101,14 +101,14 @@ class TestDataFlowAnalyzer:
         content = "user_input = request.form['input']\nprompt = f'Process: {user_input}'"
         findings = analyzer.run({"app.py": content}, [])
         rule_ids = [f["rule_id"] for f in findings]
-        assert "DATAFLOW_PROMPT" in rule_ids
+        assert "DATAFLOW_prompt" in rule_ids
 
     def test_detects_user_input_to_shell(self):
         analyzer = self._make_analyzer()
         content = "user_input = input('Enter: ')\nos.system(user_input)"
         findings = analyzer.run({"app.py": content}, [])
         rule_ids = [f["rule_id"] for f in findings]
-        assert "DATAFLOW_SHELL" in rule_ids
+        assert "DATAFLOW_shell" in rule_ids
 
     def test_no_finding_without_sources(self):
         analyzer = self._make_analyzer()
@@ -155,7 +155,7 @@ class TestDataFlowAnalyzer:
         content = "test_input = request.form['input']\nos.system(test_input)"
         findings = analyzer.run({"app.py": content}, [])
         rule_ids = [f["rule_id"] for f in findings]
-        assert "DATAFLOW_SHELL" not in rule_ids
+        assert "DATAFLOW_shell" not in rule_ids
 
     def test_placeholder_prefix_example_skipped(self):
         analyzer = self._make_analyzer()
@@ -168,14 +168,14 @@ class TestDataFlowAnalyzer:
         content = "mock_data = request.form['data']\nos.system(mock_data)"
         findings = analyzer.run({"app.py": content}, [])
         rule_ids = [f["rule_id"] for f in findings]
-        assert "DATAFLOW_SHELL" not in rule_ids
+        assert "DATAFLOW_shell" not in rule_ids
 
     def test_non_placeholder_not_skipped(self):
         analyzer = self._make_analyzer()
         content = "user_input = request.form['input']\nos.system(user_input)"
         findings = analyzer.run({"app.py": content}, [])
         rule_ids = [f["rule_id"] for f in findings]
-        assert "DATAFLOW_SHELL" in rule_ids
+        assert "DATAFLOW_shell" in rule_ids
 
     def test_finding_has_confidence_scope_limitation(self):
         analyzer = self._make_analyzer()
@@ -197,7 +197,7 @@ class TestDataFlowAnalyzer:
         content = "test_user = input('Enter: ')\nos.system(test_user)"
         findings = analyzer.run({"app.py": content}, [])
         rule_ids = [f["rule_id"] for f in findings]
-        assert "DATAFLOW_SHELL" not in rule_ids
+        assert "DATAFLOW_shell" not in rule_ids
 
 
 class TestInterproceduralDataFlow:
@@ -375,3 +375,4 @@ class TestSinkModelGapsFoundWhileWiring96:
         )
         rule_ids = [f["rule_id"] for f in self._analyzer().run({"app.py": content}, [])]
         assert "DATAFLOW_FILE_WRITE" not in rule_ids
+    

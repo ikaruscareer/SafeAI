@@ -74,7 +74,6 @@ def test_permissive_project_raises_expected_rules():
     assert rule_ids(report) == {
         "CC_WILDCARD_PERMISSION",
         "CC_BYPASS_PERMISSIONS",
-        "CC_DENY_SHADOWED",
         "CC_FS_WRITE_OUTSIDE_ROOT",
         "CC_HOOK_SHELL_EXEC",
         "CC_MCP_UNCONSTRAINED",
@@ -86,7 +85,6 @@ def test_permissive_project_raises_expected_rules():
     [
         ("CC_WILDCARD_PERMISSION", "high"),
         ("CC_BYPASS_PERMISSIONS", "critical"),
-        ("CC_DENY_SHADOWED", "high"),
         ("CC_FS_WRITE_OUTSIDE_ROOT", "high"),
         ("CC_HOOK_SHELL_EXEC", "high"),
         ("CC_MCP_UNCONSTRAINED", "medium"),
@@ -106,10 +104,25 @@ def test_wildcard_finding_names_the_offending_entry():
     assert "Write(*)" in entries
 
 
-def test_shadowed_deny_identifies_both_sides():
+def test_a_deny_narrower_than_an_allow_is_not_reported():
+    """The permissive fixture is CORRECT configuration, and used to be flagged.
+
+    It carries allow ``Bash(*)`` and deny ``Bash(curl *)``. Claude Code
+    evaluates deny first, so ``curl`` is denied and everything else is allowed
+    — exactly what the two rules say. Neither is dead.
+
+    The old ``CC_DENY_SHADOWED`` fired here at HIGH severity claiming the deny
+    "cannot take effect", which is the opposite of the documented behaviour:
+
+        "Rules are evaluated in order: deny, then ask, then allow. The first
+         match in that order determines the outcome, and rule specificity
+         doesn't change the order."
+        -- https://code.claude.com/docs/en/permissions
+
+    Asserting the absence, so re-introducing the false positive fails here.
+    """
     report = scan("permissive")
-    evidence = findings_for(report, "CC_DENY_SHADOWED")[0]["evidence"]
-    assert "Bash(curl *)" in evidence and "Bash(*)" in evidence
+    assert findings_for(report, "CC_DENY_SHADOWED") == []
 
 
 def test_permissions_carry_tool_identity_and_access_mode():
@@ -370,3 +383,112 @@ def test_monorepo_claude_configs_do_not_overwrite_each_other(tmp_path):
     ids = {f["rule_id"] for f in report["findings"] if f["rule_id"].startswith("CC_")}
     assert "CC_BYPASS_PERMISSIONS" in ids
     assert "CC_WILDCARD_PERMISSION" in ids
+
+
+# ---------------------------------------------------------------------------
+# #93 - the documented evaluation order, pinned against the issue's premise
+# ---------------------------------------------------------------------------
+class TestDocumentedPermissionPrecedence:
+    """Claude Code evaluates deny, then ask, then allow.
+
+    Source: https://code.claude.com/docs/en/permissions
+
+        "Rules are evaluated in order: deny, then ask, then allow. The first
+         match in that order determines the outcome, and rule specificity
+         doesn't change the order."
+
+        "If a tool is denied at any level, no other level can allow it. [...]
+         a user-level deny blocks a project-level allow, because deny rules
+         from any scope are evaluated before allow rules."
+
+    #93 proposed most-specific-match and last-match-wins. Neither exists. Two
+    of its three worked examples expect an allow to win, which cannot happen,
+    so they are inverted here with the citation attached.
+    """
+
+    @staticmethod
+    def _rule(tool, argument, decision, path="settings.json"):
+        return {
+            "tool": tool, "argument": argument, "decision": decision,
+            "path": path, "entry": f"{tool}({argument})", "line": 1,
+        }
+
+    def test_deny_beats_allow_regardless_of_scope(self):
+        from safeai.frameworks.claude_code.permissions import resolve_effective_rules
+
+        records = [
+            self._rule("Bash", "*", "deny", "~/.claude/settings.json"),
+            self._rule("Bash", "rm *", "allow", ".claude/settings.json"),
+        ]
+        assert resolve_effective_rules(records)["bash"]["decision"] == "deny"
+
+    def test_deny_beats_allow_in_the_other_direction_too(self):
+        """The issue's own first case, with the mechanism corrected: the deny
+        wins because deny precedes allow, not because it is more specific."""
+        from safeai.frameworks.claude_code.permissions import resolve_effective_rules
+
+        records = [
+            self._rule("Bash", "*", "allow", "~/.claude/settings.json"),
+            self._rule("Bash", "rm *", "deny", ".claude/settings.json"),
+        ]
+        assert resolve_effective_rules(records)["bash"]["decision"] == "deny"
+
+    def test_specificity_does_not_change_the_order(self):
+        """A broad deny beats a narrow allow -- "a deny rule can't carry
+        allowlist exceptions"."""
+        from safeai.frameworks.claude_code.permissions import resolve_effective_rules
+
+        records = [
+            self._rule("Bash", "aws *", "deny"),
+            self._rule("Bash", "aws s3 ls", "allow"),
+        ]
+        assert resolve_effective_rules(records)["bash"]["decision"] == "deny"
+
+    def test_same_scope_is_not_last_match_wins(self):
+        """#93 expected file order to decide. It does not: deny still wins
+        whichever order the entries appear in."""
+        from safeai.frameworks.claude_code.permissions import resolve_effective_rules
+
+        deny_first = [self._rule("Bash", "*", "deny"), self._rule("Bash", "*", "allow")]
+        allow_first = [self._rule("Bash", "*", "allow"), self._rule("Bash", "*", "deny")]
+        assert resolve_effective_rules(deny_first)["bash"]["decision"] == "deny"
+        assert resolve_effective_rules(allow_first)["bash"]["decision"] == "deny"
+
+    def test_ask_sits_between_deny_and_allow(self):
+        """The tier shadowed_denials never modelled."""
+        from safeai.frameworks.claude_code.permissions import resolve_effective_rules
+
+        records = [self._rule("Bash", "*", "ask"), self._rule("Bash", "*", "allow")]
+        assert resolve_effective_rules(records)["bash"]["decision"] == "ask"
+
+    def test_an_allow_covered_by_a_deny_is_dead_configuration(self):
+        from safeai.frameworks.claude_code.permissions import ineffective_allows
+
+        records = [
+            self._rule("Bash", "*", "deny"),
+            self._rule("Bash", "rm *", "allow"),
+        ]
+        pairs = ineffective_allows(records)
+        assert [(a["entry"], d["entry"]) for a, d in pairs] == [("Bash(rm *)", "Bash(*)")]
+
+    def test_a_narrower_deny_does_not_kill_a_broader_allow(self):
+        """The control. Without it, a pass that called every allow dead
+        whenever any deny existed would satisfy the test above."""
+        from safeai.frameworks.claude_code.permissions import ineffective_allows
+
+        records = [
+            self._rule("Bash", "*", "allow"),
+            self._rule("Bash", "curl *", "deny"),
+        ]
+        assert ineffective_allows(records) == []
+
+    def test_other_tools_are_unaffected(self):
+        from safeai.frameworks.claude_code.permissions import resolve_effective_rules
+
+        records = [
+            self._rule("Bash", "*", "deny"),
+            self._rule("Read", "src/**", "allow"),
+        ]
+        effective = resolve_effective_rules(records)
+        assert effective["bash"]["decision"] == "deny"
+        assert effective["read"]["decision"] == "allow"

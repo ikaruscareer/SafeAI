@@ -225,11 +225,137 @@ def argument_covers(broad, narrow):
     return False
 
 
-def shadowed_denials(records):
-    """Return ``(deny_record, allow_record)`` pairs where allow wins.
+#: Claude Code's documented rule evaluation order.
+#:
+#: Source: https://code.claude.com/docs/en/permissions
+#:   "Rules are evaluated in order: deny, then ask, then allow. The first match
+#:    in that order determines the outcome, and rule specificity doesn't change
+#:    the order."
+#:
+#: Two consequences this module previously modelled the wrong way round:
+#:
+#: * Specificity is irrelevant. A broad ``Bash(aws *)`` deny blocks a call that
+#:   also matches a narrower ``Bash(aws s3 ls)`` allow — "a deny rule can't
+#:   carry allowlist exceptions".
+#: * Scope is irrelevant. "If a tool is denied at any level, no other level can
+#:   allow it", and "a user-level deny blocks a project-level allow, because
+#:   deny rules from any scope are evaluated before allow rules".
+DECISION_PRECEDENCE = ("deny", "ask", "allow")
 
-    A ``deny`` that a broader ``allow`` contradicts is a false sense of
-    safety, which is worth reporting precisely because it looks safe.
+
+def _broadest(rules):
+    """The rule in ``rules`` that decides the widest set of calls.
+
+    A wildcard argument covers everything, so it wins; otherwise fall back to
+    the shortest argument, which is the most general prefix. Ties break on
+    (path, entry) so the choice is stable across runs.
+    """
+    def sort_key(rule):
+        argument = rule.get("argument")
+        return (
+            0 if _wildcard(argument) else 1,
+            len(str(argument or "")),
+            str(rule.get("path") or ""),
+            str(rule.get("entry") or ""),
+        )
+
+    return min(rules, key=sort_key)
+
+
+def resolve_effective_rules(records):
+    """Return the effective rule per tool, per the documented evaluation order.
+
+    Maps a lowercased tool name to ``{"decision", "rule", "overridden"}``, where
+    ``rule`` is the record that decides the outcome and ``overridden`` lists the
+    records that can never apply because a higher-precedence tier matched first.
+
+    Scope depth is deliberately NOT a parameter. The documentation is explicit
+    that a deny at any level beats an allow at any other, so resolving by scope
+    would model a precedence Claude Code does not implement.
+
+    This answers "which tier decides this tool", not "what happens to one exact
+    command": the argument patterns are matched by
+    :func:`argument_covers`, which is conservative by design.
+    """
+    by_tool = {}
+    for record in records or []:
+        tool = str(record.get("tool") or "").strip().lower()
+        if not tool or record.get("decision") not in DECISION_PRECEDENCE:
+            continue
+        by_tool.setdefault(tool, []).append(record)
+
+    effective = {}
+    for tool, rules in by_tool.items():
+        tiers = {
+            decision: [r for r in rules if r["decision"] == decision]
+            for decision in DECISION_PRECEDENCE
+        }
+        for decision in DECISION_PRECEDENCE:
+            if not tiers[decision]:
+                continue
+            lower = [
+                rule
+                for later in DECISION_PRECEDENCE[DECISION_PRECEDENCE.index(decision) + 1:]
+                for rule in tiers[later]
+            ]
+            effective[tool] = {
+                "decision": decision,
+                "rule": _broadest(tiers[decision]),
+                "overridden": sorted(
+                    lower, key=lambda r: (str(r.get("path") or ""), str(r.get("entry") or ""))
+                ),
+            }
+            break
+    return effective
+
+
+def deny_is_effective(records, deny):
+    """True when ``deny`` decides its tool — which, per the docs, is always.
+
+    Kept as a named predicate rather than inlined ``True`` so the claim is
+    greppable and carries its citation: nothing an allow rule can say, at any
+    scope or any specificity, prevents a matching deny from blocking the call.
+    """
+    tool = str(deny.get("tool") or "").strip().lower()
+    resolved = resolve_effective_rules(records).get(tool)
+    return bool(resolved) and resolved["decision"] == "deny"
+
+
+def ineffective_allows(records):
+    """Return ``(allow_record, deny_record)`` pairs where the ALLOW cannot apply.
+
+    The inverse of what :func:`shadowed_denials` used to claim. An allow whose
+    tool also carries a deny is dead configuration: the deny is evaluated first
+    and its match ends the decision, so the allow widens nothing.
+    """
+    denies = [r for r in records if r.get("decision") == "deny" and r.get("tool")]
+    pairs = []
+    for allow in sorted(
+        (r for r in records if r.get("decision") == "allow" and r.get("tool")),
+        key=lambda r: (str(r.get("path") or ""), str(r.get("entry") or "")),
+    ):
+        for deny in sorted(denies, key=lambda r: (str(r.get("path") or ""), str(r.get("entry") or ""))):
+            if deny["tool"].lower() != allow["tool"].lower():
+                continue
+            if argument_covers(deny["argument"], allow["argument"]):
+                pairs.append((allow, deny))
+                break
+    return pairs
+
+
+def shadowed_denials(records):
+    """Return ``(deny_record, allow_record)`` pairs whose arguments overlap.
+
+    NOTE: an allow never "wins" over a deny. This function used to be
+    documented that way and the finding built on it was inverted. Per
+    :data:`DECISION_PRECEDENCE`, deny is evaluated first and a matching deny
+    ends the decision at any scope and any specificity, so the overlap this
+    reports is a sign the ALLOW is dead configuration — see
+    :func:`ineffective_allows`, which returns the pair the right way round.
+
+    Kept because the overlap itself is still worth surfacing: two rules that
+    contradict each other are a maintenance problem even when the outcome is
+    unambiguous. The severity it carries is decided by the caller.
     """
     allows = [r for r in records if r["decision"] == "allow" and r["tool"]]
     pairs = []

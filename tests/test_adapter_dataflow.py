@@ -198,3 +198,180 @@ class TestDataFlowAnalyzer:
         findings = analyzer.run({"app.py": content}, [])
         rule_ids = [f["rule_id"] for f in findings]
         assert "DATAFLOW_SHELL" not in rule_ids
+
+
+class TestInterproceduralDataFlow:
+    """One direct call deep, within a single file (#96).
+
+    The intraprocedural pass requires the sink to appear after the source line.
+    That rule is wrong across a call boundary, because a helper is normally
+    defined ABOVE its caller — so every test here places the sink at a LOWER
+    line number than the tainted variable. If the ordering rule leaked into the
+    interprocedural pass these would all fail.
+    """
+
+    def _make_analyzer(self):
+        from safeai.analyzers.dataflow.analyzer import DataFlowAnalyzer
+        return DataFlowAnalyzer()
+
+    def _rule_ids(self, content):
+        return [f["rule_id"] for f in self._make_analyzer().run({"app.py": content}, [])]
+
+    def test_untrusted_input_through_a_call_reaches_a_file_write(self):
+        content = (
+            "def save(data):\n"
+            "    open('/tmp/out.txt', 'w').write(data)\n"
+            "\n"
+            "user_input = request.form['x']\n"
+            "save(user_input)\n"
+        )
+        assert "DATAFLOW_FILE_WRITE" in self._rule_ids(content)
+
+    def test_untrusted_input_through_a_call_reaches_a_prompt(self):
+        content = (
+            "def build(text):\n"
+            "    prompt = f'Answer this: {text}'\n"
+            "    return prompt\n"
+            "\n"
+            "user_input = request.form['x']\n"
+            "build(user_input)\n"
+        )
+        assert "DATAFLOW_PROMPT" in self._rule_ids(content)
+
+    def test_keyword_arguments_are_followed(self):
+        content = (
+            "def build(text=None):\n"
+            "    prompt = f'Answer: {text}'\n"
+            "    return prompt\n"
+            "\n"
+            "user_input = request.form['x']\n"
+            "build(text=user_input)\n"
+        )
+        assert "DATAFLOW_PROMPT" in self._rule_ids(content)
+
+    def test_the_evidence_names_the_hop(self):
+        """A reader has to be able to see WHY the sink is reachable."""
+        content = (
+            "def save(data):\n"
+            "    open('/tmp/out.txt', 'w').write(data)\n"
+            "\n"
+            "user_input = request.form['x']\n"
+            "save(user_input)\n"
+        )
+        findings = self._make_analyzer().run({"app.py": content}, [])
+        hops = [f["evidence"] for f in findings if "call:save()" in f["evidence"]]
+        assert hops, [f["evidence"] for f in findings]
+
+    # ---- the limitations, pinned so widening them is a visible change ----
+
+    def test_an_untainted_argument_does_not_taint_the_callee(self):
+        """The control. Without it, a pass that taints every parameter of every
+        called function would satisfy every test above."""
+        content = (
+            "def save(data):\n"
+            "    open('/tmp/out.txt', 'w').write(data)\n"
+            "\n"
+            "user_input = request.form['x']\n"
+            "safe_value = 'constant'\n"
+            "save(safe_value)\n"
+        )
+        assert "DATAFLOW_FILE_WRITE" not in self._rule_ids(content)
+
+    def test_cross_file_flows_remain_undetected(self):
+        """A documented limitation, asserted rather than assumed. If this
+        starts passing, the finding's ``limitation`` text is now wrong."""
+        helper = (
+            "def save(data):\n"
+            "    open('/tmp/out.txt', 'w').write(data)\n"
+        )
+        caller = (
+            "from helper import save\n"
+            "user_input = request.form['x']\n"
+            "save(user_input)\n"
+        )
+        analyzer = self._make_analyzer()
+        findings = analyzer.run({"helper.py": helper, "app.py": caller}, [])
+        assert "DATAFLOW_FILE_WRITE" not in [f["rule_id"] for f in findings]
+
+    def test_a_second_hop_is_not_followed(self):
+        """One level only. Two hops must not resolve."""
+        content = (
+            "def inner(data):\n"
+            "    open('/tmp/out.txt', 'w').write(data)\n"
+            "\n"
+            "def outer(value):\n"
+            "    inner(value)\n"
+            "\n"
+            "user_input = request.form['x']\n"
+            "outer(user_input)\n"
+        )
+        assert "DATAFLOW_FILE_WRITE" not in self._rule_ids(content)
+
+    def test_a_syntax_error_does_not_break_the_analyzer(self):
+        """The analyzer runs over whatever is on disk, including files mid-edit.
+        An unparseable file must degrade to the intraprocedural pass, not raise.
+        """
+        content = "user_input = request.form['x']\ndef broken(:\n    pass\n"
+        assert self._make_analyzer().run({"app.py": content}, []) is not None
+
+    def test_the_limitation_text_names_what_is_now_covered(self):
+        content = (
+            "def save(data):\n"
+            "    open('/tmp/out.txt', 'w').write(data)\n"
+            "\n"
+            "user_input = request.form['x']\n"
+            "save(user_input)\n"
+        )
+        findings = self._make_analyzer().run({"app.py": content}, [])
+        assert findings
+        limitation = findings[0]["limitation"]
+        assert "one direct call deep" in limitation
+        assert "does NOT cross files" in limitation
+
+
+class TestSinkModelGapsFoundWhileWiring96:
+    """Two defects surfaced by #96 that are NOT caused by it. Pinned so they
+    are visible rather than folklore."""
+
+    def _analyzer(self):
+        from safeai.analyzers.dataflow.analyzer import DataFlowAnalyzer
+        return DataFlowAnalyzer()
+
+    def test_the_file_write_sink_pattern_can_actually_match(self):
+        """It could not, before this branch.
+
+        The pattern ended in ``\b`` immediately after the mode string's closing
+        quote. The next character at a real call site is always ``)`` — both
+        non-word, so no boundary exists and the rule was unreachable. #96's
+        acceptance criterion ("DATAFLOW_file_write fires") could not be met
+        until this was repaired.
+        """
+        from safeai.analyzers.dataflow.analyzer import SINK_PATTERNS
+
+        pattern = SINK_PATTERNS["file_write"]
+        for writing in ("open('/tmp/o.txt', 'w')", 'open("f", "wb")',
+                        "with open('f','a') as h:", "open(p, 'x')"):
+            assert pattern.search(writing), writing
+        # ...and read modes must stay quiet, or the repair has over-widened it.
+        for reading in ("open('f')", "open('f','r')", "open('f', 'rb')"):
+            assert not pattern.search(reading), reading
+
+    def test_the_with_block_write_form_is_still_invisible(self):
+        """A SEPARATE, pre-existing gap this PR does not close.
+
+        The ``file_write`` sink is the ``open()`` call, but in the idiomatic
+        ``with open(...) as h:`` form the tainted value arrives at ``h.write()``
+        one line later, so the taint never coincides with the sink line. This
+        holds with no call boundary at all, so it is a property of the sink
+        model rather than of interprocedural tracking.
+
+        Asserted rather than left unsaid: if someone fixes the sink model, this
+        test fails and tells them to delete it.
+        """
+        content = (
+            "user_input = request.form['x']\n"
+            "with open('/tmp/o.txt', 'w') as handle:\n"
+            "    handle.write(user_input)\n"
+        )
+        rule_ids = [f["rule_id"] for f in self._analyzer().run({"app.py": content}, [])]
+        assert "DATAFLOW_FILE_WRITE" not in rule_ids

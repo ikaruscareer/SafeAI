@@ -6,8 +6,14 @@ file operations). Uses line-level proxy heuristics for propagation tracking.
 
 This is a heuristic analysis — not a full interprocedural data-flow solver.
 It provides a best-effort detection of common taint patterns in agent code.
+
+Propagation is tracked within a function, and across ONE direct call to a
+function defined in the same file (#96). Cross-file flows, recursion, dynamic
+dispatch and calls made through an attribute or a variable remain out of
+scope, and are reported as such in each finding's ``limitation`` field.
 """
 
+import ast
 import re
 
 # Untrusted input sources
@@ -26,7 +32,12 @@ SINK_PATTERNS = {
     "prompt": re.compile(r"\b(?:prompt|system_prompt|user_prompt|chat_history|messages\.append)\b", re.IGNORECASE),
     "tool_call": re.compile(r"\b(?:tool_call|invoke_tool|call_tool|execute_tool)\b", re.IGNORECASE),
     "shell": re.compile(r"\b(?:subprocess|os\.system|popen|exec\(|eval\()\b", re.IGNORECASE),
-    "file_write": re.compile(r"\bopen\([^)]*[\"'](?:w|a|x)[bt+]?[\"']\b", re.IGNORECASE),
+    # The trailing \b this pattern used to carry could never match: it sat
+    # after the closing quote of the mode string, and the next character is
+    # always ')' — two non-word characters, so no boundary exists. The rule
+    # was unreachable, which is why #96's acceptance criterion could not be
+    # met without this. Found while wiring interprocedural tracking.
+    "file_write": re.compile(r"\bopen\([^)]*[\"'](?:w|a|x)[bt+]*[\"']", re.IGNORECASE),
     "http_request": re.compile(r"\b(?:requests\.(?:get|post|put|delete)|httpx\.)\b", re.IGNORECASE),
     "database": re.compile(r"\b(?:execute|cursor\.execute|query)\b", re.IGNORECASE),
 }
@@ -134,6 +145,130 @@ def _track_propagation(content, sources, sinks):
     return findings
 
 
+def _same_file_call_graph(content):
+    """Map same-file functions and the direct calls into them (#96).
+
+    Returns ``(functions, calls)`` where ``functions`` maps a function name to
+    its positional parameter names and body line span, and ``calls`` is a list
+    of direct call sites with the plain-name arguments they were given.
+
+    Deliberately shallow. Only ``def``/``async def`` at any nesting level, only
+    calls written as a bare name, and only arguments that are bare names are
+    considered — a call through an attribute (``obj.method(x)``), a variable
+    holding a function, or a computed argument is not resolved. That keeps the
+    pass conservative in the direction that matters: it can miss a real flow,
+    but it will not invent a callee.
+
+    Returns ``(None, None)`` when the file does not parse. The analyzer is run
+    over whatever is on disk, which includes files mid-edit and Python 2, and a
+    syntax error must not take the whole analyzer down.
+    """
+    try:
+        tree = ast.parse(content)
+    except (SyntaxError, ValueError, RecursionError):
+        return None, None
+
+    functions = {}
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            end = getattr(node, "end_lineno", None)
+            if end is None:  # pragma: no cover - Python < 3.8 shape
+                continue
+            functions[node.name] = {
+                "params": [a.arg for a in node.args.args],
+                "start": node.lineno,
+                "end": end,
+            }
+
+    calls = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name):
+            continue
+        positional = [
+            arg.id if isinstance(arg, ast.Name) else None for arg in node.args
+        ]
+        keywords = {
+            kw.arg: kw.value.id
+            for kw in node.keywords
+            if kw.arg and isinstance(kw.value, ast.Name)
+        }
+        calls.append({
+            "callee": node.func.id,
+            "line": node.lineno,
+            "positional": positional,
+            "keywords": keywords,
+        })
+
+    return functions, calls
+
+
+def _track_interprocedural(content, sources, sinks):
+    """Follow taint one call deep, within the same file (#96).
+
+    The intraprocedural pass requires the sink to appear *after* the source
+    line. That is wrong across a call boundary and not by a little: a helper is
+    usually defined ABOVE the code that calls it, so its sinks sit at lower line
+    numbers than the tainted argument. This pass therefore does not apply that
+    ordering rule to the callee body — the ordering that matters is
+    source-before-CALL, which is checked here.
+
+    One level only, and no recursion: a call inside the callee is not followed.
+    """
+    functions, calls = _same_file_call_graph(content)
+    if not functions or not calls:
+        return []
+
+    findings = []
+    for source in sources:
+        base_var = source["variable"].split(".")[0].split("(")[0]
+        if not base_var.isidentifier():
+            continue
+
+        for call in calls:
+            # The taint has to exist before it can be passed.
+            if call["line"] < source["line"]:
+                continue
+            callee = functions.get(call["callee"])
+            if callee is None:
+                continue
+
+            # Which parameter did the tainted variable land on?
+            tainted_params = [
+                callee["params"][index]
+                for index, arg in enumerate(call["positional"])
+                if arg == base_var and index < len(callee["params"])
+            ]
+            tainted_params += [
+                name for name, value in call["keywords"].items()
+                if value == base_var and name in callee["params"]
+            ]
+            if not tainted_params:
+                continue
+
+            for sink in sinks:
+                if not (callee["start"] <= sink["line"] <= callee["end"]):
+                    continue
+                if not any(
+                    re.search(rf"\b{re.escape(param)}\b", sink["sink_text"])
+                    for param in tainted_params
+                ):
+                    continue
+                findings.append({
+                    "source_line": source["line"],
+                    "source_var": base_var,
+                    "sink_line": sink["line"],
+                    "sink_type": sink["sink_type"],
+                    "source_text": source["source_text"],
+                    "sink_text": sink["sink_text"],
+                    "via_call": call["callee"],
+                    "call_line": call["line"],
+                })
+
+    return findings
+
+
 def _finding(rule_id, rule, message, path, line, evidence=None):
     """Create a data-flow finding dict, deriving severity/owasp from the rule."""
     return {
@@ -155,9 +290,11 @@ def _finding(rule_id, rule, message, path, line, evidence=None):
         "confidence": "heuristic",
         "scope": "static-analysis",
         "limitation": (
-            "Line-level proxy heuristic; not a full interprocedural data-flow "
-            "solver. May miss indirect propagation or produce false positives "
-            "on dynamic constructs."
+            "Line-level proxy heuristic. Follows taint one direct call deep "
+            "within a single file (#96); does NOT cross files, follow "
+            "recursion, resolve dynamic dispatch, or resolve a call made "
+            "through an attribute or a variable. May miss indirect "
+            "propagation or produce false positives on dynamic constructs."
         ),
     }
 
@@ -193,6 +330,9 @@ class DataFlowAnalyzer:
                 continue
 
             propagations = _track_propagation(content, sources, sinks)
+            # #96 - one call deep, same file. Appended rather than merged: the
+            # dedupe key below already collapses a flow both passes find.
+            propagations += _track_interprocedural(content, sources, sinks)
 
             for prop in propagations:
                 key = (path, prop["source_line"], prop["sink_line"], prop["sink_type"])
@@ -213,7 +353,15 @@ class DataFlowAnalyzer:
                     ),
                     path=path,
                     line=prop["sink_line"],
-                    evidence=f"source:{prop['source_var']}@L{prop['source_line']} -> sink:{prop['sink_type']}@L{prop['sink_line']}",
+                    evidence=(
+                        f"source:{prop['source_var']}@L{prop['source_line']} -> "
+                        + (
+                            f"call:{prop['via_call']}()@L{prop['call_line']} -> "
+                            if prop.get("via_call")
+                            else ""
+                        )
+                        + f"sink:{prop['sink_type']}@L{prop['sink_line']}"
+                    ),
                 ))
 
         return findings

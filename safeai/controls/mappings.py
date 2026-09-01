@@ -260,3 +260,47 @@ def get_framework_summary():
         }
         for fid, f in FRAMEWORKS.items()
     ]
+
+
+def rule_coverage_summary():
+    """Report control-mapping coverage per rule category.
+
+    Groups every built-in rule (from ``rules/base_rules.yaml``) by its
+    category prefix -- the token before the first underscore, e.g. ``CAP``,
+    ``GOV``, ``DATAFLOW`` -- and reports how many rules in that category have
+    a ``RULE_MAPPINGS`` entry and how many do not.
+
+    This is informational only: it is not a compliance or coverage claim,
+    and a "mapped" rule is not weighted by how often it actually fires.
+
+    Returns
+    -------
+    list[dict]
+        One entry per category, sorted by category name, each with
+        ``category``, ``mapped_count``, ``unmapped_count``, and
+        ``unmapped_rules`` (sorted rule IDs).
+    """
+    from safeai.rules.loader import load_rules
+
+    rules, _metadata = load_rules()
+    rule_ids = {r["id"] for r in rules if isinstance(r, dict) and "id" in r}
+    mapped_ids = set(RULE_MAPPINGS)
+
+    by_category = {}
+    for rule_id in rule_ids:
+        category = rule_id.split("_", 1)[0]
+        entry = by_category.setdefault(category, {"mapped": 0, "unmapped": []})
+        if rule_id in mapped_ids:
+            entry["mapped"] += 1
+        else:
+            entry["unmapped"].append(rule_id)
+
+    return [
+        {
+            "category": category,
+            "mapped_count": data["mapped"],
+            "unmapped_count": len(data["unmapped"]),
+            "unmapped_rules": sorted(data["unmapped"]),
+        }
+        for category, data in sorted(by_category.items())
+    ]

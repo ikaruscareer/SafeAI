@@ -225,7 +225,7 @@ class TestInterproceduralDataFlow:
             "user_input = request.form['x']\n"
             "save(user_input)\n"
         )
-        assert "DATAFLOW_FILE_WRITE" in self._rule_ids(content)
+        assert "DATAFLOW_file_write" in self._rule_ids(content)
 
     def test_untrusted_input_through_a_call_reaches_a_prompt(self):
         content = (
@@ -236,7 +236,7 @@ class TestInterproceduralDataFlow:
             "user_input = request.form['x']\n"
             "build(user_input)\n"
         )
-        assert "DATAFLOW_PROMPT" in self._rule_ids(content)
+        assert "DATAFLOW_prompt" in self._rule_ids(content)
 
     def test_keyword_arguments_are_followed(self):
         content = (
@@ -247,7 +247,7 @@ class TestInterproceduralDataFlow:
             "user_input = request.form['x']\n"
             "build(text=user_input)\n"
         )
-        assert "DATAFLOW_PROMPT" in self._rule_ids(content)
+        assert "DATAFLOW_prompt" in self._rule_ids(content)
 
     def test_the_evidence_names_the_hop(self):
         """A reader has to be able to see WHY the sink is reachable."""

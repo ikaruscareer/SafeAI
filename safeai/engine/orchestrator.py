@@ -72,7 +72,9 @@ def _is_scannable_file(filename):
     lower = filename.lower()
     if lower.endswith((".py", ".json", ".yaml", ".yml", ".prompt")):
         return True
-    return lower in {"claude.md", "prompt.md", "system_prompt.md"} or lower.endswith((".prompt.md", ".prompt.txt"))
+    return lower in {
+        "claude.md", "prompt.md", "system_prompt.md", ".cursorrules",
+    } or lower.endswith((".prompt.md", ".prompt.txt"))
 
 
 #: Additional extensions read inside a ``.claude/`` directory. Claude Code

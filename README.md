@@ -134,6 +134,7 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 | LlamaIndex | ✔ | Partial | Minimal | Minimal | Experimental |
 | Dify | ✔ | Minimal | Minimal | Minimal | Experimental |
 | n8n | ✔ | Partial | Minimal | Minimal | Experimental |
+| Cursor (.cursorrules) | ✔ | Minimal | Minimal | Minimal | Experimental |
 
 
 ### Framework Support Details
@@ -155,6 +156,9 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 - **LlamaIndex** — detects agents, tools, indexes, and model references
 - **Dify** — detects Dify workflow and agent configuration files
 - **n8n** — detects n8n workflow exports, nodes, and connections
+- **Cursor (.cursorrules)** — detects declared tools/permissions and
+  capability-relevant keywords (shell, filesystem, HTTP, database) in the
+  IDE's rules config, JSON, YAML, or free text
 
 Maturity is on the scale defined in [`FRAMEWORK_SUPPORT.md`](FRAMEWORK_SUPPORT.md):
 **Partial** = reliable detection and discovery with capability/risk analysis over

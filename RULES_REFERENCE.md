@@ -1445,6 +1445,7 @@ MCP-related rules are generated dynamically by the MCP analyzer and are document
 | `MCP_ENDPOINT_EXPOSURE` | Potentially exposed MCP endpoint | High |
 | `MCP_HARDCODED_SECRET` | Hardcoded secret in MCP configuration | Critical |
 | `MCP_DANGEROUS_TOOL` | MCP tool may allow unrestricted execution | High |
+| `MCP_TOOL_DESCRIPTION_INJECTION` | Hidden instructions in an MCP tool description (tool poisoning, LLM01) | High |
 | `MCP_TOOL_OVERLY_BROAD` | MCP tool parameter definition uses wildcards or unrestricted patterns (`*`, `all`, `any`, `unrestricted`, `no limit`, `bypass`) | High |
 | `MCP_RESOURCE_SENSITIVE` | MCP resource may expose sensitive data (password/secret/credential/token/private/SSN/credit-card/API-key patterns) | High |
 | `MCP_TRANSPORT_INSECURE` | MCP transport uses an insecure protocol (`http://`, `ws://`, `stdio`, `tcp://`, or no HTTPS transport configured at all) | High |

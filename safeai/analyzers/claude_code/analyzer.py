@@ -22,8 +22,9 @@ _REMEDIATION = {
                               "command or path pattern the workflow needs.",
     "CC_BYPASS_PERMISSIONS": "Remove the bypass/auto-approve setting and keep the "
                              "human approval gate enabled in committed settings.",
-    "CC_DENY_SHADOWED": "Narrow the allow entry so the deny entry can take effect, "
-                        "or remove the deny entry that cannot apply.",
+    "CC_DENY_SHADOWED": "Remove the allow entry that cannot apply, or narrow the "
+                        "deny entry if the allow was the intended behaviour. The "
+                        "deny is what takes effect.",
     "CC_FS_WRITE_OUTSIDE_ROOT": "Constrain write grants to paths inside the project root.",
     "CC_SLASH_COMMAND_SHELL": "Pin the command, avoid inline shell in stored "
                               "instructions, and review who can invoke it.",
@@ -204,15 +205,27 @@ class ClaudeCodeAnalyzer:
 
     def _permission_findings(self, records, rule_map):
         findings = []
+        effective = cc_permissions.resolve_effective_rules(records)
         for record in records:
             if record["decision"] == "allow" and record["wildcard"] and record["tool"]:
+                # #93 - a wildcard allow grants nothing the tool's denies do not
+                # already take back, at any scope. Report it, but not as though
+                # the surface were unbounded when it demonstrably is not.
+                constrained = effective.get(str(record["tool"]).lower(), {}).get("decision") == "deny"
                 findings.append(_finding(
                     "CC_WILDCARD_PERMISSION", rule_map,
                     f"Unconstrained Claude Code permission: {record['entry']}",
                     record["path"], record["line"],
                     evidence=record["entry"],
-                    reason=f"{record['tool']} is allowed with no argument constraint, granting "
-                           f"{record['access_mode']} authority over its entire surface.",
+                    reason=(
+                        f"{record['tool']} is allowed with no argument constraint, but a deny "
+                        f"rule for the same tool is evaluated first, so the granted surface is "
+                        f"bounded by that deny."
+                        if constrained else
+                        f"{record['tool']} is allowed with no argument constraint, granting "
+                        f"{record['access_mode']} authority over its entire surface."
+                    ),
+                    severity="medium" if constrained else None,
                 ))
             if cc_permissions.writes_outside_root(record):
                 findings.append(_finding(
@@ -225,14 +238,21 @@ class ClaudeCodeAnalyzer:
                     capability="Filesystem",
                 ))
 
-        for deny, allow in cc_permissions.shadowed_denials(records):
+        # #93 - this finding used to be stated the wrong way round. Claude Code
+        # evaluates deny, then ask, then allow, and "rule specificity doesn't
+        # change the order", so a matching deny ALWAYS decides the call. It is
+        # the allow that is dead configuration, not the deny, and the severity
+        # follows: contradictory rules are a maintenance problem, not a hole.
+        for allow, deny in cc_permissions.ineffective_allows(records):
             findings.append(_finding(
                 "CC_DENY_SHADOWED", rule_map,
-                f"Deny entry is shadowed by a broader allow: {deny['entry']}",
-                deny["path"], deny["line"],
-                evidence=f"deny {deny['entry']} vs allow {allow['entry']}",
-                reason="The deny entry cannot take effect because a broader allow entry covers "
-                       "it, so the configuration reads as safer than it behaves.",
+                f"Allow entry can never apply, a deny covers it: {allow['entry']}",
+                allow["path"], allow["line"],
+                evidence=f"allow {allow['entry']} overridden by deny {deny['entry']}",
+                reason="Claude Code evaluates deny before allow and specificity does not change "
+                       "that, so the deny decides every matching call and this allow widens "
+                       "nothing. The deny is effective; the allow is dead configuration.",
+                severity="low",
             ))
         return findings
 

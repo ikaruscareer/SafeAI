@@ -165,3 +165,5 @@ Be respectful, inclusive, and constructive. We welcome contributors of all backg
 ---
 
 Thank you for making AI safer — one contribution at a time.
+
+If SafeAI is useful to you, consider giving the repo a ⭐ — it helps other teams discover the project and is one of the easiest ways to support it besides code.

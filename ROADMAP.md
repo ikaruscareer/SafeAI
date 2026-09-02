@@ -158,12 +158,13 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ## v2.0.0 — Governance Depth & Ecosystem Expansion *(planned)*
 
-*Goal: deepen governance detection, harden MCP against content-level attacks, and expand config-file coverage.*
+*Goal: deepen governance detection, harden MCP against content-level attacks, expand config-file coverage, and present governance gaps as failure-class coverage.*
 
 **Status: ⏳ planned. Target: after v1.9.1.**
 
 ### Governance depth
 - ⏳ **Runaway-loop / token-bombing / recursion-guard detection** — missing loop bounds, missing max-iteration guards, recursive agent-to-agent call chains without depth limits, unbounded recursive tool calls. Extends the `GOV_*` rule family (e.g. `GOV_MAX_ITERATIONS_MISSING`, `GOV_RECURSION_GUARD_MISSING`). Slots naturally next to the existing timeout/retry/circuit-breaker rules in the `GovernanceAnalyzer`. Addresses cost-exhaustion attacks and unbounded agent recursion — a top-marketed AI agent risk.
+- ⏳ **Failure-class coverage matrix** — group existing `GOV_*` findings by the class of failure they leave the agent unprepared for (dependency timeout, dependency unavailable, resource exhaustion, cascading failure, malformed config). Present as a coverage matrix: "this agent has no statically detectable circuit breaker, retry, or backpressure control, so cascading failure behavior is unverified." Not new detection logic — it is a view layer over `GOV_TIMEOUT_MISSING`, `GOV_RETRY_MISSING`, `GOV_CIRCUIT_BREAKER_MISSING`, `GOV_BACKPRESSURE_MISSING`, `GOV_HEALTH_CHECK_MISSING`, `GOV_RATE_LIMIT_MISSING`, `GOV_AUDIT_MISSING`, `GOV_APPROVAL_MISSING`. Shifts the operator question from "which rules fired?" to "which failure modes can this agent survive?" Source: Reddit community feedback (2026-09).
 
 ### MCP hardening
 - ⏳ **MCP tool-description/schema poisoning detection** — detect hidden instructions embedded in MCP tool description or schema fields that get silently injected into the agent's context ("tool poisoning"). Extends the existing MCP analyzer (currently structural: resolved vs unresolved-command) with content-level inspection of tool metadata. Aligns with the existing `PROMPT_*` depth work (multi-line, cross-file, indirect injection).
@@ -172,7 +173,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - ⏳ **Config-file-level agent scanning** — native support for `.cursorrules`, Windsurf/OpenClaw configs, Copilot configs as first-class scan targets alongside Claude Code permission analysis (`safeai/frameworks/claude_code/permissions.py`). Each config format gets its own adapter; capability and governance analysis over agent configuration files that declare permissions, tools, and behavioral constraints.
 
 ### Exit criterion
-> SafeAI detects token-bombing risks in governance signals, catches tool-poisoning in MCP metadata, and scans agent config files across all major IDE frameworks — all offline, all static, all in the Community Edition.
+> SafeAI detects token-bombing risks in governance signals, catches tool-poisoning in MCP metadata, scans agent config files across all major IDE frameworks, and presents governance gaps as a failure-class coverage matrix — all offline, all static, all in the Community Edition.
 
 ---
 
@@ -189,6 +190,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - Read the KYA manifest and produce a version-controlled test plan (`safeai-validation-plan.json`)
 - Generate adversarial queries only for detected risk surfaces — no blind brute-force prompts
 - Pack types: prompt injection, indirect retrieval injection, tool-invocation abuse, approval-gate bypass, sensitive-data exfiltration
+- **Fault-injection test plans derived from the failure-class coverage matrix** — "this agent declares a dependency on service X with no retry evidence; inject a timeout on X and assert graceful degradation." Each uncovered failure class maps to a concrete fault-injection scenario with setup, trigger, and assertion. Source: Reddit community feedback (2026-09).
 - Each test carries: surface type, severity, test input, expected safe behavior assertion, linked finding ID
 - Deterministic local harness: offline, no model calls, no external network, no runtime observation
 - Deterministic pass/fail assertions: "must refuse," "must not call tool X," "must request approval"

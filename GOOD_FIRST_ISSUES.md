@@ -2,7 +2,7 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **29 beginner-friendly issues** designed for first-time contributors (12 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **32 beginner-friendly issues** designed for first-time contributors (15 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
@@ -154,6 +154,33 @@ This document indexes **29 beginner-friendly issues** designed for first-time co
 
 ### 29. Create video or animated GIF guide for scan workflow
 - **Difficulty:** Medium | **Effort:** 4–6 hours
+
+---
+
+## Config-File Adapters
+
+### 30. Add Windsurf config-file adapter
+- **Difficulty:** Easy-Medium | **Effort:** 3–4 hours
+- **Suggested files:** `safeai/frameworks/windsurf/__init__.py` (new), `safeai/frameworks/windsurf/parser.py` (new), `safeai/frameworks/__init__.py` (register), `safeai/engine/orchestrator.py` (add `.windsurfrules` to `_is_scannable_file`), `tests/test_windsurf_framework.py` (new), `tests/fixtures/windsurf/representative/.windsurfrules` (new)
+- **Description:** Add a framework adapter for the Windsurf IDE config file (`.windsurfrules`). Follow the exact pattern of the `.cursorrules` adapter (PR [#113](https://github.com/ikaruscareer/SafeAI/pull/113)): filename-based detection, JSON/YAML/free-text structured-first parsing, capability keyword scanning (`shell`, `filesystem`, `external_apis`, `databases`), tool/model extraction, unrestricted grant detection, MCP reference detection. Register via `@register_parser`. Write tests covering JSON parsing, YAML parsing, free-text fallback, detection by filename, and integration with `run_scan()`. Maps to v2.0.0 config-file coverage in `ROADMAP.md`.
+
+---
+
+## Governance Depth
+
+### 31. Detect runaway-loop / recursion-guard governance signals
+- **Difficulty:** Medium | **Effort:** 4–5 hours
+- **Suggested files:** `safeai/analyzers/governance/analyzer.py`, `safeai/rules/base_rules.yaml`, `tests/test_governance_analyzer.py`
+- **Description:** Add two new `GOV_*` rules to the `GovernanceAnalyzer`: `GOV_MAX_ITERATIONS_MISSING` (detects agent loops with no max-iteration bound — e.g. `while True`, recursive agent-to-agent calls without depth limit) and `GOV_RECURSION_GUARD_MISSING` (detects recursive tool calls without a recursion depth guard). Follow the existing pattern in `GovernanceAnalyzer`: regex detection over Python source, per-tool dedup, ±10-line source confirmation. Add rules to `base_rules.yaml` with appropriate severity (`high` for unbounded loops, `medium` for missing recursion guards). Map both to OWASP LLM06 and OWASP Agentic in `RULE_MAPPINGS`. Write tests covering detection, dedup, and rule mapping. Maps to v2.0.0 governance depth in `ROADMAP.md`.
+
+---
+
+## Registry
+
+### 32. Add `safeai registry import` command
+- **Difficulty:** Medium | **Effort:** 4–5 hours
+- **Suggested files:** `safeai/cmd/cli.py`, `safeai/kya/exporter.py`, `tests/test_registry_cli.py`
+- **Description:** Implement `safeai registry import <file>` to complete the portable registry export/import cycle. `registry export` already produces a portable, source-safe JSON inventory (`safeai/kya/exporter.py`); `import` should read that JSON and merge agent records into the local SQLite registry (`SAFEAI_REGISTRY` or `~/.safeai/registry.db`). Import must: skip duplicate agents (match on `agent_id`), merge `agent_metadata` fields (business owner, technical owner, environment), merge `component_snapshots` (dedup by component identity), merge `finding_lifecycle` events (dedup by finding fingerprint), merge `agent_tool_snapshots` (dedup by tool identity), and record the import in the scan history. Add `--dry-run` flag to preview what would be imported without writing. Add `--force` flag to overwrite existing metadata. Write tests covering: import of a valid export, idempotent re-import (no duplicates), metadata merge, dry-run output, and error handling for corrupt/invalid JSON. Maps to CE 2.0 portable registry in `ROADMAP.md`.
 
 ---
 

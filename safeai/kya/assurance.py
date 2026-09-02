@@ -11,6 +11,32 @@ file types, real parse failures, real inference counts. Nothing is a
 fixed disclaimer string, because a fixed string stops being read.
 """
 
+#: How a finding was arrived at (#94).
+#:
+#: The assurance boundary below says what a static scan can and cannot claim.
+#: These values put the same distinction on each individual finding, so a
+#: consumer such as AgentKey can tell what was *declared* from what was
+#: *matched* from what was actually *executed*, rather than inferring it from
+#: the analyzer's name.
+#:
+#: * ``static-config``  — read out of source or configuration the project
+#:   declares: a permission entry, a model kwarg, an MCP server block.
+#: * ``static-pattern`` — matched by a pattern against text. Carries the
+#:   false-positive profile of a regex, not the certainty of a parsed field.
+#: * ``runtime-observed`` — recorded from an execution. Nothing emits this
+#:   today; it exists so a future runtime integration does not have to widen
+#:   the schema, and so its absence is visible rather than implied.
+EVIDENCE_STATIC_CONFIG = "static-config"
+EVIDENCE_STATIC_PATTERN = "static-pattern"
+EVIDENCE_RUNTIME_OBSERVED = "runtime-observed"
+
+EVIDENCE_TYPES = (
+    EVIDENCE_STATIC_CONFIG,
+    EVIDENCE_STATIC_PATTERN,
+    EVIDENCE_RUNTIME_OBSERVED,
+)
+
+
 #: Claims a static scan can support. Stable across runs; these describe
 #: the analysis SafeAI performs, not the contents of any one repository.
 VERIFIED_STATICALLY = (

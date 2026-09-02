@@ -61,6 +61,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
                 rule = rule_map.get("PROMPT_INJECTION", {})
                 findings.append({
                     "rule_id": "PROMPT_INJECTION",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": rule.get("severity", "critical"),
                     "message": "Untrusted input interpolated into prompt",
                     "file": path,
@@ -79,6 +80,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if "system" in line.lower() and UNTRUSTED.search(line) and "+" in line:
                 findings.append({
                     "rule_id": "PROMPT_DELIMITER",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": "high",
                     "message": "Possible missing delimiter between system and user content",
                     "file": path,
@@ -96,6 +98,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if "system prompt" in line.lower() or "reveal system" in line.lower():
                 findings.append({
                     "rule_id": "PROMPT_SYSTEM_LEAK",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": rule_map.get("PROMPT_SYSTEM_LEAK", {}).get("severity", "high"),
                     "message": "Possible system prompt leakage",
                     "file": path,
@@ -113,6 +116,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if "ignore previous instructions" in line.lower() or "override system" in line.lower():
                 findings.append({
                     "rule_id": "PROMPT_ROLE_OVERRIDE",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": rule_map.get("PROMPT_ROLE_OVERRIDE", {}).get("severity", "high"),
                     "message": "Role override attempt detected",
                     "file": path,
@@ -135,6 +139,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
                     and _has_multiline_concat(lines, i - 1)):
                 findings.append({
                     "rule_id": "PROMPT_MULTI_LINE_CONCAT",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": "medium",
                     "message": "Multi-line prompt concatenation detected",
                     "file": path,
@@ -153,6 +158,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if _PROMPT_FILE_INTERP.search(line) and any(kw in line.lower() for kw in ("prompt", "system", "message")):
                 findings.append({
                     "rule_id": "PROMPT_CROSS_FILE_INTERP",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": "medium",
                     "message": "Prompt content loaded from external file",
                     "file": path,
@@ -171,6 +177,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if _INDIRECT_INJECTION.search(line) and any(kw in line.lower() for kw in ("prompt", "system", "message", "user")):
                 findings.append({
                     "rule_id": "PROMPT_INDIRECT_INJECTION",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": "medium",
                     "message": "Tool call pattern detected near prompt context",
                     "file": path,
@@ -189,6 +196,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
             if _XML_TAG_INJECTION.search(line):
                 findings.append({
                     "rule_id": "PROMPT_XML_INJECTION",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": "low",
                     "message": "XML/HTML tag pattern detected in prompt context",
                     "file": path,
@@ -209,6 +217,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
                     and any(kw in line.lower() for kw in ("system", "prompt", "instruction", "ignore"))):
                 findings.append({
                     "rule_id": "PROMPT_TEMPLATE_INJECTION",
+                    "evidence_type": "static-pattern",  # #94 - regex patterns over prompt text
                     "severity": "medium",
                     "message": "Template variable in prompt file may enable injection",
                     "file": path,

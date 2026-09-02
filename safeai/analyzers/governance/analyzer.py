@@ -117,6 +117,7 @@ def _finding(rule_id, rule, message, path, line, tool_name=None, evidence=None, 
         remediation = rule.get("remediation") or "Add the missing governance control to this tool."
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-config",  # #94 - reports a declared control being absent
         "severity": sev,
         "message": message,
         "file": path,

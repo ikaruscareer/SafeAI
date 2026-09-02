@@ -186,6 +186,7 @@ def _wrap_inventory(inventory, rules):
     rule = rule_map.get(INVENTORY_RULE_ID, {})
     return [{
         "rule_id": INVENTORY_RULE_ID,
+        "evidence_type": "static-config",  # #94 - inventories declared config references, names only
         "severity": rule.get("severity", "info"),
         "message": f"Referenced {len(inventory)} external configuration/credential names",
         "file": "<scan>",

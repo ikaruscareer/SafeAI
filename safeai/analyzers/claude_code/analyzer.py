@@ -99,6 +99,7 @@ def _finding(rule_id, rule_map, message, path, line, evidence, reason, severity=
     resolved = severity or rule.get("severity") or _DEFAULT_SEVERITY.get(rule_id, "medium")
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-config",  # #94 - reads declared permission/hook/settings entries
         "severity": resolved,
         "message": message,
         "file": path,

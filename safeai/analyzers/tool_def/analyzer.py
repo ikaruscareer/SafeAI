@@ -25,6 +25,7 @@ _PERMISSION_KEYWORDS = {"permission", "permissions", "allowed", "scope", "scopes
 def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None, score_contribution=8):
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-config",  # #94 - parses tool definitions from the AST
         "severity": rule.get("severity", "medium"),
         "message": message,
         "file": path,

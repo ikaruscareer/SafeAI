@@ -94,6 +94,7 @@ class DataLeakageAnalyzer:
                         )
                         findings.append({
                             "rule_id": "DATA_LEAKAGE",
+                            "evidence_type": "static-pattern",  # #94 - regex patterns over source text
                             "severity": severity,
                             "message": f"Potential secret exposure: {key}",
                             "file": path,

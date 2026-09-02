@@ -25,6 +25,7 @@ registry, JSON output, capability/agent comparison, and future integrations.
 | 1.0 | Initial manifest: `agents`, `components`, `findings`, `summary`, `limitations` |
 | 1.1 | `tool_surface` — the per-tool capability index described below |
 | 1.2 | `assurance_boundary` — the verified/not-verifiable statement described below |
+| 1.3 | `evidence_type` on every finding — declared vs matched vs executed |
 
 Both 1.1 and 1.2 are purely additive: a 1.0 consumer that ignores unknown
 fields reads a 1.2 manifest without error.
@@ -183,6 +184,28 @@ reflection of this run rather than boilerplate. Read this alongside
 | `provenance` | `{analyzer, heuristic, evidence[]}` — evidence is redacted |
 | `location` | `{path, line_start, line_end}` — project-relative |
 | `status` | `new` \| `existing` \| `regressed` \| `resolved` \| `suppressed` \| `unknown` |
+| `evidence_type` | `static-config` \| `static-pattern` \| `runtime-observed` — how the finding was arrived at (see below) |
+
+### `evidence_type`
+
+The [assurance boundary](#assurance-boundary) says what a static scan can and
+cannot claim overall. `evidence_type` carries the same distinction on each
+individual finding, so a consumer can tell what was *declared* from what was
+*matched* from what was actually *executed* without inferring it from the
+analyzer's name.
+
+| Value | Means | Emitted by |
+|---|---|---|
+| `static-config` | Read out of source or configuration the project declares — a permission entry, a model kwarg, an MCP server block. Carries the certainty of a parsed field. | `claude_code`, `model_config`, `mcp`, `governance`, `workflow`, `skill`, `tool_def`, `env_dependency` |
+| `static-pattern` | Matched by a pattern against text. Carries the false-positive profile of a regex, not of a parsed field. | `capability`, `dataflow`, `prompt`, `prompt_file`, `data_leakage` |
+| `runtime-observed` | Recorded from an execution. **Nothing emits this today** — it is defined so a future runtime integration does not have to widen the schema, and so its absence is visible rather than implied. | — |
+
+The value is set explicitly at every finding site rather than defaulted
+centrally: a default would silently label a new analyzer's findings
+`static-config` when nobody chose that. `test_every_finding_carries_a_valid_evidence_type`
+fails instead.
+
+Surfaced in the JSON report and in SARIF `properties`.
 
 ## Fingerprint Algorithm
 

@@ -22,6 +22,7 @@ _VALIDATION_RE = re.compile(r"validat|check|verify|sanitiz|assert", re.IGNORECAS
 def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None, score_contribution=8):
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-config",  # #94 - reads declared workflow/graph structure
         "severity": rule.get("severity", "medium"),
         "message": message,
         "file": path,

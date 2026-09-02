@@ -45,6 +45,7 @@ _INJECTION_PRONE_RE = re.compile(
 def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None, score_contribution=8):
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-pattern",  # #94 - regex patterns over prompt files
         "severity": rule.get("severity", "medium"),
         "message": message,
         "file": path,

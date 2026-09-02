@@ -66,6 +66,7 @@ def write_sarif(report, path):
             "score_contribution",
             "confidence",
             "confidence_label",
+            "evidence_type",
             "resolved_definition",
             "schema_version",
             "validation_rule",

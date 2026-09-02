@@ -273,6 +273,7 @@ def _finding(rule_id, rule, message, path, line, evidence=None):
     """Create a data-flow finding dict, deriving severity/owasp from the rule."""
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-pattern",  # #94 - line-level taint heuristic over source text
         "severity": rule.get("severity", "high"),
         "message": message,
         "file": path,

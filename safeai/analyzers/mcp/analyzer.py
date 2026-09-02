@@ -87,6 +87,7 @@ def _base_finding(
 ):
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-config",  # #94 - reads declared MCP server and tool entries
         "severity": severity,
         "message": message,
         "file": path,
@@ -559,6 +560,7 @@ class MCPAnalyzer:
 
         findings.append({
             "rule_id": "MCP_ASSETS_DISCOVERED",
+            "evidence_type": "static-config",  # #94 - reads declared MCP server and tool entries
             "severity": "info",
             "message": f"Discovered MCP assets: {len(assets)}",
             "file": "<scan>",

@@ -72,6 +72,7 @@ CATEGORY_BY_CAP = {
 def _finding(rule_id, rule, message, path, line, capability, framework="generic", evidence=None, confidence=0.6, score_contribution=8):
     return {
         "rule_id": rule_id,
+        "evidence_type": "static-pattern",  # #94 - regex fallback pass over raw file content
         "severity": rule.get("severity", "medium"),
         "message": message,
         "file": path,
@@ -160,6 +161,7 @@ class CapabilityAnalyzer:
 
             findings.append({
                 "rule_id": rule_id,
+                "evidence_type": "static-pattern",  # #94 - regex fallback pass over raw file content
                 "severity": rule.get("severity", "medium"),
                 "message": f"Capability discovered: {cap_name}",
                 "file": path,
@@ -249,6 +251,7 @@ class CapabilityAnalyzer:
                         rule = rule_map.get("CAP_AUTONOMY", {})
                         findings.append({
                             "rule_id": "CAP_AUTONOMY",
+                            "evidence_type": "static-pattern",  # #94 - regex fallback pass over raw file content
                             "severity": rule.get("severity", "high"),
                             "message": "Potential autonomous agent loop detected",
                             "file": path,

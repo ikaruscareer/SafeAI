@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate SBOM (SPDX JSON), SHA-256 checksums, and provenance attestation
 for the SafeAI v2.0.0 release source tarball.
 

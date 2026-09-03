@@ -1,5 +1,114 @@
 # SafeAI — Release Notes
 
+## v2.0.0 (2026-09-03)
+
+**Governance Depth & Ecosystem Expansion.** Deepens governance detection with
+runaway-loop and recursion-guard rules, adds Windsurf config-file adapter,
+and presents governance gaps as a failure-class coverage matrix. 695 tests
+passing, lint clean, all CI workflows green.
+
+### What's New
+
+- **Runaway-loop / recursion-guard detection** — two new `GOV_*` rules:
+  `GOV_MAX_ITERATIONS_MISSING` (severity: high) detects agent loops with no
+  max-iteration bound; `GOV_RECURSION_GUARD_MISSING` (severity: medium)
+  detects recursive tool calls without a depth guard. Both slot into the
+  existing `GovernanceAnalyzer` with per-tool dedup and ±10-line source
+  confirmation.
+- **Failure-class coverage matrix** — new HTML report and JSON section
+  groups `GOV_*` findings by failure class (dependency timeout, dependency
+  unavailable, resource exhaustion, cascading failure, unbounded recursion,
+  missing accountability). Shifts operator question from "which rules fired?"
+  to "which failure modes can this agent survive?"
+- **Windsurf config-file adapter** — framework adapter for `.windsurfrules`
+  (Windsurf IDE config). JSON/YAML/free-text parsing, capability scanning,
+  tool/model extraction, unrestricted grant detection, MCP references.
+- **Evidence type schema (KYA manifest v1.3)** — `evidence_type` on every
+  finding: `static-config`, `static-pattern`, or `runtime-observed`
+  (reserved). See PR #114.
+
+### Upgrade Notes
+
+See [UPGRADE.md](./UPGRADE.md) for the full v1.x → v2.0.0 migration guide.
+Key changes:
+
+- `GOV_MAX_ITERATIONS_MISSING` and `GOV_RECURSION_GUARD_MISSING` are new
+  rule IDs — custom policies referencing GOV_* rules may need updating.
+- `failure_class_matrix` is a new field in JSON output — consumers should
+  handle its absence gracefully.
+- `.windsurfrules` is now a scannable file — scans of repos containing this
+  file will produce new findings.
+- KYA manifest schema bumped to v1.3 (additive — `evidence_type` field).
+
+### Schema Stability
+
+The following are stable as of v2.0.0 and will not change without a major
+version bump:
+
+- **Rule IDs** — `CAP_*`, `CC_*`, `DATA_*`, `DATAFLOW_*`, `DEP_*`,
+  `ENV_*`, `GOV_*`, `MCP_*`, `MODEL_*`, `PROMPT_*`, `PROMPT_FILE_*`,
+  `SKILL_*`, `TOOL_*`, `WORKFLOW_*` (82 rules in `base_rules.yaml`).
+- **SARIF output** — SARIF 2.1.0 with `properties.*` fields:
+  `risk_category`, `affected_framework`, `affected_capability`,
+  `score_contribution`, `confidence`, `confidence_label`, `evidence_type`,
+  `resolved_definition`, `schema_version`, `validation_rule`,
+  `affected_object`.
+- **JSON report schema** — `findings[]`, `summary`, `assurance_boundary`,
+  `failure_class_matrix`, `tool_surface`, `capability_diff`, `components`,
+  `kya_agents`, `policy_decision`, `suppressions`, `baseline`.
+- **Exit codes** — 0 = clean, 1 = findings at or above threshold,
+  2 = scan error.
+- **GitHub Action inputs/outputs** — inputs: `path`, `version`, `fail-on`,
+  `sarif`, `rules`, `baseline`, `fail-on-new`, `fail-on-escalation`,
+  `no-registry`, `extra-args`, `scorecard`, `scorecard-json`,
+  `scorecard-summary`, `scorecard-fail-under`. Outputs: `sarif-path`,
+  `scorecard-path`, `safeai-version`.
+- **KYA manifest** — schema v1.3: `agents`, `components`, `findings`,
+  `summary`, `limitations`, `tool_surface`, `assurance_boundary`,
+  `evidence_type` on every finding.
+
+### Supported Environments
+
+- **Python**: 3.11, 3.12, 3.13 (CI-tested). `requires-python = ">=3.11"`.
+- **Platforms**: Linux (Ubuntu 24.04), macOS, Windows. No platform-specific
+  code; all paths are cross-platform.
+- **CI**: GitHub Actions (primary), GitLab CI, Azure Pipelines (via
+  `safeai/kya/ci_context.py`).
+- **Framework adapters**: 16 adapters (azure_foundry, bedrock_agent,
+  claude_code, crewai, cursorrules, dify, google_adk, haystack, langchain,
+  langgraph, llamaindex, mastra, microsoft_agent, n8n, openai_agents,
+  semantic_kernel, windsurf). All load via `@register_parser`.
+
+### Known Limitations and Non-Goals
+
+- **Static analysis only** — SafeAI scans source code and configuration at
+  rest. It does not execute agents, call LLMs, or verify runtime behavior.
+  See `assurance_boundary` in every report for what was verified vs what
+  cannot be verified statically.
+- **No compliance certification** — control mappings (OWASP LLM/Agentic,
+  NIST AI RMF) are taxonomy references, not compliance claims. A "covered"
+  failure class means a governance control was declared in source, not that
+  it is enforced at runtime.
+- **Heuristic detection** — capability detection, data-flow tracking, and
+  governance signal detection use regex and AST heuristics. False positives
+  are possible. Confidence labels (`heuristic` vs `high`) reflect this.
+- **Single-file analysis** — data-flow tracking follows taint one call deep
+  within a file. Cross-file taint propagation is not yet supported.
+- **MCP content-level inspection not yet shipped** — MCP tool-description
+  poisoning detection is planned for v2.1. The current MCP analyzer is
+  structural (resolved vs unresolved-command).
+- **No runtime sandbox** — SafeAI is not a runtime security platform,
+  observability product, or red-teaming tool. It complements runtime tools
+  by finding risk in code first.
+
+### Links
+
+- [Source Code](https://github.com/ikaruscareer/SafeAI/tree/v2.0.0)
+- [Upgrade Guide](./UPGRADE.md)
+- [Issue Tracker](https://github.com/ikaruscareer/SafeAI/issues)
+
+---
+
 ## v1.9.1 (2026-08-30)
 
 **SafeAI 1.9.1 is a post-release hardening release for v1.9.0.** Fixes

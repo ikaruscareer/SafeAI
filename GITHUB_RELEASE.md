@@ -1,6 +1,84 @@
 # SafeAI — GitHub Release
 
-## v1.9.1
+## v2.0.0
+
+Governance Depth & Ecosystem Expansion. Deepens governance detection with
+runaway-loop and recursion-guard rules, adds Windsurf config-file adapter,
+and presents governance gaps as a failure-class coverage matrix.
+
+### What's New
+
+- **Runaway-loop / recursion-guard detection** — `GOV_MAX_ITERATIONS_MISSING`
+  (high) detects agent loops with no max-iteration bound. `GOV_RECURSION_GUARD_MISSING`
+  (medium) detects recursive tool calls without depth guard.
+- **Failure-class coverage matrix** — groups GOV_* findings by failure class
+  (dependency timeout, unavailable, resource exhaustion, cascading failure,
+  unbounded recursion, missing accountability). HTML + JSON output.
+- **Windsurf adapter** — `.windsurfrules` config-file scanning. JSON/YAML/
+  free-text parsing, capability detection, tool/model extraction.
+- **Evidence type schema v1.3** — `evidence_type` on every finding:
+  `static-config`, `static-pattern`, or `runtime-observed` (reserved).
+
+### Schema Stability (v2.0.0)
+
+The following are frozen and will not change without a major version bump:
+
+- **Rule IDs**: 82 rules across `CAP_*`, `CC_*`, `DATA_*`, `DATAFLOW_*`,
+  `DEP_*`, `ENV_*`, `GOV_*`, `MCP_*`, `MODEL_*`, `PROMPT_*`,
+  `PROMPT_FILE_*`, `SKILL_*`, `TOOL_*`, `WORKFLOW_*`.
+- **SARIF 2.1.0**: `properties.*` fields (risk_category, affected_framework,
+  affected_capability, score_contribution, confidence, confidence_label,
+  evidence_type, resolved_definition, schema_version, validation_rule,
+  affected_object).
+- **JSON report**: findings[], summary, assurance_boundary,
+  failure_class_matrix, tool_surface, capability_diff, components,
+  kya_agents, policy_decision, suppressions, baseline.
+- **Exit codes**: 0 (clean), 1 (findings at/above threshold), 2 (scan error).
+- **Action inputs**: path, version, fail-on, sarif, rules, baseline,
+  fail-on-new, fail-on-escalation, no-registry, extra-args, scorecard,
+  scorecard-json, scorecard-summary, scorecard-fail-under.
+- **Action outputs**: sarif-path, scorecard-path, safeai-version.
+- **KYA manifest**: schema v1.3 (additive — evidence_type field).
+
+### Supported Environments
+
+- **Python**: 3.11, 3.12, 3.13 (requires-python >= 3.11)
+- **Platforms**: Linux (Ubuntu 24.04), macOS, Windows
+- **CI**: GitHub Actions (primary), GitLab CI, Azure Pipelines
+- **Framework adapters**: azure_foundry, bedrock_agent, claude_code,
+  crewai, cursorrules, dify, google_adk, haystack, langchain, langgraph,
+  llamaindex, mastra, microsoft_agent, n8n, openai_agents,
+  semantic_kernel, windsurf
+
+### Known Limitations
+
+- Static analysis only — does not execute agents or verify runtime behavior.
+- No compliance certification — control mappings are taxonomy references.
+- Heuristic detection — false positives possible; confidence labels reflect this.
+- Single-file data-flow — cross-file taint not yet supported.
+- MCP content-level inspection deferred to v2.1.
+- Not a runtime security platform, observability product, or red-teaming tool.
+
+### Upgrade Guide
+
+See [UPGRADE.md](./UPGRADE.md) for the full migration guide.
+
+### Installation
+
+```bash
+pip install SafeAI-Static-Analyzer==2.0.0
+```
+
+### Links
+
+- [Source Code](https://github.com/ikaruscareer/SafeAI/tree/v2.0.0)
+- [Upgrade Guide](./UPGRADE.md)
+- [Release Notes](./RELEASE_NOTES.md)
+- [Issue Tracker](https://github.com/ikaruscareer/SafeAI/issues)
+
+---
+
+## v1.9.1 (2026-08-30)
 
 Static AI Capability & Risk Analyzer for AI agents and workflows. Post-release
 fixes for v1.9.0: mojibake correction, scoped governance suppression, hardened

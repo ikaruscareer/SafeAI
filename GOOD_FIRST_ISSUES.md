@@ -232,6 +232,28 @@ These issues have been implemented by community contributors and are now part of
 
 ---
 
+## Test Fixtures & Compatibility
+
+### 32. Expand golden fixtures to all framework adapters
+- **Difficulty:** Easy | **Effort:** 1–2 hours per framework
+- **Suggested files:** `tests/fixtures/<framework>/representative/`, `tests/test_compatibility.py`
+- **Description:** The compatibility test suite (`tests/test_compatibility.py`) has golden fixtures for 7 of 17 framework adapters (Claude Code, CrewAI, LangGraph, Cursor Rules, Windsurf, n8n, LlamaIndex). Add representative fixtures and golden tests for the remaining 10: Azure Foundry, Bedrock Agent, Dify, Google ADK, Haystack, LangChain, Mastra, Microsoft Agent, OpenAI Agents, Semantic Kernel.
+- **Acceptance criteria:**
+  1. Create `tests/fixtures/<framework>/representative/` with a minimal source file
+  2. Add a `Test<Framework>Golden` class in `tests/test_compatibility.py` following the existing pattern
+  3. All 36+ tests pass (`pytest tests/test_compatibility.py`)
+
+### 33. Add MCP tool-pattern golden fixtures
+- **Difficulty:** Easy | **Effort:** 2–3 hours
+- **Suggested files:** `tests/fixtures/mcp/`, `tests/test_compatibility.py`
+- **Description:** Add golden fixtures for representative MCP patterns: clean server, poisoned tool description, missing auth, exposed endpoint. Test that the MCP analyzer produces expected findings for each.
+- **Acceptance criteria:**
+  1. Create `tests/fixtures/mcp/golden/` with 4 representative `.json` files
+  2. Add `TestMCPToolPatterns` class in `tests/test_compatibility.py`
+  3. All tests pass
+
+---
+
 ## Detailed Templates
 
 Each issue above has a corresponding YAML template in `.github/good-first-issues/` with the full description, acceptance criteria, and labels. Run the GitHub Actions workflow to create them all in the issue tracker at once.

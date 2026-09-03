@@ -754,6 +754,18 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get involved.
 
 ---
 
+## Documentation
+
+- [Release Notes](./RELEASE_NOTES.md) — changelog for all versions
+- [Upgrade Guide](./UPGRADE.md) — v1.x → v2.0.0 migration
+- [Support Matrix](./SUPPORT_MATRIX.md) — Python versions, platforms, adapters, CI
+- [Release Channels](./RELEASE_CHANNELS.md) — main, stable, prerelease, maintenance
+- [Security Policy](./SECURITY.md) — vulnerability reporting and response targets
+- [Known Limitations](./KNOWN_LIMITATIONS.md) — what SafeAI does and does not do
+- [Roadmap](./ROADMAP.md) — future plans and feature requests
+
+---
+
 ## License
 
 SafeAI is released under the Apache 2.0 License.

@@ -1,47 +1,72 @@
-# Security Policy
+# SafeAI — Security Policy
 
 ## Reporting a Vulnerability
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+If you discover a security vulnerability in SafeAI, please report it
+responsibly. **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, report them via [GitHub Private Vulnerability Reporting](https://github.com/ikaruscareer/SafeAI/security/advisories/new).
+### How to Report
 
-You should receive a response within 72 hours. If the issue is confirmed, we will:
+Email **security@ikaruscareer.com** with:
 
-1. Acknowledge the report
-2. Develop and test a fix
-3. Release a patched version
-4. Credit the reporter (unless anonymity is requested)
+- Description of the vulnerability
+- Steps to reproduce
+- Affected version(s)
+- Potential impact assessment
+- Suggested fix (if any)
 
-## Supported Versions
+### Response Targets
 
-| Version | Supported |
-|---------|-----------|
-| 1.6.x | Yes |
-| < 1.6 | No |
+| Phase | Target |
+|-------|--------|
+| Acknowledgment | 48 hours |
+| Triage & severity assessment | 5 business days |
+| Fix development (critical) | 10 business days |
+| Fix development (high) | 30 business days |
+| Fix development (medium/low) | Next scheduled release |
+| Public disclosure | After fix is released |
 
-## Security Model
+### What We Consider a Vulnerability
 
-SafeAI is a static analyzer. Key security properties:
+- **Rule bypass**: a pattern that should trigger a finding but doesn't
+- **False-negative injection**: code that evades detection due to a parser bug
+- **Supply chain**: dependency confusion or typosquatting in `pyproject.toml`
+- **CI/CD**: GitHub Action inputs that allow code execution
+- **Data exfiltration**: telemetry or reporting that leaks sensitive data
 
-- **No code execution** — scanned code is never imported, executed, or evaluated
-- **No network access** — analysis is fully offline; no telemetry or external calls
-- **Secret masking** — credential values in findings are masked in all report formats
-- **Deterministic** — identical input always produces identical output
+### What We Don't Consider Vulnerabilities
 
-See [SECURITY_MODEL.md](SECURITY_MODEL.md) for the full threat model and trust score documentation.
+- Heuristic false positives (by design — see KNOWN_LIMITATIONS.md)
+- Framework adapter coverage gaps (use GitHub Issues)
+- Feature requests (use GitHub Issues)
 
-## Scope
+## Ownership
 
-The following are considered security issues in SafeAI itself:
+| Area | Owner | Response Target |
+|------|-------|-----------------|
+| Core scanner | @ikaruscareer | 5 business days |
+| Framework adapters | @ikaruscareer | 10 business days |
+| GitHub Action | @ikaruscareer | 5 business days |
+| Rule content | Community | Best effort |
+| Documentation | Community | Best effort |
 
-- Arbitrary code execution triggered by scanning a malicious repository
-- Path traversal when reading or writing files
-- Unmasked secret values in generated reports
-- Malicious YAML causing unsafe deserialization
-- Regular expression denial of service (ReDoS) against crafted input
+## False Positive Reports
 
-The following are **not** SafeAI vulnerabilities (they are the findings the tool is designed to report):
+Open a GitHub Issue with the `false-positive` label. Include:
 
-- Vulnerabilities discovered in scanned codebases
-- False positive or false negative detections (report as regular bugs)
+- Rule ID that fired
+- Source file and line number
+- Why you believe it's a false positive
+- SafeAI version and scan command used
+
+Target response: 10 business days for triage, fix in next patch release.
+
+## Breaking Regression Reports
+
+Open a GitHub Issue with the `regression` label. Include:
+
+- What changed (worked in vX.Y, broken in vX.Z)
+- Reproduction steps
+- Expected vs actual behavior
+
+Target response: 5 business days for triage, fix in next patch release.

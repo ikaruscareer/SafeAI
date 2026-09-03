@@ -75,6 +75,7 @@ def discover_parsers(include_external=True):
     from safeai.frameworks.semantic_kernel.parser import (
         SemanticKernelParser,  # noqa: F401
     )
+    from safeai.frameworks.windsurf.parser import WindsurfParser  # noqa: F401
     if include_external:
         _load_external_parsers()
     return [cls() for cls in _PARSER_REGISTRY]

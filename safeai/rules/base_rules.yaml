@@ -365,6 +365,16 @@
   severity: medium
   owasp_llm: LLM06
 
+- id: GOV_MAX_ITERATIONS_MISSING
+  description: Missing max-iteration bound on agent loop — enables unbounded loops
+  severity: high
+  owasp_llm: LLM06
+
+- id: GOV_RECURSION_GUARD_MISSING
+  description: Missing recursion depth guard on agent tool — enables unbounded recursion
+  severity: medium
+  owasp_llm: LLM06
+
 # --- Data-flow analysis (WS6) ---
 
 - id: DATAFLOW_prompt

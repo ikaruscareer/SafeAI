@@ -73,7 +73,7 @@ def _is_scannable_file(filename):
     if lower.endswith((".py", ".json", ".yaml", ".yml", ".prompt")):
         return True
     return lower in {
-        "claude.md", "prompt.md", "system_prompt.md", ".cursorrules",
+        "claude.md", "prompt.md", "system_prompt.md", ".cursorrules", ".windsurfrules",
     } or lower.endswith((".prompt.md", ".prompt.txt"))
 
 

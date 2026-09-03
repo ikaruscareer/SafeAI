@@ -1,0 +1,9 @@
+{
+  "rules": [
+    "You are a senior backend engineer working on this repository.",
+    "You may run shell commands to execute tests and inspect file contents.",
+    "Call the internal HTTP API to fetch ticket data when needed."
+  ],
+  "tools": ["read_file", "run_tests"],
+  "model": "claude-sonnet-4-5"
+}

@@ -271,6 +271,9 @@ def write_html(report, path):
         f for f in findings if f.get("risk_category") in {"Governance", "Integration", "Identity"}
     ]
 
+    from safeai.report.failure_matrix import build_failure_class_matrix
+    failure_matrix = build_failure_class_matrix(findings)
+
     severity_counts = "".join(
         f"<div style='margin:2px 0'>{_sev_badge(k)} <strong>{v}</strong></div>"
         for k, v in counts.items()
@@ -321,6 +324,19 @@ def write_html(report, path):
         ["Rule", "Category", "Message", "Recommendation"],
         [[f.get('rule_id', ''), f.get('risk_category', ''), f.get('message', ''), f.get('remediation', '')] for f in governance_summary],
         empty="No governance findings.",
+    )}
+
+    <h2>Failure-Class Coverage Matrix</h2>
+    <p class='muted'>Groups governance findings by the class of failure they leave the agent unprepared for. A class is "uncovered" if any of its associated controls are missing.</p>
+    {html_kit.data_table(
+        ["Failure Class", "Status", "Description", "Uncovered Controls"],
+        [[
+            entry["failure_class"],
+            '<span style="color:#dc2626">Uncovered</span>' if entry["status"] == "uncovered" else '<span style="color:#16a34a">Covered</span>',
+            entry["description"],
+            ", ".join(entry["covered_rules"]) or "—",
+        ] for entry in failure_matrix],
+        empty="No governance controls to evaluate.",
     )}
 
     <h2>Findings</h2>

@@ -133,6 +133,16 @@ RULE_MAPPINGS = {
         ("owasp_agentic", "AGENTIC10"),
         ("nist_ai_rmf", "GOVERN_2"),
     ],
+    "GOV_MAX_ITERATIONS_MISSING": [
+        ("owasp_llm", "LLM06"),
+        ("owasp_agentic", "AGENTIC08"),
+        ("nist_ai_rmf", "MANAGE_1"),
+    ],
+    "GOV_RECURSION_GUARD_MISSING": [
+        ("owasp_llm", "LLM06"),
+        ("owasp_agentic", "AGENTIC08"),
+        ("nist_ai_rmf", "MANAGE_1"),
+    ],
     # Environment dependencies
     "ENV_DEP_INVENTORY": [
         ("owasp_llm", "LLM06"),

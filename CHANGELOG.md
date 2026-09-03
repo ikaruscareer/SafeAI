@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-03
+
+**Governance Depth & Ecosystem Expansion.** Deepens governance detection with
+runaway-loop and recursion-guard rules, adds Windsurf config-file adapter,
+and presents governance gaps as a failure-class coverage matrix.
+
+### Added — Runaway-loop / recursion-guard detection
+
+- Two new `GOV_*` rules: `GOV_MAX_ITERATIONS_MISSING` (detects agent loops
+  with no max-iteration bound — `while True`, recursive calls without depth
+  limit) and `GOV_RECURSION_GUARD_MISSING` (detects recursive tool calls
+  without a recursion depth guard).
+- Both rules slot into the existing `GovernanceAnalyzer` with per-tool dedup
+  and ±10-line source confirmation.
+- Mapped to OWASP LLM06, OWASP Agentic AGENTIC08, and NIST AI RMF MANAGE_1.
+- Severity: `high` for unbounded loops, `medium` for missing recursion guards.
+
+### Added — Failure-class coverage matrix
+
+- New `failure_class_matrix` section in HTML report and JSON output groups
+  `GOV_*` findings by the class of failure they leave the agent unprepared
+  for: dependency timeout, dependency unavailable, resource exhaustion,
+  cascading failure, unbounded recursion, missing accountability.
+- Shifts operator question from "which rules fired?" to "which failure modes
+  can this agent survive?"
+- Source: Reddit community feedback (2026-09).
+
+### Added — Windsurf config-file adapter
+
+- Framework adapter for `.windsurfrules` (Windsurf IDE config file).
+- JSON/YAML/free-text structured-first parsing, capability keyword scanning,
+  tool/model extraction, unrestricted grant detection, MCP reference detection.
+- 13 tests covering detection, parsing, and integration.
+
+### Added — Evidence type schema (v1.3)
+
+- `evidence_type` field on every finding: `static-config` (parsed fields),
+  `static-pattern` (regex matches), or `runtime-observed` (reserved, nothing
+  emits it today). KYA manifest bumped to v1.3.
+
+### Changed
+
+- Governance analyzer now checks 10 controls (up from 8): added
+  `max_iterations` and `recursion_guard`.
+- 695 tests passing (up from 675 in v1.9.1).
+
 ## [1.9.1] - 2026-08-30
 
 Post-release fixes for v1.9.0.

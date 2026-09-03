@@ -91,6 +91,10 @@ class ScanPostProcessor:
         early = self._persist_registry()
         if early is not None:
             return early
+        from safeai.report.failure_matrix import build_failure_class_matrix
+        self.report["failure_class_matrix"] = build_failure_class_matrix(
+            self.report.get("findings", [])
+        )
         self._write_outputs()
         return self._compute_exit_code()
 

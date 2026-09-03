@@ -51,7 +51,7 @@ class TestGovernanceAnalyzer:
         }]
         findings = analyzer.run({}, self._default_rules(), agent_models=agent_models)
         rule_ids = [f["rule_id"] for f in findings]
-        assert len(rule_ids) == 8
+        assert len(rule_ids) == 10
 
     def test_tool_with_timeout_no_finding(self):
         analyzer = self._make_analyzer()
@@ -210,3 +210,82 @@ class TestGovernanceAnalyzer:
             assert f["confidence"] == "heuristic"
             assert f["scope"] == "static-analysis"
             assert "limitation" in f and len(f["limitation"]) > 0
+
+    def test_tool_missing_max_iterations(self):
+        analyzer = self._make_analyzer()
+        agent_models = [{
+            "file": "agent.py",
+            "data": {"tools": [{"name": "loop_tool", "line": 10}]},
+        }]
+        findings = analyzer.run({}, self._default_rules(), agent_models=agent_models)
+        rule_ids = [f["rule_id"] for f in findings]
+        assert "GOV_MAX_ITERATIONS_MISSING" in rule_ids
+
+    def test_tool_with_max_iterations_in_kwargs_no_finding(self):
+        analyzer = self._make_analyzer()
+        agent_models = [{
+            "file": "agent.py",
+            "data": {
+                "tools": [{"name": "loop_tool", "kwargs": {"max_iterations": 10}, "line": 10}],
+            },
+        }]
+        findings = analyzer.run({}, self._default_rules(), agent_models=agent_models)
+        rule_ids = [f["rule_id"] for f in findings]
+        assert "GOV_MAX_ITERATIONS_MISSING" not in rule_ids
+
+    def test_source_confirms_max_iterations(self):
+        analyzer = self._make_analyzer()
+        content = "max_steps = 5\ntool = run_tool()"
+        file_cache = {"agent.py": content}
+        agent_models = [{
+            "file": "agent.py",
+            "data": {"tools": [{"name": "tool1", "line": 2}]},
+        }]
+        findings = analyzer.run(file_cache, self._default_rules(), agent_models=agent_models)
+        rule_ids = [f["rule_id"] for f in findings]
+        assert "GOV_MAX_ITERATIONS_MISSING" not in rule_ids
+
+    def test_tool_missing_recursion_guard(self):
+        analyzer = self._make_analyzer()
+        agent_models = [{
+            "file": "agent.py",
+            "data": {"tools": [{"name": "recursive_tool", "line": 10}]},
+        }]
+        findings = analyzer.run({}, self._default_rules(), agent_models=agent_models)
+        rule_ids = [f["rule_id"] for f in findings]
+        assert "GOV_RECURSION_GUARD_MISSING" in rule_ids
+
+    def test_tool_with_recursion_guard_in_config(self):
+        analyzer = self._make_analyzer()
+        agent_models = [{
+            "file": "agent.py",
+            "data": {
+                "tools": [{"name": "recursive_tool", "config": {"max_call_depth": 5}, "line": 10}],
+            },
+        }]
+        findings = analyzer.run({}, self._default_rules(), agent_models=agent_models)
+        rule_ids = [f["rule_id"] for f in findings]
+        assert "GOV_RECURSION_GUARD_MISSING" not in rule_ids
+
+    def test_source_confirms_recursion_guard(self):
+        analyzer = self._make_analyzer()
+        content = "recursion_limit = 10\ntool = agent_tool()"
+        file_cache = {"agent.py": content}
+        agent_models = [{
+            "file": "agent.py",
+            "data": {"tools": [{"name": "tool1", "line": 2}]},
+        }]
+        findings = analyzer.run(file_cache, self._default_rules(), agent_models=agent_models)
+        rule_ids = [f["rule_id"] for f in findings]
+        assert "GOV_RECURSION_GUARD_MISSING" not in rule_ids
+
+    def test_bare_tool_missing_all_ten_controls(self):
+        """A bare tool should now miss all 10 governance controls."""
+        analyzer = self._make_analyzer()
+        agent_models = [{
+            "file": "agent.py",
+            "data": {"tools": [{"name": "bare_tool", "line": 5}]},
+        }]
+        findings = analyzer.run({}, self._default_rules(), agent_models=agent_models)
+        rule_ids = [f["rule_id"] for f in findings]
+        assert len(rule_ids) == 10

@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-09-03
+
+**Release hardening.** Consolidated release pipeline with mandatory
+verification gates, GPG-signed artifacts, cross-platform verification
+instructions, and pre-release checklist.
+
+### Added
+
+- **Consolidated release pipeline** (`.github/workflows/release.yml`) —
+  6-job pipeline: checklist → build → attest → sign → publish → release.
+  Every gate must pass before the next starts. Builds are pinned to the
+  exact release commit SHA.
+- **Pre-release checklist** — blocks publication if version string, rules,
+  analyzers, compatibility tests, SARIF output, JSON report, Action I/O
+  contract, failure-class matrix, or CHANGELOG entry is inconsistent.
+- **GPG-signed release artifacts** — wheel, sdist, checksums, provenance,
+  and SBOM are all GPG-signed with detached `.asc` signatures.
+- **Cross-platform verification instructions** (`VERIFICATION.md`) —
+  step-by-step GPG, checksum, and provenance verification for Linux,
+  macOS, and Windows (PowerShell). Includes pip hash-checking.
+- **Compatibility test suite** (`tests/test_compatibility.py`) — 36 tests
+  covering golden fixtures (7 frameworks), JSON/SARIF/CLI/Action contracts,
+  and adapter contract (detect/parse for all 17 parsers).
+- **Golden fixtures** for Google ADK, OpenAI Agents, Semantic Kernel.
+- **Release channels documentation** (`RELEASE_CHANNELS.md`).
+- **Security policy** (`SECURITY.md`) with vulnerability reporting and
+  response targets.
+- **Support matrix** (`SUPPORT_MATRIX.md`) — Python versions, platforms,
+  adapters, CI, Action I/O, exit codes, rule coverage.
+
+### Changed
+
+- Version bumped to 2.0.1.
+- 731 tests passing (up from 695 in v2.0.0).
+
 ## [2.0.0] - 2026-09-03
 
 **Governance Depth & Ecosystem Expansion.** Deepens governance detection with

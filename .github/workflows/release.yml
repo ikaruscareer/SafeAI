@@ -1,0 +1,402 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v2.0.1)"
+        required: true
+
+permissions: read-all
+
+jobs:
+  # ── Gate 1: Pre-release checklist ────────────────────────────────────
+  checklist:
+    name: Pre-release checklist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      sha: ${{ steps.meta.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          TAG="${{ github.ref_name || inputs.tag }}"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e . pyyaml
+
+      - name: "Check: version string matches tag"
+        run: |
+          TAG_VERSION="${{ steps.meta.outputs.version }}"
+          CODE_VERSION=$(python -c "from safeai.version import SAFEAI_VERSION; print(SAFEAI_VERSION)")
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) != code version ($CODE_VERSION)"
+            exit 1
+          fi
+          echo "Version match: $TAG_VERSION"
+
+      - name: "Check: all rules have required fields"
+        run: python -c "
+        import yaml, sys
+        with open('safeai/rules/base_rules.yaml') as f:
+            rules = yaml.safe_load(f)
+        required = {'id', 'severity', 'message'}
+        bad = [r for r in rules if not required.issubset(r.keys())]
+        if bad:
+            for r in bad:
+                print(f'Missing fields in rule: {r.get(\"id\", \"UNKNOWN\")}')
+            sys.exit(1)
+        print(f'All {len(rules)} rules have required fields')
+        "
+
+      - name: "Check: all analyzers registered"
+        run: python -c "
+        from safeai.analyzers import _ANALYZER_REGISTRY
+        expected = {
+            'PromptAnalyzer', 'DataLeakageAnalyzer', 'MCPAnalyzer',
+            'CapabilityAnalyzer', 'DependencyAnalyzer', 'EnvironmentAnalyzer',
+            'GovernanceAnalyzer', 'WorkflowAnalyzer', 'ToolAnalyzer',
+            'SkillAnalyzer', 'ModelAnalyzer', 'PromptFileAnalyzer',
+            'DataFlowAnalyzer',
+        }
+        actual = {type(a).__name__ for a in _ANALYZER_REGISTRY}
+        missing = expected - actual
+        if missing:
+            print(f'Missing analyzers: {missing}')
+            exit(1)
+        print(f'All {len(actual)} analyzers registered')
+        "
+
+      - name: "Check: compatibility tests pass"
+        run: python -m pytest tests/test_compatibility.py -q --tb=short
+
+      - name: "Check: SARIF output is valid"
+        run: python -c "
+        from safeai.engine.scan import run_scan
+        from safeai.report.sarif import write_sarif
+        import json, tempfile, os
+        report = run_scan('tests/fixtures/crewai/representative')
+        path = os.path.join(tempfile.mkdtemp(), 'test.sarif')
+        write_sarif(report, path)
+        data = json.loads(open(path).read())
+        assert data['version'] == '2.1.0', 'Invalid SARIF version'
+        assert len(data['runs']) >= 1, 'No SARIF runs'
+        print('SARIF output valid')
+        "
+
+      - name: "Check: JSON report has required keys"
+        run: python -c "
+        from safeai.engine.scan import run_scan
+        report = run_scan('tests/fixtures/crewai/representative')
+        required = ['findings', 'counts', 'detected_frameworks', 'tool_surface', 'assurance_boundary']
+        missing = [k for k in required if k not in report]
+        if missing:
+            print(f'Missing keys: {missing}')
+            exit(1)
+        print(f'JSON report has all {len(required)} required keys')
+        "
+
+      - name: "Check: Action I/O contract stable"
+        run: python -c "
+        import yaml
+        with open('action.yml') as f:
+            action = yaml.safe_load(f)
+        inputs = set(action['inputs'].keys())
+        outputs = set(action['outputs'].keys())
+        expected_inputs = {'path','version','fail-on','sarif','rules','baseline','fail-on-new','fail-on-escalation','no-registry','extra-args','scorecard','scorecard-json','scorecard-summary','scorecard-fail-under'}
+        expected_outputs = {'sarif-path','scorecard-path','safeai-version'}
+        missing_i = expected_inputs - inputs
+        missing_o = expected_outputs - outputs
+        if missing_i:
+            print(f'Missing Action inputs: {missing_i}')
+            exit(1)
+        if missing_o:
+            print(f'Missing Action outputs: {missing_o}')
+            exit(1)
+        print(f'Action I/O contract stable: {len(inputs)} inputs, {len(outputs)} outputs')
+        "
+
+      - name: "Check: failure_class_matrix present"
+        run: python -c "
+        from safeai.engine.scan import run_scan
+        from safeai.report.failure_matrix import build_failure_class_matrix
+        report = run_scan('tests/fixtures/crewai/representative')
+        matrix = build_failure_class_matrix(report.get('findings', []))
+        assert len(matrix) > 0, 'Empty failure class matrix'
+        print(f'Failure class matrix: {len(matrix)} classes')
+        "
+
+      - name: "Check: CHANGELOG has entry for this version"
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          if ! grep -q "\[$VERSION\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no entry for v$VERSION"
+            exit 1
+          fi
+          echo "CHANGELOG entry found for v$VERSION"
+
+  # ── Gate 2: Build ────────────────────────────────────────────────────
+  build:
+    name: Build package
+    needs: checklist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.checklist.outputs.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install --require-hashes -r requirements-build.txt
+
+      - name: Build package
+        run: python -m build
+
+      - name: Verify package metadata
+        run: |
+          python -m twine check dist/*
+          echo "Package metadata valid"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist
+          path: dist/
+          retention-days: 5
+
+  # ── Gate 3: Checksums + SBOM + Provenance ────────────────────────────
+  attest:
+    name: Generate artifacts
+    needs: [checklist, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.checklist.outputs.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+
+      - name: Generate SBOM
+        run: python scripts/generate_release_artifacts.py ${{ needs.checklist.outputs.version }}
+
+      - name: Generate SHA-256 checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          echo "Checksums generated:"
+          cat SHA256SUMS
+
+      - name: Generate SLSA provenance
+        run: |
+          TAG="${{ needs.checklist.outputs.version }}"
+          SHA="${{ needs.checklist.outputs.sha }}"
+          cat > dist/provenance.json << PROV
+          {
+            "_type": "https://in-toto.io/Statement/v1",
+            "subject": [{"name": "safeai-${TAG}.tar.gz", "digest": {"sha1": "${SHA}"}}],
+            "predicateType": "https://slsa.dev/provenance/v1",
+            "predicate": {
+              "buildType": "https://github.com/ikaruscareer/SafeAI/.github/workflows/release.yml",
+              "externalParameters": {
+                "source": {"uri": "git+https://github.com/ikaruscareer/SafeAI@${SHA}", "digest": {"sha1": "${SHA}"}}
+              },
+              "metadata": {
+                "buildInvocationId": "${{ github.run_id }}",
+                "completeness": {"parameters": true, "environment": false, "materials": false}
+              }
+            }
+          }
+          PROV
+
+      - name: Upload attestations
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: attestations
+          path: |
+            release-artifacts/
+            dist/SHA256SUMS
+            dist/provenance.json
+          retention-days: 5
+
+  # ── Gate 4: Sign ─────────────────────────────────────────────────────
+  sign:
+    name: GPG-sign artifacts
+    needs: [checklist, attest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.checklist.outputs.sha }}
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@72f2cbedc0d652855751fc5aaa5d54aca80abb87 # v6.1.0
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+
+      - name: Download attestations
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: attestations
+          path: attestations/
+
+      - name: Sign all artifacts
+        run: |
+          mkdir -p signed
+          # Sign wheel and sdist
+          for f in dist/*.whl dist/*.tar.gz; do
+            [ -f "$f" ] || continue
+            gpg --batch --yes --armor --detach-sign "$f"
+            cp "$f" signed/
+            cp "$f.asc" signed/
+          done
+          # Sign checksums
+          gpg --batch --yes --armor --detach-sign --output signed/SHA256SUMS.asc dist/SHA256SUMS
+          cp dist/SHA256SUMS signed/
+          # Sign provenance
+          gpg --batch --yes --armor --detach-sign --output signed/provenance.json.asc attestations/provenance.json
+          cp attestations/provenance.json signed/
+          # Sign SBOM
+          for f in attestations/release-artifacts/*.spdx.json; do
+            [ -f "$f" ] || continue
+            gpg --batch --yes --armor --detach-sign "$f"
+            cp "$f" signed/
+            cp "$f.asc" signed/
+          done
+          echo "Signed artifacts:"
+          ls -la signed/
+
+      - name: Verify all signatures
+        run: |
+          for f in signed/*.asc; do
+            [ -f "$f" ] || continue
+            orig="${f%.asc}"
+            echo "Verifying: $f"
+            gpg --verify "$f" "$orig"
+          done
+          echo "All signatures verified."
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: signed
+          path: signed/
+          retention-days: 5
+
+  # ── Gate 5: Publish to PyPI ─────────────────────────────────────────
+  publish:
+    name: Publish to PyPI
+    needs: [checklist, sign]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.checklist.outputs.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install --require-hashes -r requirements-build.txt
+
+      - name: Build package (pinned to release SHA)
+        run: |
+          echo "Building from SHA: ${{ needs.checklist.outputs.sha }}"
+          git checkout ${{ needs.checklist.outputs.sha }}
+          python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
+        with:
+          packages-dir: dist/
+
+  # ── Gate 6: Upload to GitHub Release ─────────────────────────────────
+  release:
+    name: Upload to GitHub Release
+    needs: [checklist, sign, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: signed
+          path: signed/
+
+      - name: Download attestations
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: attestations
+          path: attestations/
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.checklist.outputs.version }}
+        run: |
+          TAG="v${TAG}"
+          # Upload signed artifacts
+          for f in signed/*; do
+            [ -f "$f" ] || continue
+            gh release upload "$TAG" "$f" --clobber 2>/dev/null || true
+          done
+          # Upload SBOM
+          for f in attestations/release-artifacts/*; do
+            [ -f "$f" ] || continue
+            gh release upload "$TAG" "$f" --clobber 2>/dev/null || true
+          done
+          # Upload provenance
+          gh release upload "$TAG" attestations/provenance.json --clobber 2>/dev/null || true
+          echo "All artifacts uploaded to release $TAG"

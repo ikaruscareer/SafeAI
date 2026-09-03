@@ -543,6 +543,13 @@ class ScanOrchestrator:
             "skipped_files": dict(sorted(self.skipped_files.items())),
             "trust_score": self.trust_score,
         }
+        # Scanner metadata (v2.0.1): machine-readable engine/schema/ruleset/adapter versions.
+        from safeai.engine.metadata import build_scanner_metadata
+        self.report["scanner_metadata"] = build_scanner_metadata(
+            rules_dir=self.rules_dir,
+            parsers=self.parsers,
+            scan_root=self.directory,
+        )
         # Per-tool capability surface (v1.4): the unit the diff compares and
         # the registry persists. Built from report data only — no extra file
         # access. Requires only agent_models/mcp_assets, so it runs before

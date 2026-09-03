@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["Bash(*)"]
+  },
+  "tools": ["web_search", "send_email"]
+}

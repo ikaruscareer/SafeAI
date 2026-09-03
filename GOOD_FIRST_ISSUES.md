@@ -237,7 +237,7 @@ These issues have been implemented by community contributors and are now part of
 ### 32. Expand golden fixtures to all framework adapters
 - **Difficulty:** Easy | **Effort:** 1–2 hours per framework
 - **Suggested files:** `tests/fixtures/<framework>/representative/`, `tests/test_compatibility.py`
-- **Description:** The compatibility test suite (`tests/test_compatibility.py`) has golden fixtures for 7 of 17 framework adapters (Claude Code, CrewAI, LangGraph, Cursor Rules, Windsurf, n8n, LlamaIndex). Add representative fixtures and golden tests for the remaining 10: Azure Foundry, Bedrock Agent, Dify, Google ADK, Haystack, LangChain, Mastra, Microsoft Agent, OpenAI Agents, Semantic Kernel.
+- **Description:** The compatibility test suite has golden fixtures for 10 of 17 framework adapters (Claude Code, CrewAI, LangGraph, Cursor Rules, Windsurf, n8n, LlamaIndex, Google ADK, OpenAI Agents, Semantic Kernel). Add representative fixtures and golden tests for the remaining 7: Azure Foundry, Bedrock Agent, Dify, Haystack, LangChain, Mastra, Microsoft Agent.
 - **Acceptance criteria:**
   1. Create `tests/fixtures/<framework>/representative/` with a minimal source file
   2. Add a `Test<Framework>Golden` class in `tests/test_compatibility.py` following the existing pattern

@@ -15,6 +15,7 @@ jobs:
   # ── Gate 1: Pre-release checklist ────────────────────────────────────
   checklist:
     name: Pre-release checklist
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read

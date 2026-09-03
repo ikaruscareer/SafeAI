@@ -52,95 +52,101 @@ jobs:
           echo "Version match: $TAG_VERSION"
 
       - name: "Check: all rules have required fields"
-        run: python -c "
-        import yaml, sys
-        with open('safeai/rules/base_rules.yaml') as f:
-            rules = yaml.safe_load(f)
-        required = {'id', 'severity', 'message'}
-        bad = [r for r in rules if not required.issubset(r.keys())]
-        if bad:
-            for r in bad:
-                print(f'Missing fields in rule: {r.get(\"id\", \"UNKNOWN\")}')
-            sys.exit(1)
-        print(f'All {len(rules)} rules have required fields')
-        "
+        run: |
+          python -c "
+          import yaml, sys
+          with open('safeai/rules/base_rules.yaml') as f:
+              rules = yaml.safe_load(f)
+          required = {'id', 'severity', 'message'}
+          bad = [r for r in rules if not required.issubset(r.keys())]
+          if bad:
+              for r in bad:
+                  print(f'Missing fields in rule: {r.get(\"id\", \"UNKNOWN\")}')
+              sys.exit(1)
+          print(f'All {len(rules)} rules have required fields')
+          "
 
       - name: "Check: all analyzers registered"
-        run: python -c "
-        from safeai.analyzers import _ANALYZER_REGISTRY
-        expected = {
-            'PromptAnalyzer', 'DataLeakageAnalyzer', 'MCPAnalyzer',
-            'CapabilityAnalyzer', 'DependencyAnalyzer', 'EnvironmentAnalyzer',
-            'GovernanceAnalyzer', 'WorkflowAnalyzer', 'ToolAnalyzer',
-            'SkillAnalyzer', 'ModelAnalyzer', 'PromptFileAnalyzer',
-            'DataFlowAnalyzer',
-        }
-        actual = {type(a).__name__ for a in _ANALYZER_REGISTRY}
-        missing = expected - actual
-        if missing:
-            print(f'Missing analyzers: {missing}')
-            exit(1)
-        print(f'All {len(actual)} analyzers registered')
-        "
+        run: |
+          python -c "
+          from safeai.analyzers import _ANALYZER_REGISTRY
+          expected = {
+              'PromptAnalyzer', 'DataLeakageAnalyzer', 'MCPAnalyzer',
+              'CapabilityAnalyzer', 'DependencyAnalyzer', 'EnvironmentAnalyzer',
+              'GovernanceAnalyzer', 'WorkflowAnalyzer', 'ToolAnalyzer',
+              'SkillAnalyzer', 'ModelAnalyzer', 'PromptFileAnalyzer',
+              'DataFlowAnalyzer',
+          }
+          actual = {type(a).__name__ for a in _ANALYZER_REGISTRY}
+          missing = expected - actual
+          if missing:
+              print(f'Missing analyzers: {missing}')
+              exit(1)
+          print(f'All {len(actual)} analyzers registered')
+          "
 
       - name: "Check: compatibility tests pass"
         run: python -m pytest tests/test_compatibility.py -q --tb=short
 
       - name: "Check: SARIF output is valid"
-        run: python -c "
-        from safeai.engine.scan import run_scan
-        from safeai.report.sarif import write_sarif
-        import json, tempfile, os
-        report = run_scan('tests/fixtures/crewai/representative')
-        path = os.path.join(tempfile.mkdtemp(), 'test.sarif')
-        write_sarif(report, path)
-        data = json.loads(open(path).read())
-        assert data['version'] == '2.1.0', 'Invalid SARIF version'
-        assert len(data['runs']) >= 1, 'No SARIF runs'
-        print('SARIF output valid')
-        "
+        run: |
+          python -c "
+          from safeai.engine.scan import run_scan
+          from safeai.report.sarif import write_sarif
+          import json, tempfile, os
+          report = run_scan('tests/fixtures/crewai/representative')
+          path = os.path.join(tempfile.mkdtemp(), 'test.sarif')
+          write_sarif(report, path)
+          data = json.loads(open(path).read())
+          assert data['version'] == '2.1.0', 'Invalid SARIF version'
+          assert len(data['runs']) >= 1, 'No SARIF runs'
+          print('SARIF output valid')
+          "
 
       - name: "Check: JSON report has required keys"
-        run: python -c "
-        from safeai.engine.scan import run_scan
-        report = run_scan('tests/fixtures/crewai/representative')
-        required = ['findings', 'counts', 'detected_frameworks', 'tool_surface', 'assurance_boundary']
-        missing = [k for k in required if k not in report]
-        if missing:
-            print(f'Missing keys: {missing}')
-            exit(1)
-        print(f'JSON report has all {len(required)} required keys')
-        "
+        run: |
+          python -c "
+          from safeai.engine.scan import run_scan
+          report = run_scan('tests/fixtures/crewai/representative')
+          required = ['findings', 'counts', 'detected_frameworks', 'tool_surface', 'assurance_boundary']
+          missing = [k for k in required if k not in report]
+          if missing:
+              print(f'Missing keys: {missing}')
+              exit(1)
+          print(f'JSON report has all {len(required)} required keys')
+          "
 
       - name: "Check: Action I/O contract stable"
-        run: python -c "
-        import yaml
-        with open('action.yml') as f:
-            action = yaml.safe_load(f)
-        inputs = set(action['inputs'].keys())
-        outputs = set(action['outputs'].keys())
-        expected_inputs = {'path','version','fail-on','sarif','rules','baseline','fail-on-new','fail-on-escalation','no-registry','extra-args','scorecard','scorecard-json','scorecard-summary','scorecard-fail-under'}
-        expected_outputs = {'sarif-path','scorecard-path','safeai-version'}
-        missing_i = expected_inputs - inputs
-        missing_o = expected_outputs - outputs
-        if missing_i:
-            print(f'Missing Action inputs: {missing_i}')
-            exit(1)
-        if missing_o:
-            print(f'Missing Action outputs: {missing_o}')
-            exit(1)
-        print(f'Action I/O contract stable: {len(inputs)} inputs, {len(outputs)} outputs')
-        "
+        run: |
+          python -c "
+          import yaml
+          with open('action.yml') as f:
+              action = yaml.safe_load(f)
+          inputs = set(action['inputs'].keys())
+          outputs = set(action['outputs'].keys())
+          expected_inputs = {'path','version','fail-on','sarif','rules','baseline','fail-on-new','fail-on-escalation','no-registry','extra-args','scorecard','scorecard-json','scorecard-summary','scorecard-fail-under'}
+          expected_outputs = {'sarif-path','scorecard-path','safeai-version'}
+          missing_i = expected_inputs - inputs
+          missing_o = expected_outputs - outputs
+          if missing_i:
+              print(f'Missing Action inputs: {missing_i}')
+              exit(1)
+          if missing_o:
+              print(f'Missing Action outputs: {missing_o}')
+              exit(1)
+          print(f'Action I/O contract stable: {len(inputs)} inputs, {len(outputs)} outputs')
+          "
 
       - name: "Check: failure_class_matrix present"
-        run: python -c "
-        from safeai.engine.scan import run_scan
-        from safeai.report.failure_matrix import build_failure_class_matrix
-        report = run_scan('tests/fixtures/crewai/representative')
-        matrix = build_failure_class_matrix(report.get('findings', []))
-        assert len(matrix) > 0, 'Empty failure class matrix'
-        print(f'Failure class matrix: {len(matrix)} classes')
-        "
+        run: |
+          python -c "
+          from safeai.engine.scan import run_scan
+          from safeai.report.failure_matrix import build_failure_class_matrix
+          report = run_scan('tests/fixtures/crewai/representative')
+          matrix = build_failure_class_matrix(report.get('findings', []))
+          assert len(matrix) > 0, 'Empty failure class matrix'
+          print(f'Failure class matrix: {len(matrix)} classes')
+          "
 
       - name: "Check: CHANGELOG has entry for this version"
         run: |

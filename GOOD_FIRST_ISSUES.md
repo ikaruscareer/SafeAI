@@ -2,11 +2,11 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **32 beginner-friendly issues** designed for first-time contributors (15 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **32 beginner-friendly issues** designed for first-time contributors (9 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
-> **25 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
+> **23 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
 
 ---
 

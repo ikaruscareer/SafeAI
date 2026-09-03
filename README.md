@@ -3,7 +3,7 @@
 [![CI](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml/badge.svg)](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ikaruscareer/SafeAI/badge)](https://scorecard.dev/viewer/?uri=github.com/ikaruscareer/SafeAI)
 [![Website](https://img.shields.io/badge/web-safeai--analyzer.ikaruscareer.com-0f766e)](https://safeai-analyzer.ikaruscareer.com)
-[![Latest Release](https://img.shields.io/badge/latest-v1.9.0-0f766e)](https://github.com/ikaruscareer/SafeAI/releases/tag/v1.9.0)
+[![Latest Release](https://img.shields.io/badge/latest-v2.0.1-0f766e)](https://github.com/ikaruscareer/SafeAI/releases/tag/v2.0.1)
 [![Best Practices](https://bestpractices.dev/projects/14126/badge)](https://www.bestpractices.dev/en/projects/14126)
 
 Enjoying SafeAI? A ⭐ on [GitHub](https://github.com/ikaruscareer/SafeAI) helps more security teams find it.
@@ -51,7 +51,7 @@ SafeAI sits before runtime guardrails and red-teaming tools in the security life
 
 | Feature | Description |
 |---------|-------------|
-| **Framework Detection** | Detects and parses 16 AI agent frameworks (AST + config + regex, no mutual exclusion) |
+| **Framework Detection** | Detects and parses 17 AI agent frameworks (AST + config + regex, no mutual exclusion) |
 | **Tool Identity & Access Modes** | Capabilities attributed to named tools (agent / MCP server / skill / tool / workflow node) on an access scale `none < read < write < mutate < execute`; inferred modes are flagged, never overstated |
 | **Capability Discovery** | Maps 19 capability categories (shell, filesystem, network, database, memory, MCP, ...) with evidence, confidence, and provenance |
 | **Capability Escalation Detection** | Per-tool authority diffs between scans (new shell, read→write widening, new MCP server, removed approval gate, ...) — 14 rules, including gating-aware subsumption |
@@ -122,7 +122,6 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 |-----------|-----------|-----------|-------------------|---------------|--------|
 | LangGraph | ✔ | Partial | Partial | Partial | Partial |
 | CrewAI | ✔ | Partial | Partial | Partial | Partial |
-| AutoGen | ✔ | Partial | Minimal | Minimal | Experimental |
 | LangChain | ✔ | Partial | Partial | Partial | Partial |
 | Semantic Kernel | ✔ | Partial | Partial | Partial | Partial |
 | OpenAI Agents SDK | ✔ | Partial | Partial | Partial | Partial |
@@ -137,6 +136,7 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 | Dify | ✔ | Minimal | Minimal | Minimal | Experimental |
 | n8n | ✔ | Partial | Minimal | Minimal | Experimental |
 | Cursor (.cursorrules) | ✔ | Minimal | Minimal | Minimal | Experimental |
+| Windsurf (.windsurfrules) | ✔ | Minimal | Minimal | Minimal | Experimental |
 
 
 ### Framework Support Details
@@ -761,7 +761,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get involved.
 - [Support Matrix](./SUPPORT_MATRIX.md) — Python versions, platforms, adapters, CI
 - [Release Channels](./RELEASE_CHANNELS.md) — main, stable, prerelease, maintenance
 - [Security Policy](./SECURITY.md) — vulnerability reporting and response targets
-- [Known Limitations](./KNOWN_LIMITATIONS.md) — what SafeAI does and does not do
+- [Known Limitations](./LIMITATIONS.md) — what SafeAI does and does not do
 - [Roadmap](./ROADMAP.md) — future plans and feature requests
 
 ---

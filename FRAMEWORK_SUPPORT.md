@@ -1,8 +1,8 @@
 # SafeAI — Framework Support Reference
 
-> **Current release: v1.9.0** (2026-08-28) — governance signal detection,
-> data-flow analysis, control mappings, component version/hash, `safeai init`,
-> adapter completion.
+> **Current release: v2.0.1** (2026-09-03) — governance depth (runaway-loop
+> and recursion-guard detection), Windsurf adapter, failure-class coverage
+> matrix, evidence-type schema v1.3, release hardening.
 
 This document details the detection approach, discovered artifacts, capabilities, and limitations for each supported AI agent framework.
 
@@ -27,7 +27,6 @@ we deliberately do not overclaim coverage.
 |-----------|-----------------|----------------|---------------------|---------------|----------|
 | LangGraph | AST + regex | Nodes, edges, tools, models, memory | Shell, filesystem, memory, planner | Partial | Partial |
 | CrewAI | AST + regex | Agents, tasks, tools, models, memory | Shell, memory, delegations | Partial | Partial |
-| AutoGen | AST + regex | Agents, tools, models | Shell, filesystem, external APIs | Minimal | Experimental |
 | LangChain | AST + metadata + regex | Agents, chains, tools, memory, models | Shell, memory, planner | Partial | Partial |
 | Semantic Kernel | AST + metadata + regex | Workflows, plugins, memory, models, skills | Shell, memory, planner | Partial | Partial |
 | OpenAI Agents SDK | AST + metadata + regex | Agents, tools, handoffs, MCP | Multi-agent, delegation, MCP | Partial | Partial |
@@ -42,6 +41,7 @@ we deliberately do not overclaim coverage.
 | Dify | YAML/JSON + references | Workflows, agents, tools, models | Shell, databases, external APIs | Minimal | Experimental |
 | n8n | Workflow JSON + references | Workflows, nodes, connections | Shell, databases, email, external APIs | Minimal | Experimental |
 | Cursor (.cursorrules) | Filename + JSON/YAML/free text | Declared tools, model | Shell, filesystem, external APIs, databases | Minimal | Experimental |
+| Windsurf (.windsurfrules) | Filename + JSON/YAML/free text | Declared tools, model | Shell, filesystem, external APIs, databases | Minimal | Experimental |
 
 ---
 

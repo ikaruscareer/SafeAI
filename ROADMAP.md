@@ -4,7 +4,7 @@ SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI 
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v1.9.0 is shipped. Community Edition **CE 1.4 (Reviewable Change)** is complete; **CE 1.5 (True Capability Surface)** env inventory + correlation shipped; **CE 1.6 (AI Component Records)** — component version/hash, impact-query CLI shipped in v1.9.0; unpinned-reference detection and lockfile-style integrity remain planned; **CE 1.8 (Code-Level Authority & Provenance)** is complete (tool↔implementation mapping, command-aware MCP resolution, target taxonomy, finding lifecycle, stale suppression guard, agent metadata, prompt/data-leakage depth, cross-component graph); **v1.9.0** is shipped (component depth, ecosystem foundations, `safeai init`, governance signal detection, data-flow analysis, control mappings); **CE 2.0** (plugin ecosystem, static IaC authority correlation) — `safeai init` and control mappings shipped; plugin SDK, portable registry import, per-scan plugin versions remain planned; **CE-V** (pre-deployment validation packs) are planned; the entire Corporate Edition remains planned.
+> **Current state:** v2.0.1 is shipped. Community Edition **CE 1.4 (Reviewable Change)** is complete; **CE 1.5 (True Capability Surface)** env inventory + correlation shipped; **CE 1.6 (AI Component Records)** — component version/hash, impact-query CLI shipped in v1.9.0; unpinned-reference detection and lockfile-style integrity remain planned; **CE 1.8 (Code-Level Authority & Provenance)** is complete (tool↔implementation mapping, command-aware MCP resolution, target taxonomy, finding lifecycle, stale suppression guard, agent metadata, prompt/data-leakage depth, cross-component graph); **v1.9.0** is shipped (component depth, ecosystem foundations, `safeai init`, governance signal detection, data-flow analysis, control mappings); **v2.0.0** is shipped (governance depth: runaway-loop/recursion-guard detection, Windsurf adapter, failure-class coverage matrix, evidence-type schema v1.3); **v2.0.1** is shipped (release hardening: consolidated pipeline, GPG-signed artifacts, cross-platform verification, regression fixtures, scanner metadata); **CE 2.0** (plugin ecosystem, static IaC authority correlation) — `safeai init` and control mappings shipped; plugin SDK, portable registry import, per-scan plugin versions remain planned; **CE-V** (pre-deployment validation packs) are planned; the entire Corporate Edition remains planned.
 
 ---
 
@@ -156,11 +156,11 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ---
 
-## v2.0.0 — Governance Depth & Ecosystem Expansion *(planned)*
+## v2.0.0 — Governance Depth & Ecosystem Expansion *(shipped)*
 
 *Goal: deepen governance detection, harden MCP against content-level attacks, expand config-file coverage, and present governance gaps as failure-class coverage.*
 
-**Status: 🔄 in progress. Target: after v1.9.1.**
+**Status: ✅ shipped (v2.0.0, 2026-09-03).**
 
 ### Governance depth
 - ✅ **Runaway-loop / token-bombing / recursion-guard detection** — missing loop bounds, missing max-iteration guards, recursive agent-to-agent call chains without depth limits, unbounded recursive tool calls. Extends the `GOV_*` rule family (e.g. `GOV_MAX_ITERATIONS_MISSING`, `GOV_RECURSION_GUARD_MISSING`). Slots naturally next to the existing timeout/retry/circuit-breaker rules in the `GovernanceAnalyzer`. Addresses cost-exhaustion attacks and unbounded agent recursion — a top-marketed AI agent risk. **Shipped in v2.0.0.**

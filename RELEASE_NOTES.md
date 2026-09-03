@@ -1,5 +1,43 @@
 # SafeAI — Release Notes
 
+## v2.0.1 (2026-09-03)
+
+**Release hardening.** Consolidated release pipeline with mandatory
+verification gates, GPG-signed artifacts, cross-platform verification
+instructions, and pre-release checklist. 744 tests passing.
+
+### What's New
+
+- **Consolidated release pipeline** — 6-job pipeline: checklist → build →
+  attest → sign → publish → release. Every gate must pass before the next.
+- **Pre-release checklist** — blocks publication if version, rules, tests,
+  CHANGELOG, or Action I/O contract is inconsistent.
+- **GPG-signed artifacts** — wheel, sdist, checksums, provenance, SBOM
+  all signed with detached `.asc` signatures.
+- **Cross-platform verification** (`VERIFICATION.md`) — GPG, checksum,
+  and provenance verification for Linux, macOS, Windows.
+- **Regression fixtures** — 13 tests for 6 high-risk areas: Claude Code
+  deny/allow, dataflow rule-ID casing, MCP tool-description injection,
+  config-file adapter discovery, governance suppression, runaway-loop
+  detection.
+- **File discovery extraction** — `safeai/engine/file_discovery.py` with
+  `discover_files()` and `dispatch_adapters()` extracted from orchestrator.
+- **Scanner metadata** — machine-readable `scanner_metadata` section in
+  reports (engine version, schema version, ruleset hash, adapter versions).
+
+### Schema Stability
+
+All v2.0.0 schema stability commitments remain in effect. See
+[UPGRADE.md](./UPGRADE.md) for details.
+
+### Links
+
+- [Source Code](https://github.com/ikaruscareer/SafeAI/tree/v2.0.1)
+- [Verification](./VERIFICATION.md)
+- [Issue Tracker](https://github.com/ikaruscareer/SafeAI/issues)
+
+---
+
 ## v2.0.0 (2026-09-03)
 
 **Governance Depth & Ecosystem Expansion.** Deepens governance detection with
@@ -47,7 +85,7 @@ version bump:
 
 - **Rule IDs** — `CAP_*`, `CC_*`, `DATA_*`, `DATAFLOW_*`, `DEP_*`,
   `ENV_*`, `GOV_*`, `MCP_*`, `MODEL_*`, `PROMPT_*`, `PROMPT_FILE_*`,
-  `SKILL_*`, `TOOL_*`, `WORKFLOW_*` (82 rules in `base_rules.yaml`).
+  `SKILL_*`, `TOOL_*`, `WORKFLOW_*` (79 rules in `base_rules.yaml`).
 - **SARIF output** — SARIF 2.1.0 with `properties.*` fields:
   `risk_category`, `affected_framework`, `affected_capability`,
   `score_contribution`, `confidence`, `confidence_label`, `evidence_type`,

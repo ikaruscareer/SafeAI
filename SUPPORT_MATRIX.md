@@ -108,20 +108,20 @@
 
 | Category | Rules | Description |
 |----------|-------|-------------|
-| `CAP_*` | 28 | Capability detection |
-| `CC_*` | 12 | Claude Code specific |
-| `DATA_*` | 2 | Data classification |
+| `CAP_*` | 19 | Capability detection |
+| `CC_*` | 10 | Claude Code specific |
+| `DATA_*` | 1 | Data classification |
 | `DATAFLOW_*` | 6 | Data-flow tracking |
-| `DEP_*` | 4 | Dependency correlation |
-| `ENV_*` | 2 | Environment analysis |
+| `DEP_*` | 2 | Dependency correlation |
+| `ENV_*` | 1 | Environment analysis |
 | `GOV_*` | 10 | Governance controls |
-| `MCP_*` | 2 | MCP configuration |
-| `MODEL_*` | 2 | Model configuration |
-| `PROMPT_*` | 14 | Prompt injection detection |
-| `PROMPT_FILE_*` | 2 | Prompt file scanning |
-| `SKILL_*` | 2 | Skill analysis |
-| `TOOL_*` | 2 | Tool analysis |
-| `WORKFLOW_*` | 2 | Workflow analysis |
+| `MCP_*` | 4 | MCP configuration |
+| `MODEL_*` | 3 | Model configuration |
+| `PROMPT_*` | 4 | Prompt injection detection |
+| `PROMPT_FILE_*` | 4 | Prompt file scanning |
+| `SKILL_*` | 5 | Skill analysis |
+| `TOOL_*` | 6 | Tool analysis |
+| `WORKFLOW_*` | 4 | Workflow analysis |
 
 ## Links
 
@@ -130,4 +130,4 @@
 - [Upgrade Guide](./UPGRADE.md)
 - [Release Channels](./RELEASE_CHANNELS.md)
 - [Security Policy](./SECURITY.md)
-- [Known Limitations](./KNOWN_LIMITATIONS.md)
+- [Known Limitations](./LIMITATIONS.md)

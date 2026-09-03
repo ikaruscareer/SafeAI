@@ -36,7 +36,7 @@ Email **security@ikaruscareer.com** with:
 
 ### What We Don't Consider Vulnerabilities
 
-- Heuristic false positives (by design — see KNOWN_LIMITATIONS.md)
+- Heuristic false positives (by design — see LIMITATIONS.md)
 - Framework adapter coverage gaps (use GitHub Issues)
 - Feature requests (use GitHub Issues)
 

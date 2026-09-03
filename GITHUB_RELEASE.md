@@ -1,5 +1,27 @@
 # SafeAI — GitHub Release
 
+## v2.0.1
+
+Release hardening. Consolidated 6-job release pipeline with mandatory
+verification gates, GPG-signed artifacts, cross-platform verification
+instructions, and pre-release checklist.
+
+### What's New
+
+- Consolidated release pipeline with mandatory gates
+- Pre-release checklist blocks publication on inconsistencies
+- GPG-signed artifacts (wheel, sdist, checksums, provenance, SBOM)
+- Cross-platform verification instructions (Linux, macOS, Windows)
+- Regression fixtures for 6 high-risk areas
+- File discovery extraction and scanner metadata
+
+### Verification
+
+See [VERIFICATION.md](./VERIFICATION.md) for GPG, checksum, and
+provenance verification instructions.
+
+---
+
 ## v2.0.0
 
 Governance Depth & Ecosystem Expansion. Deepens governance detection with
@@ -23,7 +45,7 @@ and presents governance gaps as a failure-class coverage matrix.
 
 The following are frozen and will not change without a major version bump:
 
-- **Rule IDs**: 82 rules across `CAP_*`, `CC_*`, `DATA_*`, `DATAFLOW_*`,
+- **Rule IDs**: 79 rules across `CAP_*`, `CC_*`, `DATA_*`, `DATAFLOW_*`,
   `DEP_*`, `ENV_*`, `GOV_*`, `MCP_*`, `MODEL_*`, `PROMPT_*`,
   `PROMPT_FILE_*`, `SKILL_*`, `TOOL_*`, `WORKFLOW_*`.
 - **SARIF 2.1.0**: `properties.*` fields (risk_category, affected_framework,

@@ -1,5 +1,6 @@
 """Pre-release checklist verification."""
 import sys
+
 import yaml
 
 
@@ -49,7 +50,7 @@ def main():
     if missing_o:
         print(f"Missing Action outputs: {missing_o}")
         return 1
-    print(f"Action I/O contract stable")
+    print("Action I/O contract stable")
 
     print("\nAll pre-release checks passed!")
     return 0

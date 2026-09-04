@@ -1,4 +1,4 @@
-name: Sign Release Assets
+name: Attest Release Assets
 
 on:
   release:
@@ -6,68 +6,34 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to sign (e.g. v2.0.0)"
+        description: "Release tag to attest (e.g. v2.0.1)"
         required: true
 
 permissions: {}
 
 jobs:
-  sign:
-    name: GPG-sign release assets
+  attest:
+    name: Sigstore-attest release assets
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@72f2cbedc0d652855751fc5aaa5d54aca80abb87 # v6.1.0
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Download release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          mkdir -p unsigned
-          gh release download "$TAG" --dir unsigned --pattern '*.sbom.spdx.json' --pattern 'SHA256SUMS' --pattern '*.provenance.json' --pattern '*.whl' --pattern '*.tar.gz' || true
-          ls -la unsigned/
+          mkdir -p artifacts
+          gh release download "$TAG" --dir artifacts --pattern '*.whl' --pattern '*.tar.gz' || true
+          ls -la artifacts/
 
-      - name: Sign assets
-        env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
-        run: |
-          mkdir -p signed
-          for f in unsigned/*; do
-            [ -f "$f" ] || continue
-            gpg --batch --yes --armor --detach-sign "$f"
-            cp "$f" signed/
-            cp "$f.asc" signed/
-          done
-          # Generate detached signature for the combined checksum
-          if [ -f unsigned/SHA256SUMS ]; then
-            gpg --batch --yes --armor --detach-sign --output signed/SHA256SUMS.asc unsigned/SHA256SUMS
-          fi
-          ls -la signed/
-
-      - name: Upload signed assets to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.release.tag_name || inputs.tag }}
-        run: |
-          for f in signed/*.asc; do
-            [ -f "$f" ] || continue
-            gh release upload "$TAG" "$f" --clobber
-          done
-
-      - name: Verify signatures
-        run: |
-          for f in signed/*.asc; do
-            [ -f "$f" ] || continue
-            orig="${f%.asc}"
-            echo "Verifying: $f"
-            gpg --verify "$f" "$orig"
-          done
-          echo "All signatures verified."
+      - name: Attest build provenance (Sigstore)
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184ef3e0a7dc8 # v2.2.3
+        with:
+          subject-path: |
+            artifacts/*.whl
+            artifacts/*.tar.gz

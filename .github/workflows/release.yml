@@ -261,23 +261,19 @@ jobs:
             dist/provenance.json
           retention-days: 5
 
-  # ── Gate 4: Sign ─────────────────────────────────────────────────────
+  # ── Gate 4: Sign + Attest ────────────────────────────────────────────
   sign:
-    name: GPG-sign artifacts
+    name: Sigstore-sign artifacts
     needs: [checklist, attest]
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.checklist.outputs.sha }}
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@72f2cbedc0d652855751fc5aaa5d54aca80abb87 # v6.1.0
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Download build artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -291,41 +287,25 @@ jobs:
           name: attestations
           path: attestations/
 
-      - name: Sign all artifacts
+      - name: Attest build provenance (Sigstore)
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184ef3e0a7dc8 # v2.2.3
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+
+      - name: Prepare release assets
         run: |
           mkdir -p signed
-          # Sign wheel and sdist
-          for f in dist/*.whl dist/*.tar.gz; do
-            [ -f "$f" ] || continue
-            gpg --batch --yes --armor --detach-sign "$f"
-            cp "$f" signed/
-            cp "$f.asc" signed/
-          done
-          # Sign checksums
-          gpg --batch --yes --armor --detach-sign --output signed/SHA256SUMS.asc dist/SHA256SUMS
+          cp dist/*.whl dist/*.tar.gz signed/
           cp dist/SHA256SUMS signed/
-          # Sign provenance
-          gpg --batch --yes --armor --detach-sign --output signed/provenance.json.asc attestations/provenance.json
           cp attestations/provenance.json signed/
-          # Sign SBOM
           for f in attestations/release-artifacts/*.spdx.json; do
             [ -f "$f" ] || continue
-            gpg --batch --yes --armor --detach-sign "$f"
             cp "$f" signed/
-            cp "$f.asc" signed/
           done
-          echo "Signed artifacts:"
+          echo "Release assets:"
           ls -la signed/
-
-      - name: Verify all signatures
-        run: |
-          for f in signed/*.asc; do
-            [ -f "$f" ] || continue
-            orig="${f%.asc}"
-            echo "Verifying: $f"
-            gpg --verify "$f" "$orig"
-          done
-          echo "All signatures verified."
 
       - name: Upload signed artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

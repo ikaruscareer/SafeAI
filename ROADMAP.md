@@ -16,6 +16,8 @@ This document describes the roadmap across **two editions**: the open-source **C
 | **Phase 2** — What changed since the last approved version? | Tool-centric escalation diffs, PR review, governed waivers, lifecycle | ✅ Shipped |
 | **Phase 3** — Does declared capability match deployed authority? | Static IaC correlation (CE); live IAM reconciliation (Corporate) | 🔄 CE 2.0 / EE3 |
 | **Phase 4** — Does the agent resist manipulation at its risk surfaces? | Capability-informed validation packs, adversarial regression | ⏳ CE-V (planned) |
+| **Phase 5** — Is the CI gate enforcing quality and are developers getting feedback? | Quality gates, PR decoration, IDE integration | ⏳ v2.1 (planned) |
+| **Phase 6** — Can we see progress over time and understand agent architecture? | Trend tracking, architecture maps, AI-assisted triage | ⏳ v2.2 (planned) |
 
 ---
 
@@ -179,6 +181,45 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ---
 
+## v2.1 — CI/CD Hardening & Developer Experience *(planned)*
+
+*Goal: make SafeAI a true CI gate with rich developer feedback, and bring governance into the IDE.*
+
+**Status: ⏳ planned. Target: Q4 2026.**
+
+### CI/CD hardening
+- ⏳ **Quality gates** — configurable threshold profiles (`--fail-on-score-under N`, `--fail-on-severity critical|high`, `--fail-on-rule GOV_*`). GitHub Actions status-check integration with named gate outputs. Exit-code semantics documented and stable. Extends the existing `--fail-on`, `--fail-on-escalation`, `--scorecard-fail-under` mechanisms into a unified gating model.
+- ⏳ **PR decoration (auto-posting)** — auto-post `--pr-comment` summaries to GitHub PRs via the GitHub API (currently the comment is stdout-only and must be posted manually). Inline diff annotations for new findings on changed lines. GitLab MR and Azure DevOps PR support.
+
+### Developer experience
+- ⏳ **VS Code extension MVP** — real-time governance feedback in the IDE. Parse open files with SafeAI's analyzers, surface findings as diagnostics, show capability surface in the status bar. Uses the existing scanner as a library (`safeai.engine.scan.run_scan`), no LSP server required.
+- ⏳ **Documentation and examples** — showcase all v2.1 features with real agent repositories (LangGraph, CrewAI, Claude Code). Add to `examples/` directory with runnable scan scripts.
+
+### Exit criterion
+> A developer sees SafeAI findings as inline PR comments and VS Code diagnostics, and CI blocks merges on configurable quality thresholds.
+
+---
+
+## v2.2 — Visibility & Intelligence *(planned)*
+
+*Goal: show progress over time, visualise agent architecture, and assist triage with AI.*
+
+**Status: ⏳ planned. Target: Q1 2027.**
+
+### Trend tracking
+- ⏳ **Baseline trend tracking** — historical score/compliance charts across scans. Registry stores per-scan score snapshots; `safeai trend` CLI command renders ASCII sparklines or exports JSON for external dashboards. Show "improving / declining / stable" trend indicators on the scorecard.
+
+### Architecture visualisation
+- ⏳ **Architecture maps in HTML reports** — visual component diagrams showing agent → tool → MCP server → workflow relationships. Rendered as SVG or embedded Mermaid in the HTML report. Extends `analysis/component_graph.py` with a view layer.
+
+### AI-assisted triage
+- ⏳ **Exploitability validation pilot** — AI-assisted triage for `GOV_*` findings. Given a governance gap (e.g., `GOV_TIMEOUT_MISSING`), generate a plain-English exploitability explanation and suggested remediation. Uses a local template engine (no external API calls), extending the existing remediation text in `safeai/kya/enrich.py`.
+
+### Exit criterion
+> A team lead can view a trend chart showing governance score improvement over 30 days, see an architecture diagram of their agent in the HTML report, and get AI-assisted remediation guidance for each governance finding.
+
+---
+
 ## CE-V — Pre-Deployment Validation Packs *(planned)*
 
 *Goal: turn SafeAI's static capability map into a CI-runnable adversarial test suite for agents.*
@@ -248,7 +289,7 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 ## EE1 — Organisational Evidence Registry
 *The first thing to sell. Aggregation and ownership, not analytics.*
 - Self-hosted central registry of an org-wide KYA inventory from CI-submitted manifests and local exports.
-- Portfolio view across repositories, teams and environments; portfolio-level diffs.
+- **Web dashboard MVP** — central view for multiple agent projects. Portfolio view across repositories, teams and environments; portfolio-level diffs; trend charts; architecture diagrams. Built on the registry data, served as a self-hosted web application.
 - Ownership model: business owner, technical owner, environment, lifecycle status, review date, approval state.
 - Central exception management: verified approver identity, approval workflow, expiry enforcement and notification, org-wide stale-waiver reporting (the identity-backed half of the Community CE 1.4 suppressions item).
 - PR risk ownership and security-review assignment routing.

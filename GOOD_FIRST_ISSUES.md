@@ -2,7 +2,7 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **35 beginner-friendly issues** designed for first-time contributors (12 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **37 beginner-friendly issues** designed for first-time contributors (12 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
@@ -234,7 +234,7 @@ These issues have been implemented by community contributors and are now part of
 
 ## Test Fixtures & Compatibility
 
-### 32. Expand golden fixtures to all framework adapters
+### 33. Expand golden fixtures to all framework adapters
 - **Difficulty:** Easy | **Effort:** 1–2 hours per framework
 - **Suggested files:** `tests/fixtures/<framework>/representative/`, `tests/test_compatibility.py`
 - **Description:** The compatibility test suite has golden fixtures for 10 of 17 framework adapters (Claude Code, CrewAI, LangGraph, Cursor Rules, Windsurf, n8n, LlamaIndex, Google ADK, OpenAI Agents, Semantic Kernel). Add representative fixtures and golden tests for the remaining 7: Azure Foundry, Bedrock Agent, Dify, Haystack, LangChain, Mastra, Microsoft Agent.
@@ -243,7 +243,7 @@ These issues have been implemented by community contributors and are now part of
   2. Add a `Test<Framework>Golden` class in `tests/test_compatibility.py` following the existing pattern
   3. All 36+ tests pass (`pytest tests/test_compatibility.py`)
 
-### 33. Add MCP tool-pattern golden fixtures
+### 34. Add MCP tool-pattern golden fixtures
 - **Difficulty:** Easy | **Effort:** 2–3 hours
 - **Suggested files:** `tests/fixtures/mcp/`, `tests/test_compatibility.py`
 - **Description:** Add golden fixtures for representative MCP patterns: clean server, poisoned tool description, missing auth, exposed endpoint. Test that the MCP analyzer produces expected findings for each.
@@ -256,7 +256,7 @@ These issues have been implemented by community contributors and are now part of
 
 ## Release Pipeline
 
-### 34. Add support-matrix consistency check to release checklist
+### 35. Add support-matrix consistency check to release checklist
 - **Difficulty:** Easy | **Effort:** 1–2 hours
 - **Suggested files:** `.github/workflows/release.yml` (checklist job), `scripts/check_release.py`
 - **Description:** Add a step to the release checklist that verifies `SUPPORT_MATRIX.md` is consistent with the actual codebase: adapter count matches `discover_parsers()` output, Python version classifiers match `pyproject.toml`, Action I/O matches `action.yml`. Fail the pipeline if any mismatch is found.
@@ -266,7 +266,7 @@ These issues have been implemented by community contributors and are now part of
   3. Mismatches cause the pipeline to fail with a clear error message
   4. Add the same check to `scripts/check_release.py`
 
-### 35. Add fixture coverage completeness check to release checklist
+### 36. Add fixture coverage completeness check to release checklist
 - **Difficulty:** Easy | **Effort:** 1–2 hours
 - **Suggested files:** `.github/workflows/release.yml` (checklist job), `tests/test_compatibility.py`
 - **Description:** Add a step to the release checklist that verifies every adapter registered via `discover_parsers()` has a corresponding golden fixture directory under `tests/fixtures/`. Fail the pipeline if any adapter is missing fixtures.
@@ -275,7 +275,7 @@ These issues have been implemented by community contributors and are now part of
   2. Missing fixtures cause the pipeline to fail with a clear error message listing the missing adapters
   3. Add a `test_fixture_coverage_completeness` test in `tests/test_compatibility.py`
 
-### 36. Wire check_release.py into the release pipeline
+### 37. Wire check_release.py into the release pipeline
 - **Difficulty:** Easy | **Effort:** 1 hour
 - **Suggested files:** `.github/workflows/release.yml`, `scripts/check_release.py`
 - **Description:** The standalone `scripts/check_release.py` script duplicates some checks from the inline pipeline steps but is never invoked by the workflow. Add a step to the checklist job that runs `python scripts/check_release.py` to consolidate all pre-release checks in one place.

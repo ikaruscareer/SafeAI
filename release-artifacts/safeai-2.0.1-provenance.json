@@ -1,0 +1,50 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "safeai-2.0.1.tar.gz",
+      "digest": {
+        "sha256": "a4e93acd9cb8a4cc02d12460b90f173ddaf258d48b4b1db6f3a56813366fe0f8"
+      }
+    }
+  ],
+  "predicateType": "https://slsa.dev/provenance/v1",
+  "predicate": {
+    "buildType": "https://github.com/ikaruscareer/SafeAI/.github/workflows/ci.yml",
+    "externalParameters": {
+      "source": {
+        "uri": "https://github.com/ikaruscareer/SafeAI/archive/refs/tags/2.0.1.tar.gz",
+        "digest": {
+          "sha1": "f46489494c686890446d36a66841af67e105bc22"
+        }
+      }
+    },
+    "internalParameters": {
+      "runner": {
+        "arch": "x64",
+        "os": "linux"
+      },
+      "workflowRef": ".github/workflows/ci.yml",
+      "workflowSha": "f46489494c686890446d36a66841af67e105bc22"
+    },
+    "metadata": {
+      "buildInvocationId": "release-2.0.1",
+      "buildStartedOn": "2026-09-04T22:52:21.162645+00:00",
+      "buildFinishedOn": "2026-09-04T22:52:21.162645+00:00",
+      "completeness": {
+        "parameters": true,
+        "environment": false,
+        "materials": false
+      },
+      "reproducible": false
+    },
+    "materials": [
+      {
+        "uri": "https://github.com/ikaruscareer/SafeAI/archive/refs/tags/2.0.1.tar.gz",
+        "digest": {
+          "sha1": "f46489494c686890446d36a66841af67e105bc22"
+        }
+      }
+    ]
+  }
+}

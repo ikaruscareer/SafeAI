@@ -2,7 +2,7 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **32 beginner-friendly issues** designed for first-time contributors (9 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **35 beginner-friendly issues** designed for first-time contributors (12 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
@@ -251,6 +251,38 @@ These issues have been implemented by community contributors and are now part of
   1. Create `tests/fixtures/mcp/golden/` with 4 representative `.json` files
   2. Add `TestMCPToolPatterns` class in `tests/test_compatibility.py`
   3. All tests pass
+
+---
+
+## Release Pipeline
+
+### 34. Add support-matrix consistency check to release checklist
+- **Difficulty:** Easy | **Effort:** 1–2 hours
+- **Suggested files:** `.github/workflows/release.yml` (checklist job), `scripts/check_release.py`
+- **Description:** Add a step to the release checklist that verifies `SUPPORT_MATRIX.md` is consistent with the actual codebase: adapter count matches `discover_parsers()` output, Python version classifiers match `pyproject.toml`, Action I/O matches `action.yml`. Fail the pipeline if any mismatch is found.
+- **Acceptance criteria:**
+  1. New step in `release.yml` checklist job compares adapter count in `SUPPORT_MATRIX.md` against runtime parser count
+  2. New step compares Action I/O in `SUPPORT_MATRIX.md` against `action.yml`
+  3. Mismatches cause the pipeline to fail with a clear error message
+  4. Add the same check to `scripts/check_release.py`
+
+### 35. Add fixture coverage completeness check to release checklist
+- **Difficulty:** Easy | **Effort:** 1–2 hours
+- **Suggested files:** `.github/workflows/release.yml` (checklist job), `tests/test_compatibility.py`
+- **Description:** Add a step to the release checklist that verifies every adapter registered via `discover_parsers()` has a corresponding golden fixture directory under `tests/fixtures/`. Fail the pipeline if any adapter is missing fixtures.
+- **Acceptance criteria:**
+  1. New step in `release.yml` checklist job iterates `discover_parsers()` and checks for `tests/fixtures/<name>/` directory
+  2. Missing fixtures cause the pipeline to fail with a clear error message listing the missing adapters
+  3. Add a `test_fixture_coverage_completeness` test in `tests/test_compatibility.py`
+
+### 36. Wire check_release.py into the release pipeline
+- **Difficulty:** Easy | **Effort:** 1 hour
+- **Suggested files:** `.github/workflows/release.yml`, `scripts/check_release.py`
+- **Description:** The standalone `scripts/check_release.py` script duplicates some checks from the inline pipeline steps but is never invoked by the workflow. Add a step to the checklist job that runs `python scripts/check_release.py` to consolidate all pre-release checks in one place.
+- **Acceptance criteria:**
+  1. New step in `release.yml` checklist job: `run: python scripts/check_release.py`
+  2. `check_exit_code` script exits non-zero on any failure
+  3. Pipeline fails if the script reports inconsistencies
 
 ---
 

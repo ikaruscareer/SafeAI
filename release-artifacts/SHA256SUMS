@@ -1,1 +1,4 @@
-a15c50cf98f1a47dd35d74fc8b6e5edaa74cb00e2077f31d7ce5512fdc306331  safeai-v2.0.0-sbom.spdx.json
+cb04c16efddda3ba5621dc8e61a6c91383e3fc94c4ca1ce77873d5a6d14edab1  safeai-2.0.1-provenance.json
+a4e93acd9cb8a4cc02d12460b90f173ddaf258d48b4b1db6f3a56813366fe0f8  safeai-2.0.1-sbom.spdx.json
+7048f0c4110bf17677159bf2f1785ce311346a16e781d342d2dfa6c9946adee1  safeai_static_analyzer-2.0.1-py3-none-any.whl
+f52e8bc7a69da8bfbb5304170e835da7d5b80cb4ffd28eecbda5812d5ca085aa  safeai_static_analyzer-2.0.1.tar.gz

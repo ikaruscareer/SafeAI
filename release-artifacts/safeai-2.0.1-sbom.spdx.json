@@ -1,0 +1,4462 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "safeai-2.0.1",
+  "documentNamespace": "https://github.com/ikaruscareer/SafeAI/2.0.1",
+  "documentCreationInfo": {
+    "created": "2026-09-04T22:52:18.718343+00:00",
+    "creators": [
+      "Tool: safeai-release-artifacts"
+    ],
+    "licenseListVersion": "3.21"
+  },
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-safeai-2.0.1",
+      "name": "SafeAI-Static-Analyzer",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/ikaruscareer/SafeAI/archive/refs/tags/2.0.1.tar.gz",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": ""
+        }
+      ],
+      "filesAnalyzed": true,
+      "hasFiles": [
+        "SPDXRef-File--github-PULL_REQUEST_TEMPLATE-md",
+        "SPDXRef-File--github-dependabot-yml",
+        "SPDXRef-File--github-workflows-action-test-yml",
+        "SPDXRef-File--github-workflows-ci-yml",
+        "SPDXRef-File--github-workflows-codeql-yml",
+        "SPDXRef-File--github-workflows-community-scan-yml",
+        "SPDXRef-File--github-workflows-dependency-review-yml",
+        "SPDXRef-File--github-workflows-fuzz-yml",
+        "SPDXRef-File--github-workflows-pypi-publish-yml",
+        "SPDXRef-File--github-workflows-release-yml",
+        "SPDXRef-File--github-workflows-safeai-example-yml",
+        "SPDXRef-File--github-workflows-scorecard-analysis-yml",
+        "SPDXRef-File--github-workflows-scorecard-yml",
+        "SPDXRef-File--github-workflows-sign-release-yml",
+        "SPDXRef-File--github-workflows-validate-community-scan-yml",
+        "SPDXRef-File--gitignore",
+        "SPDXRef-File-ARCHITECTURE-md",
+        "SPDXRef-File-ARCHITECTURE_FOR_CONTRIBUTORS-md",
+        "SPDXRef-File-CAPABILITIES-md",
+        "SPDXRef-File-CHANGELOG-md",
+        "SPDXRef-File-CODE_OF_CONDUCT-md",
+        "SPDXRef-File-COMMUNITY_PROJECTS-md",
+        "SPDXRef-File-CONTRIBUTING-md",
+        "SPDXRef-File-CONTRIBUTOR_ROADMAP-md",
+        "SPDXRef-File-DEVELOPER_GUIDE-md",
+        "SPDXRef-File-FRAMEWORK_SUPPORT-md",
+        "SPDXRef-File-GITHUB_RELEASE-md",
+        "SPDXRef-File-GOOD_FIRST_ISSUES-md",
+        "SPDXRef-File-HOW_TO_ADD_ANALYZER-md",
+        "SPDXRef-File-HOW_TO_ADD_CAPABILITY-md",
+        "SPDXRef-File-HOW_TO_ADD_FRAMEWORK-md",
+        "SPDXRef-File-HOW_TO_ADD_RULE-md",
+        "SPDXRef-File-KYA_MANIFEST-md",
+        "SPDXRef-File-LABELS_GUIDE-md",
+        "SPDXRef-File-LICENSE",
+        "SPDXRef-File-LIMITATIONS-md",
+        "SPDXRef-File-MCP_SECURITY-md",
+        "SPDXRef-File-PLUGIN_TEMPLATE-README-md",
+        "SPDXRef-File-PRIVACY-md",
+        "SPDXRef-File-README-md",
+        "SPDXRef-File-REGISTRY-md",
+        "SPDXRef-File-RELEASE_CHANNELS-md",
+        "SPDXRef-File-RELEASE_NOTES-md",
+        "SPDXRef-File-REPORTING_GUIDE-md",
+        "SPDXRef-File-RISK_MODEL-md",
+        "SPDXRef-File-ROADMAP-md",
+        "SPDXRef-File-RULES_REFERENCE-md",
+        "SPDXRef-File-SECURITY-md",
+        "SPDXRef-File-SECURITY_MODEL-md",
+        "SPDXRef-File-SUPPORT_MATRIX-md",
+        "SPDXRef-File-TESTING_CORPUS_GUIDE-md",
+        "SPDXRef-File-UPGRADE-md",
+        "SPDXRef-File-USER_GUIDE-md",
+        "SPDXRef-File-VERIFICATION-md",
+        "SPDXRef-File-action-yml",
+        "SPDXRef-File-community-scans-README-md",
+        "SPDXRef-File-community-scans-disclosure-policy-md",
+        "SPDXRef-File-community-scans-methodology-md",
+        "SPDXRef-File-community-scans-private-pilot-md",
+        "SPDXRef-File-community-scans-report-schema-json",
+        "SPDXRef-File-community-scans-requirements-in",
+        "SPDXRef-File-community-scans-requirements-txt",
+        "SPDXRef-File-community-scans-scripts-build_scan_manifest-py",
+        "SPDXRef-File-community-scans-scripts-render_reddit_draft-py",
+        "SPDXRef-File-community-scans-scripts-resolve_meta-py",
+        "SPDXRef-File-community-scans-scripts-sanitise_report-py",
+        "SPDXRef-File-community-scans-scripts-validate_targets-py",
+        "SPDXRef-File-community-scans-targets-schema-json",
+        "SPDXRef-File-community-scans-targets-yml",
+        "SPDXRef-File-community-scans-templates-maintainer-notification-md-j2",
+        "SPDXRef-File-community-scans-templates-public-summary-md-j2",
+        "SPDXRef-File-community-scans-templates-reddit-post-md-j2",
+        "SPDXRef-File-docs-ci-integration-md",
+        "SPDXRef-File-docs-github-actions-example-md",
+        "SPDXRef-File-docs-sarif-review-guidance-md",
+        "SPDXRef-File-examples-README-md",
+        "SPDXRef-File-examples-autogen-README-md",
+        "SPDXRef-File-examples-azure_foundry-yaml",
+        "SPDXRef-File-examples-bedrock_agent-json",
+        "SPDXRef-File-examples-crewai-README-md",
+        "SPDXRef-File-examples-crewai_example-py",
+        "SPDXRef-File-examples-github-actions-README-md",
+        "SPDXRef-File-examples-github-actions-agent-py",
+        "SPDXRef-File-examples-google-adk-README-md",
+        "SPDXRef-File-examples-langgraph-README-md",
+        "SPDXRef-File-examples-langgraph_example-py",
+        "SPDXRef-File-examples-mcp-README-md",
+        "SPDXRef-File-examples-multi-agent-README-md",
+        "SPDXRef-File-examples-n8n-README-md",
+        "SPDXRef-File-examples-prompts-README-md",
+        "SPDXRef-File-examples-risky-README-md",
+        "SPDXRef-File-examples-safe-README-md",
+        "SPDXRef-File-examples-semantic-kernel-README-md",
+        "SPDXRef-File-examples-workflows-README-md",
+        "SPDXRef-File-fuzz-README-md",
+        "SPDXRef-File-fuzz-fuzz_report_schema-py",
+        "SPDXRef-File-fuzz-fuzz_sanitise_report-py",
+        "SPDXRef-File-fuzz-fuzz_targets_manifest-py",
+        "SPDXRef-File-fuzz-requirements-txt",
+        "SPDXRef-File-out-json",
+        "SPDXRef-File-pyproject-toml",
+        "SPDXRef-File-release-artifacts-SHA256SUMS",
+        "SPDXRef-File-release-artifacts-safeai-v2-0-0-provenance-json",
+        "SPDXRef-File-release-artifacts-safeai-v2-0-0-sbom-spdx-json",
+        "SPDXRef-File-requirements-build-txt",
+        "SPDXRef-File-requirements-dev-lock",
+        "SPDXRef-File-requirements-dev-txt",
+        "SPDXRef-File-requirements-lock",
+        "SPDXRef-File-requirements-txt",
+        "SPDXRef-File-safeai-__init__-py",
+        "SPDXRef-File-safeai-__main__-py",
+        "SPDXRef-File-safeai-analysis-__init__-py",
+        "SPDXRef-File-safeai-analysis-aggregation-py",
+        "SPDXRef-File-safeai-analysis-capabilities-py",
+        "SPDXRef-File-safeai-analysis-capability_diff-py",
+        "SPDXRef-File-safeai-analysis-component_diff-py",
+        "SPDXRef-File-safeai-analysis-component_graph-py",
+        "SPDXRef-File-safeai-analysis-components-py",
+        "SPDXRef-File-safeai-analysis-dependency_correlation-py",
+        "SPDXRef-File-safeai-analysis-escalation-py",
+        "SPDXRef-File-safeai-analysis-import_graph-py",
+        "SPDXRef-File-safeai-analysis-project_graph-py",
+        "SPDXRef-File-safeai-analysis-semantic-py",
+        "SPDXRef-File-safeai-analysis-target_taxonomy-py",
+        "SPDXRef-File-safeai-analysis-tool_identity-py",
+        "SPDXRef-File-safeai-analysis-tool_implementation-py",
+        "SPDXRef-File-safeai-analysis-tool_surface-py",
+        "SPDXRef-File-safeai-analyzers-__init__-py",
+        "SPDXRef-File-safeai-analyzers-capability-__init__-py",
+        "SPDXRef-File-safeai-analyzers-capability-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-claude_code-__init__-py",
+        "SPDXRef-File-safeai-analyzers-claude_code-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-data_leakage-__init__-py",
+        "SPDXRef-File-safeai-analyzers-data_leakage-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-dataflow-__init__-py",
+        "SPDXRef-File-safeai-analyzers-dataflow-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-env_dependency-__init__-py",
+        "SPDXRef-File-safeai-analyzers-env_dependency-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-governance-__init__-py",
+        "SPDXRef-File-safeai-analyzers-governance-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-mcp-__init__-py",
+        "SPDXRef-File-safeai-analyzers-mcp-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-mcp-compatibility-py",
+        "SPDXRef-File-safeai-analyzers-mcp-schema-py",
+        "SPDXRef-File-safeai-analyzers-mcp-validators-py",
+        "SPDXRef-File-safeai-analyzers-model_config-__init__-py",
+        "SPDXRef-File-safeai-analyzers-model_config-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-prompt-__init__-py",
+        "SPDXRef-File-safeai-analyzers-prompt-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-prompt_file-__init__-py",
+        "SPDXRef-File-safeai-analyzers-prompt_file-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-skill-__init__-py",
+        "SPDXRef-File-safeai-analyzers-skill-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-tool_def-__init__-py",
+        "SPDXRef-File-safeai-analyzers-tool_def-analyzer-py",
+        "SPDXRef-File-safeai-analyzers-workflow-__init__-py",
+        "SPDXRef-File-safeai-analyzers-workflow-analyzer-py",
+        "SPDXRef-File-safeai-cmd-__init__-py",
+        "SPDXRef-File-safeai-cmd-cli-py",
+        "SPDXRef-File-safeai-cmd-postprocess-py",
+        "SPDXRef-File-safeai-cmd-registry_cli-py",
+        "SPDXRef-File-safeai-controls-__init__-py",
+        "SPDXRef-File-safeai-controls-catalogs-py",
+        "SPDXRef-File-safeai-controls-mappings-py",
+        "SPDXRef-File-safeai-engine-__init__-py",
+        "SPDXRef-File-safeai-engine-orchestrator-py",
+        "SPDXRef-File-safeai-engine-scan-py",
+        "SPDXRef-File-safeai-frameworks-__init__-py",
+        "SPDXRef-File-safeai-frameworks-autogen-parser-py",
+        "SPDXRef-File-safeai-frameworks-azure_foundry-__init__-py",
+        "SPDXRef-File-safeai-frameworks-azure_foundry-parser-py",
+        "SPDXRef-File-safeai-frameworks-bedrock_agent-__init__-py",
+        "SPDXRef-File-safeai-frameworks-bedrock_agent-parser-py",
+        "SPDXRef-File-safeai-frameworks-claude_code-__init__-py",
+        "SPDXRef-File-safeai-frameworks-claude_code-commands-py",
+        "SPDXRef-File-safeai-frameworks-claude_code-parser-py",
+        "SPDXRef-File-safeai-frameworks-claude_code-permissions-py",
+        "SPDXRef-File-safeai-frameworks-claude_code-settings-py",
+        "SPDXRef-File-safeai-frameworks-crewai-__init__-py",
+        "SPDXRef-File-safeai-frameworks-crewai-parser-py",
+        "SPDXRef-File-safeai-frameworks-cursorrules-__init__-py",
+        "SPDXRef-File-safeai-frameworks-cursorrules-parser-py",
+        "SPDXRef-File-safeai-frameworks-dify-__init__-py",
+        "SPDXRef-File-safeai-frameworks-dify-parser-py",
+        "SPDXRef-File-safeai-frameworks-google_adk-__init__-py",
+        "SPDXRef-File-safeai-frameworks-google_adk-parser-py",
+        "SPDXRef-File-safeai-frameworks-haystack-__init__-py",
+        "SPDXRef-File-safeai-frameworks-haystack-parser-py",
+        "SPDXRef-File-safeai-frameworks-langchain-__init__-py",
+        "SPDXRef-File-safeai-frameworks-langchain-parser-py",
+        "SPDXRef-File-safeai-frameworks-langgraph-__init__-py",
+        "SPDXRef-File-safeai-frameworks-langgraph-parser-py",
+        "SPDXRef-File-safeai-frameworks-llamaindex-__init__-py",
+        "SPDXRef-File-safeai-frameworks-llamaindex-parser-py",
+        "SPDXRef-File-safeai-frameworks-mastra-__init__-py",
+        "SPDXRef-File-safeai-frameworks-mastra-parser-py",
+        "SPDXRef-File-safeai-frameworks-microsoft_agent-__init__-py",
+        "SPDXRef-File-safeai-frameworks-microsoft_agent-parser-py",
+        "SPDXRef-File-safeai-frameworks-n8n-__init__-py",
+        "SPDXRef-File-safeai-frameworks-n8n-parser-py",
+        "SPDXRef-File-safeai-frameworks-openai_agents-__init__-py",
+        "SPDXRef-File-safeai-frameworks-openai_agents-parser-py",
+        "SPDXRef-File-safeai-frameworks-semantic_kernel-__init__-py",
+        "SPDXRef-File-safeai-frameworks-semantic_kernel-parser-py",
+        "SPDXRef-File-safeai-frameworks-windsurf-__init__-py",
+        "SPDXRef-File-safeai-frameworks-windsurf-parser-py",
+        "SPDXRef-File-safeai-kya-__init__-py",
+        "SPDXRef-File-safeai-kya-assurance-py",
+        "SPDXRef-File-safeai-kya-baseline-py",
+        "SPDXRef-File-safeai-kya-ci_context-py",
+        "SPDXRef-File-safeai-kya-enrich-py",
+        "SPDXRef-File-safeai-kya-exporter-py",
+        "SPDXRef-File-safeai-kya-fingerprints-py",
+        "SPDXRef-File-safeai-kya-identity-py",
+        "SPDXRef-File-safeai-kya-manifest-py",
+        "SPDXRef-File-safeai-kya-policy-py",
+        "SPDXRef-File-safeai-kya-registry-__init__-py",
+        "SPDXRef-File-safeai-kya-registry-connection-py",
+        "SPDXRef-File-safeai-kya-registry-persist-py",
+        "SPDXRef-File-safeai-kya-registry-queries-py",
+        "SPDXRef-File-safeai-kya-registry-schema-py",
+        "SPDXRef-File-safeai-kya-suppressions-py",
+        "SPDXRef-File-safeai-kya-util-py",
+        "SPDXRef-File-safeai-policy_profiles-developer-yml",
+        "SPDXRef-File-safeai-policy_profiles-mcp-yml",
+        "SPDXRef-File-safeai-policy_profiles-production-agent-yml",
+        "SPDXRef-File-safeai-policy_profiles-rag-yml",
+        "SPDXRef-File-safeai-policy_profiles-strict-ci-yml",
+        "SPDXRef-File-safeai-report-__init__-py",
+        "SPDXRef-File-safeai-report-failure_matrix-py",
+        "SPDXRef-File-safeai-report-html-py",
+        "SPDXRef-File-safeai-report-html_kit-py",
+        "SPDXRef-File-safeai-report-json_report-py",
+        "SPDXRef-File-safeai-report-pr_comment-py",
+        "SPDXRef-File-safeai-report-registry_html-py",
+        "SPDXRef-File-safeai-report-sarif-py",
+        "SPDXRef-File-safeai-report-terminal-py",
+        "SPDXRef-File-safeai-rules-__init__-py",
+        "SPDXRef-File-safeai-rules-base_rules-yaml",
+        "SPDXRef-File-safeai-rules-loader-py",
+        "SPDXRef-File-safeai-scorecard-schema-json",
+        "SPDXRef-File-safeai-scorecard-py",
+        "SPDXRef-File-safeai-scoring-__init__-py",
+        "SPDXRef-File-safeai-scoring-engine-py",
+        "SPDXRef-File-safeai-severity-py",
+        "SPDXRef-File-safeai-telemetry-__init__-py",
+        "SPDXRef-File-safeai-telemetry-client-py",
+        "SPDXRef-File-safeai-telemetry-config-py",
+        "SPDXRef-File-safeai-telemetry-schema-py",
+        "SPDXRef-File-safeai-version-py",
+        "SPDXRef-File-scripts-check_wheel-py",
+        "SPDXRef-File-scripts-create_good_first_issues-py",
+        "SPDXRef-File-scripts-generate_release_artifacts-py",
+        "SPDXRef-File-scripts-run_local_integration-py",
+        "SPDXRef-File-scripts-safeai-action-py",
+        "SPDXRef-File-tests-community_scan-fixtures-clean-agent-py",
+        "SPDXRef-File-tests-community_scan-fixtures-risky-agent-py",
+        "SPDXRef-File-tests-community_scan-test_community_scan-py",
+        "SPDXRef-File-tests-conftest-py",
+        "SPDXRef-File-tests-fixtures-action-clean-agent-py",
+        "SPDXRef-File-tests-fixtures-action-medium-agent-py",
+        "SPDXRef-File-tests-fixtures-action-risky-agent-py",
+        "SPDXRef-File-tests-fixtures-claude_code-compatibility--claude-settings-json",
+        "SPDXRef-File-tests-fixtures-claude_code-compatibility--mcp-json",
+        "SPDXRef-File-tests-fixtures-claude_code-compatibility-CLAUDE-md",
+        "SPDXRef-File-tests-fixtures-claude_code-malformed--claude-settings-json",
+        "SPDXRef-File-tests-fixtures-claude_code-malformed--claude-settings-local-json",
+        "SPDXRef-File-tests-fixtures-claude_code-minimal--claude-settings-json",
+        "SPDXRef-File-tests-fixtures-claude_code-minimal-CLAUDE-md",
+        "SPDXRef-File-tests-fixtures-claude_code-permissive--claude-settings-json",
+        "SPDXRef-File-tests-fixtures-claude_code-permissive--mcp-json",
+        "SPDXRef-File-tests-fixtures-claude_code-slash_injection--claude-commands-deploy-md",
+        "SPDXRef-File-tests-fixtures-claude_code-slash_injection--claude-commands-status-md",
+        "SPDXRef-File-tests-fixtures-claude_code-slash_injection--claude-settings-json",
+        "SPDXRef-File-tests-fixtures-claude_code-subagent_escalation--claude-agents-releaser-md",
+        "SPDXRef-File-tests-fixtures-claude_code-subagent_escalation--claude-settings-json",
+        "SPDXRef-File-tests-fixtures-crewai-representative-crew-py",
+        "SPDXRef-File-tests-fixtures-cursorrules-representative--cursorrules",
+        "SPDXRef-File-tests-fixtures-google_adk-representative-agent-py",
+        "SPDXRef-File-tests-fixtures-langgraph-representative-graph-py",
+        "SPDXRef-File-tests-fixtures-llamaindex-representative-agent-py",
+        "SPDXRef-File-tests-fixtures-mcp-clean_tool-json",
+        "SPDXRef-File-tests-fixtures-mcp-poisoned_tool-json",
+        "SPDXRef-File-tests-fixtures-n8n-representative-workflow-json",
+        "SPDXRef-File-tests-fixtures-openai_agents-representative-agents-py",
+        "SPDXRef-File-tests-fixtures-semantic_kernel-representative-plugin-py",
+        "SPDXRef-File-tests-fixtures-windsurf-representative--windsurfrules",
+        "SPDXRef-File-tests-test_adapter_dataflow-py",
+        "SPDXRef-File-tests-test_assurance-py",
+        "SPDXRef-File-tests-test_baseline-py",
+        "SPDXRef-File-tests-test_capability_detection-py",
+        "SPDXRef-File-tests-test_capability_diff_v2-py",
+        "SPDXRef-File-tests-test_ci_context-py",
+        "SPDXRef-File-tests-test_claude_code_deep-py",
+        "SPDXRef-File-tests-test_compatibility-py",
+        "SPDXRef-File-tests-test_component_graph-py",
+        "SPDXRef-File-tests-test_component_hash-py",
+        "SPDXRef-File-tests-test_confidence_arbitration-py",
+        "SPDXRef-File-tests-test_control_mappings-py",
+        "SPDXRef-File-tests-test_crewai_framework-py",
+        "SPDXRef-File-tests-test_cursorrules_framework-py",
+        "SPDXRef-File-tests-test_env_dependency-py",
+        "SPDXRef-File-tests-test_escalation-py",
+        "SPDXRef-File-tests-test_evidence_type-py",
+        "SPDXRef-File-tests-test_fingerprints-py",
+        "SPDXRef-File-tests-test_github_action-py",
+        "SPDXRef-File-tests-test_governance_analyzer-py",
+        "SPDXRef-File-tests-test_html_report-py",
+        "SPDXRef-File-tests-test_init_and_rules-py",
+        "SPDXRef-File-tests-test_kya_integration-py",
+        "SPDXRef-File-tests-test_kya_manifest-py",
+        "SPDXRef-File-tests-test_langgraph_framework-py",
+        "SPDXRef-File-tests-test_llamaindex_framework-py",
+        "SPDXRef-File-tests-test_mcp_tool_poisoning-py",
+        "SPDXRef-File-tests-test_mcp_validation-py",
+        "SPDXRef-File-tests-test_n8n_workflow-py",
+        "SPDXRef-File-tests-test_parser_aggregation-py",
+        "SPDXRef-File-tests-test_phase15-py",
+        "SPDXRef-File-tests-test_policy-py",
+        "SPDXRef-File-tests-test_pr_comment-py",
+        "SPDXRef-File-tests-test_pr_comment_cli-py",
+        "SPDXRef-File-tests-test_registry-py",
+        "SPDXRef-File-tests-test_registry_cli-py",
+        "SPDXRef-File-tests-test_registry_html-py",
+        "SPDXRef-File-tests-test_release_fixes-py",
+        "SPDXRef-File-tests-test_release_validation-py",
+        "SPDXRef-File-tests-test_rules_loader_determinism-py",
+        "SPDXRef-File-tests-test_sarif-py",
+        "SPDXRef-File-tests-test_scan_phase11-py",
+        "SPDXRef-File-tests-test_scorecard-py",
+        "SPDXRef-File-tests-test_scoring-py",
+        "SPDXRef-File-tests-test_semantic-py",
+        "SPDXRef-File-tests-test_severity-py",
+        "SPDXRef-File-tests-test_suppressions-py",
+        "SPDXRef-File-tests-test_target_taxonomy_engine-py",
+        "SPDXRef-File-tests-test_telemetry-py",
+        "SPDXRef-File-tests-test_tool_identity-py",
+        "SPDXRef-File-tests-test_tool_implementation-py",
+        "SPDXRef-File-tests-test_version-py",
+        "SPDXRef-File-tests-test_windsurf_framework-py"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relatedSpdxElement": "SPDXRef-Package-safeai-2.0.1",
+      "relationshipType": "DESCRIBES"
+    }
+  ],
+  "files": [
+    {
+      "SPDXID": "SPDXRef-File--github-PULL_REQUEST_TEMPLATE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "37371675d6608833abb99017ee3a044dd788e2f353ba9ab243362013f3080548"
+        }
+      ],
+      "fileName": ".github/PULL_REQUEST_TEMPLATE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-dependabot-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4b18f413d6a83e70a3cceb98f7da7b214876230c2a593e2d3967708db847d641"
+        }
+      ],
+      "fileName": ".github/dependabot.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-action-test-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b91d704f9592391b41a18b69c3256c83b526ff071fc3b982c04b4cc8c0980523"
+        }
+      ],
+      "fileName": ".github/workflows/action-test.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-ci-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6bb77c8b4331e9c928d0c4bf873e73e05e2810bf2b5c3896c0eb4d06ff5717a7"
+        }
+      ],
+      "fileName": ".github/workflows/ci.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-codeql-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1e699dc264cb46b028418ffb4259a8ef1aa270b96dc9d440a89ce43afe5ec495"
+        }
+      ],
+      "fileName": ".github/workflows/codeql.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-community-scan-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "64b544d83645efce340a572c99fbc06ee91bf3410448a55198f0b193b83a7bda"
+        }
+      ],
+      "fileName": ".github/workflows/community-scan.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-dependency-review-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7f98282c6e8fcfa9848cc86065119c3645394333c064733491d03f2bcfe66710"
+        }
+      ],
+      "fileName": ".github/workflows/dependency-review.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-fuzz-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7e44f1c8bdb683cb3ae1ac1f56cd4d376766cbcdcaf6e75b252cbcd5b6bf85dc"
+        }
+      ],
+      "fileName": ".github/workflows/fuzz.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-pypi-publish-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "93d8a840f3c4de914c4b635ca91d8e585f9475179fe20fb0170d9e671f61f501"
+        }
+      ],
+      "fileName": ".github/workflows/pypi-publish.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-release-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "53314383c658d36c8594ee6215e15856bacb0917479cf9e2a6064c47ed6b6bf6"
+        }
+      ],
+      "fileName": ".github/workflows/release.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-safeai-example-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b17ae0b6ef2de984d4480efd16b2c75f2c6924c303cfa70308009b4033d388e6"
+        }
+      ],
+      "fileName": ".github/workflows/safeai-example.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-scorecard-analysis-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5d5ef224f1d00dbe65d11f3837c97321572001bf31d9e283a39dbe56093c5787"
+        }
+      ],
+      "fileName": ".github/workflows/scorecard-analysis.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-scorecard-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3b7e4be901179e578a377d86ea66e0d285b7c80465ec9c0103b1b65c361bf74c"
+        }
+      ],
+      "fileName": ".github/workflows/scorecard.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-sign-release-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9c8fa2ae333e68f39d2f3566412bd3176de824fe15d2d2e577f9d95eb36b0e08"
+        }
+      ],
+      "fileName": ".github/workflows/sign-release.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--github-workflows-validate-community-scan-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1498f44d926dea788c8d1a7b53a92e83143f978c9afef20de50a6d890d7031e1"
+        }
+      ],
+      "fileName": ".github/workflows/validate-community-scan.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File--gitignore",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e04127bb2c6c3ad1a3ddb5935d400a47492c9e976273932bcc2ad1d840e591e2"
+        }
+      ],
+      "fileName": ".gitignore",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-ARCHITECTURE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f13dc88e288d9a86ca21b996ba9b5a6943fe13f3afc7b4174699f33c8ef9add0"
+        }
+      ],
+      "fileName": "ARCHITECTURE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-ARCHITECTURE_FOR_CONTRIBUTORS-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e0c17f2856ffde9749dca9b445b9ea944c414d1a2ce2eeed9fd0e26691cb25e0"
+        }
+      ],
+      "fileName": "ARCHITECTURE_FOR_CONTRIBUTORS.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-CAPABILITIES-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4c7214ac35dc2eef05feb310f3fe94e505eaf058da011cebcfafa4147d4f861c"
+        }
+      ],
+      "fileName": "CAPABILITIES.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-CHANGELOG-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a0392bbfb264ae86bea6fcb4da2dad917483ed957c1bf49c541dac3d3054aa34"
+        }
+      ],
+      "fileName": "CHANGELOG.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-CODE_OF_CONDUCT-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "bd069f80944fb87fa8f2d5209d7ff66e35b0a772cfa990d285281356d82688ba"
+        }
+      ],
+      "fileName": "CODE_OF_CONDUCT.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-COMMUNITY_PROJECTS-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d4e79f5e190457c8639f30404fceb8b7116c05ff0a217f778a4c65f87898cc02"
+        }
+      ],
+      "fileName": "COMMUNITY_PROJECTS.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-CONTRIBUTING-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "35c7899c3e329a84c7b4dd9fcc9ff71acf696a523f528251be85f6ca899e93c7"
+        }
+      ],
+      "fileName": "CONTRIBUTING.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-CONTRIBUTOR_ROADMAP-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "08caef0a4ff88f11a1f46922ebca02d68e1d90307587719dbb69694e0abc4e61"
+        }
+      ],
+      "fileName": "CONTRIBUTOR_ROADMAP.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-DEVELOPER_GUIDE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2a9ceeefbd6ea04cdb088df15eee344a68db4ff1635e648858be18e456d91a3d"
+        }
+      ],
+      "fileName": "DEVELOPER_GUIDE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-FRAMEWORK_SUPPORT-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "550a81ea96bd3725e9c0b2e8734da382edb6c3c30020b3676a9b7acdd411658f"
+        }
+      ],
+      "fileName": "FRAMEWORK_SUPPORT.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-GITHUB_RELEASE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7498a730480f12f357d4bff88acf2b1625f1fe34399ff8db2b1b6b037a08e3dc"
+        }
+      ],
+      "fileName": "GITHUB_RELEASE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-GOOD_FIRST_ISSUES-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "07795f30cab4012b8c29d514df55468b44b2da17655c9c9075e59dad8c8d4e92"
+        }
+      ],
+      "fileName": "GOOD_FIRST_ISSUES.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-HOW_TO_ADD_ANALYZER-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5b04d5c579a4508014f9dadfa6246a99191a50325a777d50bf37285c096db236"
+        }
+      ],
+      "fileName": "HOW_TO_ADD_ANALYZER.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-HOW_TO_ADD_CAPABILITY-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d3db59bccf75d9604e39359a37d5adcccf269d1c48ba5b8d293d5f1e5e837c6b"
+        }
+      ],
+      "fileName": "HOW_TO_ADD_CAPABILITY.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-HOW_TO_ADD_FRAMEWORK-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "247ce6c1c45e53e1f902330224ee562d74c63659955c796bd482e7fca9058ad9"
+        }
+      ],
+      "fileName": "HOW_TO_ADD_FRAMEWORK.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-HOW_TO_ADD_RULE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2fbedf780f5b9be80d6439341c34437fdf76757c4674c2fb1e0d418dffb33273"
+        }
+      ],
+      "fileName": "HOW_TO_ADD_RULE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-KYA_MANIFEST-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "daf016ce271207917826412d42559eb541a66b3d76a0c3fa8bd47607b20b14e8"
+        }
+      ],
+      "fileName": "KYA_MANIFEST.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-LABELS_GUIDE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8d4baac0a4c9d01454c28c6d44d9c74fdf9de1b26b9a92e63f4992d7fd1fc137"
+        }
+      ],
+      "fileName": "LABELS_GUIDE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-LICENSE",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e51cac6aa8866c76196ad82e4388244e72a4812f5ce5b828c4bb2b3f74f56709"
+        }
+      ],
+      "fileName": "LICENSE",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-LIMITATIONS-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "439919d87482a10c2b2d602de2d871903dd589597454d995cdd954dcc2a6c502"
+        }
+      ],
+      "fileName": "LIMITATIONS.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-MCP_SECURITY-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "745db195a3d938d91bb1f846a9df1fdcc229597bf89771d8000ddbec6a2eee42"
+        }
+      ],
+      "fileName": "MCP_SECURITY.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-PLUGIN_TEMPLATE-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "61c5260c0ddbfc067763336738dc0423f73d9767b788c7e6d675d638c922214d"
+        }
+      ],
+      "fileName": "PLUGIN_TEMPLATE/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-PRIVACY-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b2873596209344c5012e956e7811b653a2c76dbf1223883545547410c17ac185"
+        }
+      ],
+      "fileName": "PRIVACY.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cfba84c1b39088f68f065be0b13108ab48e53a94931620c9867cb768da7aefeb"
+        }
+      ],
+      "fileName": "README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-REGISTRY-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5d2eadbab26df578ccf6ccb795a8a0f1823fa98d8ffd71c409355495b75c0531"
+        }
+      ],
+      "fileName": "REGISTRY.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-RELEASE_CHANNELS-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d8b8038f984d0d7fb7035ce2206b69edb0452eb7afc46ada42578ffec7e36c6c"
+        }
+      ],
+      "fileName": "RELEASE_CHANNELS.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-RELEASE_NOTES-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cbb472f38cef1487e9388b1de3c2a2e01ef3f3288026542d69e87166b5fe2955"
+        }
+      ],
+      "fileName": "RELEASE_NOTES.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-REPORTING_GUIDE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c24ce8580cdb4b995baed14f47f9140d517c59760e11a7c68fae6175815e91b9"
+        }
+      ],
+      "fileName": "REPORTING_GUIDE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-RISK_MODEL-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d748964be821a8089ee86743b93bbcda5d3b1ef96b9bd993d76797714c99972d"
+        }
+      ],
+      "fileName": "RISK_MODEL.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-ROADMAP-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4278f821cf55a2727bc8b11eab32dd875fea5679b3579bdefd888d7f37bc47b5"
+        }
+      ],
+      "fileName": "ROADMAP.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-RULES_REFERENCE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c947f2e6ecc496e31ee7db7e0f032ea8c5046a80dd04220040d5bef7d63ac63f"
+        }
+      ],
+      "fileName": "RULES_REFERENCE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-SECURITY-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e02d2a700f84ae7a261380af7c1fef1ac3b600f704030b2e40e24b3101565fbf"
+        }
+      ],
+      "fileName": "SECURITY.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-SECURITY_MODEL-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "795e593aefd4b05b392d00b9a00547bbd607a1ffe2e2356b34beedf02d99a45e"
+        }
+      ],
+      "fileName": "SECURITY_MODEL.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-SUPPORT_MATRIX-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ae2675b48a6ef693c87b9effe6add1b304e2358d282fe285aaae82eb59e057b4"
+        }
+      ],
+      "fileName": "SUPPORT_MATRIX.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-TESTING_CORPUS_GUIDE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6f49d01c7beec33ed80bb6c54a286e875a87da710a422e283b99fb94470cbfeb"
+        }
+      ],
+      "fileName": "TESTING_CORPUS_GUIDE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-UPGRADE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b408ca39e1d94014ede3d27cbd2e1552c40548eca047a4d5f7c641f479330117"
+        }
+      ],
+      "fileName": "UPGRADE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-USER_GUIDE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8ae4af483d03e154b6f31516f7726a771a3c5fe855c679ddec6558579ee40f04"
+        }
+      ],
+      "fileName": "USER_GUIDE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-VERIFICATION-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5a52ded15fc475ae5736ed14e4eee28ff5bd6ac1bf7c598e6891553768f5f2d4"
+        }
+      ],
+      "fileName": "VERIFICATION.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-action-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "eb6eadb9b35262e6dd938c020ad6abfe8649cb317909157687927ab0e554ade5"
+        }
+      ],
+      "fileName": "action.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6d198a13c231996d39712459e810b8165bd45d8d5b98ecb26f573a323b38d35c"
+        }
+      ],
+      "fileName": "community-scans/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-disclosure-policy-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7748d34808c79bef56b6e1aee8859150c6529b27d8875f2a044ac2ea26c26ea2"
+        }
+      ],
+      "fileName": "community-scans/disclosure-policy.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-methodology-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "90b6857560b097eca4cdaedcf609542f64d048e58abd9eda78901eae0fdaa1c6"
+        }
+      ],
+      "fileName": "community-scans/methodology.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-private-pilot-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a7029aff7ee1294204eb00a5e017e06ebb68128a6fa838a6a4739038d7e4447e"
+        }
+      ],
+      "fileName": "community-scans/private-pilot.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-report-schema-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b7a6be0f59b994cdb968e026315b4af1bc3c996726447159b7e010d55d627001"
+        }
+      ],
+      "fileName": "community-scans/report-schema.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-requirements-in",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9104e74eaca0a304df1bde284d73e500e9cd122148e382c92168f3662837039b"
+        }
+      ],
+      "fileName": "community-scans/requirements.in",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-requirements-txt",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8a13bae5659f64038efc909c058b1e1446987456099759cc794850ee6515faef"
+        }
+      ],
+      "fileName": "community-scans/requirements.txt",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-scripts-build_scan_manifest-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8a970dc64f7514e10729e35b422985e00c1dda7d8d903ee979a1c43283d07c58"
+        }
+      ],
+      "fileName": "community-scans/scripts/build_scan_manifest.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-scripts-render_reddit_draft-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d16974d2ef9227a27a88ee8dfdb80f9763311efd7a4e23dd1a9b32a3c538e6f9"
+        }
+      ],
+      "fileName": "community-scans/scripts/render_reddit_draft.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-scripts-resolve_meta-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "410aed5f6bf6e4125e7af3e4c732b224fb123e6101a052f39a5cc52bbfccad0f"
+        }
+      ],
+      "fileName": "community-scans/scripts/resolve_meta.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-scripts-sanitise_report-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c5576fb1a62726362c2284188ac2c32427b67458188ab962f0cbfd7a1f895e40"
+        }
+      ],
+      "fileName": "community-scans/scripts/sanitise_report.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-scripts-validate_targets-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d5f828d235a753c33109e0645ce1fb5a632410a7e3609959a1fddc72b9dacade"
+        }
+      ],
+      "fileName": "community-scans/scripts/validate_targets.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-targets-schema-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "34910ad90c076ff78e07f42a1716736b0790c7e1dd3306d5fa27d006269e8abc"
+        }
+      ],
+      "fileName": "community-scans/targets-schema.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-targets-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "18927b4a671bca1c02ccd18eded3ec4bd2b9b8dc3e14ffd889a69a10add5d3f1"
+        }
+      ],
+      "fileName": "community-scans/targets.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-templates-maintainer-notification-md-j2",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "47fba604d2ecee1c4607ecf108bdb1fff5dc108195f7eed9e746f4b154bae53f"
+        }
+      ],
+      "fileName": "community-scans/templates/maintainer-notification.md.j2",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-templates-public-summary-md-j2",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6b3955772251e8c2f3ebafa9471e43f685f8091fd3b5ddcc159c65d8c4c12dec"
+        }
+      ],
+      "fileName": "community-scans/templates/public-summary.md.j2",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-community-scans-templates-reddit-post-md-j2",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7821d6e1aad536168c0e368a76c1167ec4ebdb80874e0558dc710e9369c03473"
+        }
+      ],
+      "fileName": "community-scans/templates/reddit-post.md.j2",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-docs-ci-integration-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "257cddca5859db301874000b766e2d82ad5723ba697d6d1111feeac6735b2b16"
+        }
+      ],
+      "fileName": "docs/ci-integration.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-docs-github-actions-example-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "eb9b742c1c5d556a4448c688a15ccf976d4743c29931b30c6e218417876d1f25"
+        }
+      ],
+      "fileName": "docs/github-actions-example.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-docs-sarif-review-guidance-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e5c98b1063cd5f68788112dd832013f7a0880be51e41b2b30dee0ee27a6d2086"
+        }
+      ],
+      "fileName": "docs/sarif-review-guidance.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7e08bb900e9a1a1ab6a072bc2dc7587fa0f27f3edc1281f8a2e1f0a66259cfad"
+        }
+      ],
+      "fileName": "examples/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-autogen-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "29fb7d128c681b2270a9473879c682e2de24382abeb6320d698a3366a2343b0c"
+        }
+      ],
+      "fileName": "examples/autogen/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-azure_foundry-yaml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "073adbdf653021ca9b246c84b1233531dfc94ba4a466eadac2b4ffcd58e531e9"
+        }
+      ],
+      "fileName": "examples/azure_foundry.yaml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-bedrock_agent-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "19ccd7925b17ae483aca9138ff33b373fd211fec74001377caec9b42c968ba92"
+        }
+      ],
+      "fileName": "examples/bedrock_agent.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-crewai-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8e9121bcda2e0d4aae9899a7ea64c05ac82ecb7f99eb0fd6a609aa1748b1cb2c"
+        }
+      ],
+      "fileName": "examples/crewai/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-crewai_example-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a5efa930e07c231c0bc9ee524f28d2f0421cf5f97a3b739a028e101a1c88e737"
+        }
+      ],
+      "fileName": "examples/crewai_example.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-github-actions-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b79d4917f445bfe982c6d44dc8f633ea0c32970f42633888c08bcf405da6aa59"
+        }
+      ],
+      "fileName": "examples/github-actions/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-github-actions-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ee38a625e304dd499629583515a93fcc99de37c6da16d318231cfd6a425c60d5"
+        }
+      ],
+      "fileName": "examples/github-actions/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-google-adk-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cb1a2c194792bb35f8244816e6dc3d34a492200ae5e032a48943aab728bbe4d7"
+        }
+      ],
+      "fileName": "examples/google-adk/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-langgraph-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "651394a216c72383516e0f27f4dddbf130636f0dd245634cec97d0baaf9ef6b0"
+        }
+      ],
+      "fileName": "examples/langgraph/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-langgraph_example-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c716e1d44bd67da8942c83775a5597b519929ac3bd20530e7bcf26fe044e8960"
+        }
+      ],
+      "fileName": "examples/langgraph_example.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-mcp-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "197941830a9bbbd64ed7ac10b7037fc63b2925ff5695ec4ad4c44d4cea133625"
+        }
+      ],
+      "fileName": "examples/mcp/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-multi-agent-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0418f16bac7c5bc3859d55b0d341e6ea5daa663c87f6a9e4e916c11876e5d024"
+        }
+      ],
+      "fileName": "examples/multi-agent/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-n8n-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6eeb75e835a336b7f03856d169c1b701a5824003638f745d8dcf0d1c090358cb"
+        }
+      ],
+      "fileName": "examples/n8n/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-prompts-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "350a384c862e4ef532492efaf41b1afb0b376c4929cee89e2583f1a9e88cb449"
+        }
+      ],
+      "fileName": "examples/prompts/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-risky-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "60cf9b3eee01de736faa9676a1c5e5c20015f0e6dea0b5c787060273fc6a091b"
+        }
+      ],
+      "fileName": "examples/risky/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-safe-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2aeca6f09a927610fcc0582dc50261ea4f81c66cbe4e2212b145bc867d3f8606"
+        }
+      ],
+      "fileName": "examples/safe/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-semantic-kernel-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2054c852fdaf525a625006eafeebb6b6e78a6224775e57d82827bf73ee913307"
+        }
+      ],
+      "fileName": "examples/semantic-kernel/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-examples-workflows-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "862071ea3ec826ef9387f837aa251d1a9504978574f8105a73bc57a211b6376c"
+        }
+      ],
+      "fileName": "examples/workflows/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-fuzz-README-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5ad96dc001c0dcd83f561a11ecf1bfe4f2fa94419294c0fad9a66c2c5c33cba2"
+        }
+      ],
+      "fileName": "fuzz/README.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-fuzz-fuzz_report_schema-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e90fe5309f0954515269bada9de18382d959689e4de4b1fa34e26465b06bd011"
+        }
+      ],
+      "fileName": "fuzz/fuzz_report_schema.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-fuzz-fuzz_sanitise_report-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fb52d8034a1595b0a5a8e44103b2786a7855b14e36ea9583e68cbe6315cf54ad"
+        }
+      ],
+      "fileName": "fuzz/fuzz_sanitise_report.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-fuzz-fuzz_targets_manifest-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2b65fb9a2c1119832dd3c15db406704544b7c243185768fa59913cefa03e5bdc"
+        }
+      ],
+      "fileName": "fuzz/fuzz_targets_manifest.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-fuzz-requirements-txt",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b2985b8d2784cbfff0dee5762fab82208464963fb529ac72f9f16e293b9a3592"
+        }
+      ],
+      "fileName": "fuzz/requirements.txt",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-out-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0d5d3bca43dc9cdc1740bda698f0eab0d913d17bc93114cc6f7c7202e5eeff11"
+        }
+      ],
+      "fileName": "out.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-pyproject-toml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6b518e9885b402dddd2fedfcb527d5e439824571bd5564b1cc15bb3190d2c87e"
+        }
+      ],
+      "fileName": "pyproject.toml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-release-artifacts-SHA256SUMS",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "dabe04b9c8eafd85917f8fffbfd9f9116991d51e688cc7b7920187aeef297fce"
+        }
+      ],
+      "fileName": "release-artifacts/SHA256SUMS",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-release-artifacts-safeai-v2-0-0-provenance-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b3ad05cc8f9a243b1ce2d00a7ebd1eb0e0eba373fb12e710ef2ba202067dea83"
+        }
+      ],
+      "fileName": "release-artifacts/safeai-v2.0.0-provenance.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-release-artifacts-safeai-v2-0-0-sbom-spdx-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a15c50cf98f1a47dd35d74fc8b6e5edaa74cb00e2077f31d7ce5512fdc306331"
+        }
+      ],
+      "fileName": "release-artifacts/safeai-v2.0.0-sbom.spdx.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-requirements-build-txt",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "46fdcfa5d3c0b938dc2ddd0c8023cd994444166cc10a5dba46232f529a36fda3"
+        }
+      ],
+      "fileName": "requirements-build.txt",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-requirements-dev-lock",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "428831e7d885d8fcc3f7a7177dfa916d90d62d5466fccb6cdf57037c94284ad9"
+        }
+      ],
+      "fileName": "requirements-dev.lock",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-requirements-dev-txt",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9928b9ec4d7f0011e59ffcda6274e72cd41149d7ec21cc53564318f84b8b7692"
+        }
+      ],
+      "fileName": "requirements-dev.txt",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-requirements-lock",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "01e08410080741c1f164e3b7459ea15db5966cef6629bfeb2691175f269efd00"
+        }
+      ],
+      "fileName": "requirements.lock",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-requirements-txt",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "efe50cb8728b5e752c24a31fae9e3e9687e01e11598a0025758bb4499c1d3d1d"
+        }
+      ],
+      "fileName": "requirements.txt",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e9cd16dd4e728120270e2859bb24144c101332059ec730f516b0b5aa3f8d92d7"
+        }
+      ],
+      "fileName": "safeai/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-__main__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8de08d06bbfe9f878a6b9e84864c0d5e859bb1ed9ed93d91fd40920c7e7325e5"
+        }
+      ],
+      "fileName": "safeai/__main__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analysis/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-aggregation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9f28b5c410725db7b6c3abb1e6b6f528445cad3cc5dc8929b2286422cf4e4d39"
+        }
+      ],
+      "fileName": "safeai/analysis/aggregation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-capabilities-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5232c29f046687bd72debb4d983eb96d664016544410944b95b2d3f7165ed4dd"
+        }
+      ],
+      "fileName": "safeai/analysis/capabilities.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-capability_diff-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e4faa96b1c92be484e93edf7f3e938734b14cd55ebc5f3e16a297679196b13d8"
+        }
+      ],
+      "fileName": "safeai/analysis/capability_diff.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-component_diff-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "dd0db57957fcb0e426c5d2a2052c86f059702ceb2e0423192ed48f8236ec896d"
+        }
+      ],
+      "fileName": "safeai/analysis/component_diff.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-component_graph-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "99e878af5bde451a983693efab603fb4b95cb448a96f4881ce8fceb21ec7bed1"
+        }
+      ],
+      "fileName": "safeai/analysis/component_graph.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-components-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d362fb8eb102dad47141569648e9eb47b75be77968eefe1c2c46a520491cfbd6"
+        }
+      ],
+      "fileName": "safeai/analysis/components.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-dependency_correlation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "db442a65670c15c7eccfd42b6b014e643a33f6ad252cc562ade5e732abc44df5"
+        }
+      ],
+      "fileName": "safeai/analysis/dependency_correlation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-escalation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "202be137c8f56973d41d3746a19ab022e71f6328a9430a3be4934b5bd37fa7a3"
+        }
+      ],
+      "fileName": "safeai/analysis/escalation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-import_graph-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "778fcf6f123d09ff89f70a94aba5da0e3450c293c0ee0eedb6a72fc1551ab0a7"
+        }
+      ],
+      "fileName": "safeai/analysis/import_graph.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-project_graph-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ca4d77d9bc7583be5029a1bdce3497c15cad4ed6314fce7691f1ead5127ce847"
+        }
+      ],
+      "fileName": "safeai/analysis/project_graph.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-semantic-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6dccf927871ec8b877b95ec60b85712807cfa5d0b63de84d224f5dc8c2008e8e"
+        }
+      ],
+      "fileName": "safeai/analysis/semantic.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-target_taxonomy-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "efe49fa75774c8c3db6b346db8ded5d456a0f2585eeb5a5b1cbb1527a686ab92"
+        }
+      ],
+      "fileName": "safeai/analysis/target_taxonomy.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-tool_identity-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8eff9bb4caa7c20b2a92a8dc9e2ca62ea1b0ba407aa22d2da672a1ba597d742f"
+        }
+      ],
+      "fileName": "safeai/analysis/tool_identity.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-tool_implementation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5f22bb8c75aff0c4d454fb347f366828a094d995fbdb79665ace7ae4368061f7"
+        }
+      ],
+      "fileName": "safeai/analysis/tool_implementation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analysis-tool_surface-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "de78787e44c806f7f4b71d7db2f109c92d54a9928b8354dadfbe934fc715446d"
+        }
+      ],
+      "fileName": "safeai/analysis/tool_surface.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-capability-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/capability/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-capability-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "91e6ed5bdc0193e8d9b626d595db5bc4200c01361f0eb9c3e5f064f70ee1d020"
+        }
+      ],
+      "fileName": "safeai/analyzers/capability/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-claude_code-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "90b228e313d8cbc0a0a3914a398c511e6714297e74f62b408a2b6d52d6ca6d3b"
+        }
+      ],
+      "fileName": "safeai/analyzers/claude_code/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-claude_code-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d320ac43fa3d535a63b5b4e331dc57a0258837eccc9a0eb1a61ddf9bc75f5934"
+        }
+      ],
+      "fileName": "safeai/analyzers/claude_code/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-data_leakage-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/data_leakage/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-data_leakage-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "60d2ba3082c4c0b8844504c1da94509743798a250310404ee681dd7a06aac31b"
+        }
+      ],
+      "fileName": "safeai/analyzers/data_leakage/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-dataflow-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a318799ff4521982c7c797f1f786798986af60fbb36ebb062323f52a079c8b71"
+        }
+      ],
+      "fileName": "safeai/analyzers/dataflow/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-dataflow-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "369a7c6353b57b02e92831de65c533bf6602bc96c95669dd5f78cacdd3d5ab82"
+        }
+      ],
+      "fileName": "safeai/analyzers/dataflow/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-env_dependency-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0b3ff056e9e907f6248aaca652bb8a9d404c2e47dc1bfa466d5ae42508a34373"
+        }
+      ],
+      "fileName": "safeai/analyzers/env_dependency/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-env_dependency-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2df909b35bb2595ad2417151edefe83e5264e7170647311f7608e561c7400fd5"
+        }
+      ],
+      "fileName": "safeai/analyzers/env_dependency/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-governance-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2dc3e8d24cb856b62aed2f95842edb1b443359ffbfb15f7208a5bc52d647fe66"
+        }
+      ],
+      "fileName": "safeai/analyzers/governance/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-governance-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "193443e91f5cc7b6e1939bb1bab45654b6e40e06bffe911782b3b3cc4af7a78a"
+        }
+      ],
+      "fileName": "safeai/analyzers/governance/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-mcp-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/mcp/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-mcp-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c688e1d831b50b4ac1c00160fa3884173ba69b632bb3a03c235296ee50bd1e13"
+        }
+      ],
+      "fileName": "safeai/analyzers/mcp/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-mcp-compatibility-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2b882719b59473d8e90310eab44a471ecd3da0a762b930b6b85fb841feb16d0a"
+        }
+      ],
+      "fileName": "safeai/analyzers/mcp/compatibility.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-mcp-schema-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6db017eabf08fb72c99a2435252232732e80d775dd8718342cb3a7a0653a4668"
+        }
+      ],
+      "fileName": "safeai/analyzers/mcp/schema.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-mcp-validators-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d1a7d5107e927a65eda9544e7f186b94692e747267f8a84ceb35f9545031abdf"
+        }
+      ],
+      "fileName": "safeai/analyzers/mcp/validators.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-model_config-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/model_config/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-model_config-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fa8e06aa8f74d731e22851267426d6a747e8bd78501274631ba73ab17e3257fe"
+        }
+      ],
+      "fileName": "safeai/analyzers/model_config/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-prompt-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/prompt/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-prompt-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a2d0a5d3d929168bbb3c5f09aa5468a2c4381034ed17efb7e47282b1bb096e5a"
+        }
+      ],
+      "fileName": "safeai/analyzers/prompt/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-prompt_file-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/prompt_file/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-prompt_file-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a71654125c79a944819fe70db9e02424bc0501d2be40b62444faf78fe49c3593"
+        }
+      ],
+      "fileName": "safeai/analyzers/prompt_file/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-skill-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/skill/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-skill-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "aa94b7d35f37fd59131ea7586a8953a07973336f952d96aa7b55cd6b0fabed47"
+        }
+      ],
+      "fileName": "safeai/analyzers/skill/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-tool_def-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/tool_def/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-tool_def-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "807f34b2ba4e99141d42b19ecd8f130d17eeb447a95abe523bc71daa382a40a7"
+        }
+      ],
+      "fileName": "safeai/analyzers/tool_def/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-workflow-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/analyzers/workflow/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-analyzers-workflow-analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b8cabd129dd2e045e62f049b79db63cd832ecd85bbfa8057a4241a7d9e1b3e61"
+        }
+      ],
+      "fileName": "safeai/analyzers/workflow/analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-cmd-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/cmd/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-cmd-cli-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "951dab53d856f433e398d3e908d9d9ddba58b8f9c71305b0d9aaa9d03644d786"
+        }
+      ],
+      "fileName": "safeai/cmd/cli.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-cmd-postprocess-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "16f26c8d8067cd37edb8caaf50139a04f451cd877e124b32a48a004ab761b626"
+        }
+      ],
+      "fileName": "safeai/cmd/postprocess.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-cmd-registry_cli-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "11f28d869482f596562c057e379e93fe9eb04cfea46271edc14552ab6e148fde"
+        }
+      ],
+      "fileName": "safeai/cmd/registry_cli.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-controls-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0e70f0dbf7d36ccf84bfd27fb4c1d15695025773b1e2f6f6fbb1e4b856b8fb7b"
+        }
+      ],
+      "fileName": "safeai/controls/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-controls-catalogs-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "89bf56c33724255bfa4ab17fc961ed572ba5c67a44102735085b792c769ee340"
+        }
+      ],
+      "fileName": "safeai/controls/catalogs.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-controls-mappings-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e564ca5ab24ce298f3634c6eff21679be8e69b8026343cf47c9ec7f3604c42b0"
+        }
+      ],
+      "fileName": "safeai/controls/mappings.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-engine-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/engine/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-engine-orchestrator-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b6cb57b1ebf33a84b1617167fd19bd223e44ff7e8257e1e580a54921f94b9f38"
+        }
+      ],
+      "fileName": "safeai/engine/orchestrator.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-engine-scan-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a750d4d9f48328907e6a928064bac2352c609b2b1a654279b47789ee50040e01"
+        }
+      ],
+      "fileName": "safeai/engine/scan.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "36ac41581850f247f1345de0011ed527ecef3ab46c54d9bb1df22cd3182ee89f"
+        }
+      ],
+      "fileName": "safeai/frameworks/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-autogen-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8289bf6cd430a65355022776c59ae93a751b8fb14a2480a7414c9ed822f0bcf9"
+        }
+      ],
+      "fileName": "safeai/frameworks/autogen/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-azure_foundry-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/azure_foundry/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-azure_foundry-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c9149e1bbc4709026a26407fb540468eaabcc7991c4d3af1a9b484055e1b5881"
+        }
+      ],
+      "fileName": "safeai/frameworks/azure_foundry/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-bedrock_agent-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/bedrock_agent/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-bedrock_agent-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9b0dec8fbfe060e58390b586ef0e15728fe5f5a6ec98389f48d61f0f4908784a"
+        }
+      ],
+      "fileName": "safeai/frameworks/bedrock_agent/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-claude_code-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/claude_code/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-claude_code-commands-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "71b935cb64ae8d36336ba87005008ec072c3a1b890fbeb9e4a4f07f510e57fac"
+        }
+      ],
+      "fileName": "safeai/frameworks/claude_code/commands.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-claude_code-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2177332e7eeef0c93803a390c103803c0d797beafce4e18f9cabb091bc9747c3"
+        }
+      ],
+      "fileName": "safeai/frameworks/claude_code/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-claude_code-permissions-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a08bda4eb4a02837019f291ef480e688312d97af6e1d3bd86173bb8798b7c031"
+        }
+      ],
+      "fileName": "safeai/frameworks/claude_code/permissions.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-claude_code-settings-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "878c2c3bda0c7c0cc64dd5b6616a7cf5eb4a63157113686a8addad14a3b704bd"
+        }
+      ],
+      "fileName": "safeai/frameworks/claude_code/settings.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-crewai-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/crewai/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-crewai-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f81517f652443ec40668a5ce02988b19da3078757aaaf497ecaf68eb50eefe19"
+        }
+      ],
+      "fileName": "safeai/frameworks/crewai/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-cursorrules-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/cursorrules/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-cursorrules-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "312a139388651397dc741a10696bd2ab71bff8381f89e90f1dd8f266a3a6a42a"
+        }
+      ],
+      "fileName": "safeai/frameworks/cursorrules/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-dify-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/dify/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-dify-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b4ceb081f31669e548d5cdfedabb78adc646a47cb5bfde7810169c4f08211429"
+        }
+      ],
+      "fileName": "safeai/frameworks/dify/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-google_adk-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/google_adk/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-google_adk-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "359d15020b794eeb20fd5085afc93d77269148b9bb84eedaa32bb5a05ac42d1c"
+        }
+      ],
+      "fileName": "safeai/frameworks/google_adk/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-haystack-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/haystack/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-haystack-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "58ecedee5512f851e31823f6eaefe65252f04951a89a8e430c3e581cd48603e6"
+        }
+      ],
+      "fileName": "safeai/frameworks/haystack/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-langchain-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/langchain/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-langchain-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "bd5d6a78e6c5283577919065bf8f7d200ceb00e92830f147acffc722104d6f34"
+        }
+      ],
+      "fileName": "safeai/frameworks/langchain/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-langgraph-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/langgraph/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-langgraph-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0e3a6f8fd7fe2900101d33a35aaac347a8c22704ab69de758ad35fde2bb1791f"
+        }
+      ],
+      "fileName": "safeai/frameworks/langgraph/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-llamaindex-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/llamaindex/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-llamaindex-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "421030061ae1c89e84e708fec8ac7ba985931a4db23d7d57f385a970629ec806"
+        }
+      ],
+      "fileName": "safeai/frameworks/llamaindex/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-mastra-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/mastra/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-mastra-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8d7f35cbc0f621e544a7cee07794f63d29651b1315a926ccf9b94451d38f89d9"
+        }
+      ],
+      "fileName": "safeai/frameworks/mastra/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-microsoft_agent-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/microsoft_agent/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-microsoft_agent-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9ba271e5bcfb063b1c80e5934a16c03f5358f966a3a46bfa57dd2eea5a33627f"
+        }
+      ],
+      "fileName": "safeai/frameworks/microsoft_agent/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-n8n-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/n8n/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-n8n-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ff79ef2752031b2d2939ccf63112a362342ed3e24f1bde59ae9786b770bedd57"
+        }
+      ],
+      "fileName": "safeai/frameworks/n8n/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-openai_agents-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/openai_agents/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-openai_agents-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8c4100bc46cb3c7f9326b994865da62f0a0080abc597885fe966aec04c4708de"
+        }
+      ],
+      "fileName": "safeai/frameworks/openai_agents/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-semantic_kernel-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/semantic_kernel/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-semantic_kernel-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3ec23e4c2b451c51e8271ca05465e9c50661b05c3a3bf1f5c6d3a2cec44cd25a"
+        }
+      ],
+      "fileName": "safeai/frameworks/semantic_kernel/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-windsurf-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/frameworks/windsurf/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-frameworks-windsurf-parser-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9706a6ec3171ff5cba49927fa90a2bf4bc15510618c1142e50ff5858eb53df5d"
+        }
+      ],
+      "fileName": "safeai/frameworks/windsurf/parser.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0e3d7bb999d4847aedb96006157b98f9e0d847161e95bbd2f19ab5a257064c3c"
+        }
+      ],
+      "fileName": "safeai/kya/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-assurance-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ba5a2fcecb9ee8c6f036413f5a10f49f3216341be8fcc3aff22cc750f4d16ac2"
+        }
+      ],
+      "fileName": "safeai/kya/assurance.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-baseline-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2c273f712ba8936c2195c01a33fb0ab38b25a19b3aa492993e8fa1976de89825"
+        }
+      ],
+      "fileName": "safeai/kya/baseline.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-ci_context-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "39cb4907a1f2293bfcf5d7ce35d9807a8a5216e3ea8b88372252b31dfc7a65fd"
+        }
+      ],
+      "fileName": "safeai/kya/ci_context.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-enrich-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "40633fe1a3200c3baa9283b21a7da29a40761088e686b09d1b0fccdcdaef1b68"
+        }
+      ],
+      "fileName": "safeai/kya/enrich.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-exporter-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3f5bfda6a9a8896afb8817cee422f8494ce213a707ba1686afac8deeb01be722"
+        }
+      ],
+      "fileName": "safeai/kya/exporter.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-fingerprints-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "76017ced11f738ca589249fd82a5d2684e29ca61ad91cec26554a58750afaafd"
+        }
+      ],
+      "fileName": "safeai/kya/fingerprints.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-identity-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ca4f9634438a9c8e47908dd14bf1ab7a0690adcaf12f6b47dd328f5f0a109855"
+        }
+      ],
+      "fileName": "safeai/kya/identity.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-manifest-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "dfc8b0d2a86513bb47c3289e072f62b32ded2f6ce114b273d8a4a437bd9e5cba"
+        }
+      ],
+      "fileName": "safeai/kya/manifest.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-policy-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2ecf94ee49551ba3a72f087055bbf82f5a35294c43af36939bd25138c1b3691b"
+        }
+      ],
+      "fileName": "safeai/kya/policy.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-registry-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "357ce04d0c04a29ec645f49632bb26e103050be048e2b1dbe78d2c24fce5eb2e"
+        }
+      ],
+      "fileName": "safeai/kya/registry/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-registry-connection-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ee5a46796e688d59ba0f496640845fcc99b69aaabc95148ea354ce9cb442e85c"
+        }
+      ],
+      "fileName": "safeai/kya/registry/connection.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-registry-persist-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8104a812ec6c0bbb69c673eaa18a2567c18e0f8b700c8c0c1392a13097cbcae6"
+        }
+      ],
+      "fileName": "safeai/kya/registry/persist.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-registry-queries-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d35e47357c4589069cf96a76c5bdea0b4e175ca6fdb89f0fb977f5b5796c9101"
+        }
+      ],
+      "fileName": "safeai/kya/registry/queries.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-registry-schema-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b2d729c36ec4c7c94835fca923ee291cdef950860676efc19cf3f9664de2da27"
+        }
+      ],
+      "fileName": "safeai/kya/registry/schema.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-suppressions-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "daac76cac419c513813bca66223422716cd424853f88ddbc3f2271ba6d1b2b13"
+        }
+      ],
+      "fileName": "safeai/kya/suppressions.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-kya-util-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5f3303fec762995e16058d9bc24cf9d6fea864e8a20c277d4eef54245d14d760"
+        }
+      ],
+      "fileName": "safeai/kya/util.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-policy_profiles-developer-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9990ff865a94d397c462d8fdeed5940b6dfc21807be5755665f67623a2b10534"
+        }
+      ],
+      "fileName": "safeai/policy_profiles/developer.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-policy_profiles-mcp-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a6385bfffaa8d3cc4f25ce01301c1a3104b55edf1cdc89191ac8d875f305768f"
+        }
+      ],
+      "fileName": "safeai/policy_profiles/mcp.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-policy_profiles-production-agent-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1b8ffc7179c41fd594b61cab7d249166b217d815dcdb8c52d2d0c32c9f72cd5d"
+        }
+      ],
+      "fileName": "safeai/policy_profiles/production-agent.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-policy_profiles-rag-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6e1f59fcd1a9919a639ca3f450d0f14f1018cda9eda1d65f680c924ee04a9a92"
+        }
+      ],
+      "fileName": "safeai/policy_profiles/rag.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-policy_profiles-strict-ci-yml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b66b4651271291ebc73a0dc08c60fcb3c3a0183890813293b6a63de49067e18d"
+        }
+      ],
+      "fileName": "safeai/policy_profiles/strict-ci.yml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/report/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-failure_matrix-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5e499aeb1f09f046fcf74e22ff8fa0549d85cfb010727c481f339d9bd1f996c9"
+        }
+      ],
+      "fileName": "safeai/report/failure_matrix.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-html-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9e151da75167ce46af43ab618bdea82787d709769cdb02582fcc88eb898c5086"
+        }
+      ],
+      "fileName": "safeai/report/html.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-html_kit-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e23a39cb33f93c77ed4a3e0828b23b5f003c8e6fdbf75cea551c87808abbdd89"
+        }
+      ],
+      "fileName": "safeai/report/html_kit.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-json_report-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6c27f10959536527f564809b80f496301a1c5ce105abbd07d2cf96ee984e6709"
+        }
+      ],
+      "fileName": "safeai/report/json_report.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-pr_comment-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "04f48ab9d78bbff0ce90d59e06f7355b36c1f14077ef8ba1a4d7d8fa63fe7778"
+        }
+      ],
+      "fileName": "safeai/report/pr_comment.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-registry_html-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8b193f80f644410ec643f0aaef15607f9f9867ac116d5c4839118f1e283de3c5"
+        }
+      ],
+      "fileName": "safeai/report/registry_html.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-sarif-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1a64d20215ce64891747cb588899f686307997f04f125c9910050c9e9fa71dfe"
+        }
+      ],
+      "fileName": "safeai/report/sarif.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-report-terminal-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "21b536af2e19dc3b347f4fdfbced0f16bc2333a605d9f7c5cb6572fa0f7f55b2"
+        }
+      ],
+      "fileName": "safeai/report/terminal.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-rules-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/rules/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-rules-base_rules-yaml",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9ca85b0be12cfadb71d0b3f50eaeb3fdc870e5560653affaf987f0e5079c6eb3"
+        }
+      ],
+      "fileName": "safeai/rules/base_rules.yaml",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-rules-loader-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "86bdcd0c5a68a88f3cf785abeb61b50f63091c5412e3a755b4f0e7761792475e"
+        }
+      ],
+      "fileName": "safeai/rules/loader.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-scorecard-schema-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9517fac8e4e656ea338aa76c59b96e5e182d26615a59e8a45d8e2468c8256024"
+        }
+      ],
+      "fileName": "safeai/scorecard-schema.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-scorecard-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "988af6e205bc0022edcf2597a67c6f9042214cfea76dd8469374184db1fee9b0"
+        }
+      ],
+      "fileName": "safeai/scorecard.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-scoring-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "fileName": "safeai/scoring/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-scoring-engine-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b76ef6e655f105db7b957783690e1fbbaf1b8f2c4daa6b19bb107e1943fcca47"
+        }
+      ],
+      "fileName": "safeai/scoring/engine.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-severity-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7fc465f79064215112e5545f75dfe45851066bf8609b3a159e1966d41b8a81d2"
+        }
+      ],
+      "fileName": "safeai/severity.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-telemetry-__init__-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6fced542dc6322e42342204c9f464216575b64cce75355ab52ff3ccbb60c60e5"
+        }
+      ],
+      "fileName": "safeai/telemetry/__init__.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-telemetry-client-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "23e40499edf2b0065b5d1a33daf8e2ad264d7f4b57111aa001fd7e0983b7a988"
+        }
+      ],
+      "fileName": "safeai/telemetry/client.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-telemetry-config-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a62157a75d9ef438aba902ffa8baea91ae9c57b747d86759012dc44c713b24e0"
+        }
+      ],
+      "fileName": "safeai/telemetry/config.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-telemetry-schema-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2e2c114a47263f0e28a9979e9d9d9506f310791385b2c28a118e432f3c8131f1"
+        }
+      ],
+      "fileName": "safeai/telemetry/schema.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-safeai-version-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ff9df0d305fedfeb8304a7b82b7fb8491ae2ac06ce65cebab66c81d0b28dab3d"
+        }
+      ],
+      "fileName": "safeai/version.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-scripts-check_wheel-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e73a11988ddd4592b39c9098fc558213b1b64595d4d6b27e36bb21ea77e46cfa"
+        }
+      ],
+      "fileName": "scripts/check_wheel.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-scripts-create_good_first_issues-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5aa6e12a483fd98f262728c54f7eae59c82308ba4cc6d66b2629c0443d28a414"
+        }
+      ],
+      "fileName": "scripts/create_good_first_issues.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-scripts-generate_release_artifacts-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "77a29d2b7c67c8122da61117ad97d6c21e22b136c9e692f141722818647e85d4"
+        }
+      ],
+      "fileName": "scripts/generate_release_artifacts.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-scripts-run_local_integration-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "39313622caf94820e6845982147c14cf1b0812bf2612d1cc23fb6f1b5868c196"
+        }
+      ],
+      "fileName": "scripts/run_local_integration.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-scripts-safeai-action-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ace64fec3e945dd2d9fa1dcf9af61e5d8234b7148f23d36c1c43563c2af5ce9f"
+        }
+      ],
+      "fileName": "scripts/safeai-action.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-community_scan-fixtures-clean-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "686e56c5719b5c86a2bf6fa4cabd66f32d28a15839f01eda402e048c175adac4"
+        }
+      ],
+      "fileName": "tests/community_scan/fixtures/clean/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-community_scan-fixtures-risky-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fc2ec170836e8cd34b46b0e23b32ef3b252dfbaed53a2c8906bced682167aa91"
+        }
+      ],
+      "fileName": "tests/community_scan/fixtures/risky/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-community_scan-test_community_scan-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2c2608158c661e2b7d0e126c261e06b330723c594b60f5a22fd4bfeb4f50b633"
+        }
+      ],
+      "fileName": "tests/community_scan/test_community_scan.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-conftest-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "abb006ec19e7f41e1126302a084a0a2f43c0d87aa2e0a0b2bf17a53496bde467"
+        }
+      ],
+      "fileName": "tests/conftest.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-action-clean-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "896804104e27b826a0f30e2c4189a384ad4ff77231361ee18fc67b958ba96cfe"
+        }
+      ],
+      "fileName": "tests/fixtures/action/clean/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-action-medium-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "482899e854924e6f1bcc5b55fc9b9950b1df1212366e99d942d05695226677d7"
+        }
+      ],
+      "fileName": "tests/fixtures/action/medium/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-action-risky-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "49fb09a853bed19997e4913bc9dab68d0b9c02401f70b2874e24770b4cbfb604"
+        }
+      ],
+      "fileName": "tests/fixtures/action/risky/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-compatibility--claude-settings-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8092a73ef18faf32c5722265e28b31130480fb7e02a73b959ae0cab56fdbc210"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/compatibility/.claude/settings.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-compatibility--mcp-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "25f96729c81f3bb51b48118a00416b01bcea01a40d9f45d105b8724ed8251271"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/compatibility/.mcp.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-compatibility-CLAUDE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "972d0ce2b6ab7c7dd055d30a4ecb969d08fa06c19c084bcdc3f46923dc21e1e1"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/compatibility/CLAUDE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-malformed--claude-settings-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d80ce735f53ea726ba7e7e082297c2b6b80b1a5473e555e5b8656a0da1c939b5"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/malformed/.claude/settings.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-malformed--claude-settings-local-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9b339eff63e6bb942bd78e6ac4ec888834ea32aa6a7a61a5c70bbfdd4fac7cae"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/malformed/.claude/settings.local.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-minimal--claude-settings-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4fe86eaf33165ceaae3e3b441f8b409bd769f123729175541f3eaef64e7a9d71"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/minimal/.claude/settings.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-minimal-CLAUDE-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "53e8442407ae1ea4f960845dc6abd180519c577b514709bf052a3973b7d89fa0"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/minimal/CLAUDE.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-permissive--claude-settings-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d877bfe6afda3bec254a1a51b267fd5773671736bcc1013fb7feb6a210ef743f"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/permissive/.claude/settings.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-permissive--mcp-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6b158d319a8805f854013b605ac62178585d7ea568da6352032f221b8075d3d8"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/permissive/.mcp.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-slash_injection--claude-commands-deploy-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4044860a86f54a9ac9d91d4c37a9b67abbc5a2c807b95ea7eb6c60702e70ee33"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/slash_injection/.claude/commands/deploy.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-slash_injection--claude-commands-status-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cca4861f7f2af352aab504a7befffe1d9c6ae0c0d4177c97d2c441d590f2c991"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/slash_injection/.claude/commands/status.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-slash_injection--claude-settings-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5d9e7433834016522b435e95a470b288c6a3593f08bc9b1ba6d58cc3091b7730"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/slash_injection/.claude/settings.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-subagent_escalation--claude-agents-releaser-md",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1845270cbb2c4eec7e3c2f33751c5ceb9db8f26a0d03f92f5207895ffca955e0"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/subagent_escalation/.claude/agents/releaser.md",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-claude_code-subagent_escalation--claude-settings-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2fc14d8e5e428f52435eab8cdb5024a8d4b07e5c4358e33319b7371e453213a8"
+        }
+      ],
+      "fileName": "tests/fixtures/claude_code/subagent_escalation/.claude/settings.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-crewai-representative-crew-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f6aeebbd35d60b56ef8e77d30b699c1b52579d7d42a9df9502a22cc34d93e2de"
+        }
+      ],
+      "fileName": "tests/fixtures/crewai/representative/crew.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-cursorrules-representative--cursorrules",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "163f223f75a3d4db841077aac80865cdbe8a509eb969a5f1d4d41a0c56be20a1"
+        }
+      ],
+      "fileName": "tests/fixtures/cursorrules/representative/.cursorrules",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-google_adk-representative-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1b39e8d1e045aa71a2153127ada74744e548e27c65ee61a0f056eea577ec68de"
+        }
+      ],
+      "fileName": "tests/fixtures/google_adk/representative/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-langgraph-representative-graph-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "727aa3fb0094c43dc10b6c61d32053f55843aa0fb252553c7f5507e01e3330bc"
+        }
+      ],
+      "fileName": "tests/fixtures/langgraph/representative/graph.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-llamaindex-representative-agent-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8753ba30e23e79b6c6fcbd4febb291166a27c5ce441f10b4a91b5c4560840cc2"
+        }
+      ],
+      "fileName": "tests/fixtures/llamaindex/representative/agent.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-mcp-clean_tool-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9b1d3e672782254c385bc19acd3c330d23fcccbd9637961acc9953fd10c0c593"
+        }
+      ],
+      "fileName": "tests/fixtures/mcp/clean_tool.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-mcp-poisoned_tool-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b8831ebff0bfe630d57eacc7ad73df1bf6896e5471c24ed110108350a8c2e68a"
+        }
+      ],
+      "fileName": "tests/fixtures/mcp/poisoned_tool.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-n8n-representative-workflow-json",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "26d3b905243df21dd3e62d9662ac1221784e41f0bb7681be0f0b76aeecd41d10"
+        }
+      ],
+      "fileName": "tests/fixtures/n8n/representative/workflow.json",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-openai_agents-representative-agents-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ce7b80cfde70e252ee18aa891201f529372655a3313e24e794eac3b8a178d66e"
+        }
+      ],
+      "fileName": "tests/fixtures/openai_agents/representative/agents.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-semantic_kernel-representative-plugin-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "89269b7e6c3ffc622846b6a84fb6359007b47588aa2f6af37daf0eb02f349983"
+        }
+      ],
+      "fileName": "tests/fixtures/semantic_kernel/representative/plugin.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-fixtures-windsurf-representative--windsurfrules",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9e50ada53721109de408b730c5ee98f439e98935fd7adac20280d7b5a3263546"
+        }
+      ],
+      "fileName": "tests/fixtures/windsurf/representative/.windsurfrules",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_adapter_dataflow-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3c0ae69d697ac7ece90b8b593e90547eb50a0cc0e46dc9a52b3a7bbadc63d59b"
+        }
+      ],
+      "fileName": "tests/test_adapter_dataflow.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_assurance-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2e0dc2176e9c19bc7d4ca41fb0b6af980e97bd2441756ac87e8ac37f9a1061a9"
+        }
+      ],
+      "fileName": "tests/test_assurance.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_baseline-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "795c1522a328fef18a069fc4acae80b45f841727c0a9c5579cfb08944d74e434"
+        }
+      ],
+      "fileName": "tests/test_baseline.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_capability_detection-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e8fe13a5921a02d1ff68e30606bd3958bf9c0f6fd565c27bbb544d79f73dd46d"
+        }
+      ],
+      "fileName": "tests/test_capability_detection.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_capability_diff_v2-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3a310b6302e319394b8cbfc196db4d2c0d436e5a67bda5f6996f98abc55bd457"
+        }
+      ],
+      "fileName": "tests/test_capability_diff_v2.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_ci_context-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6e1ef58c9d1c108a15460d6803a0445ad21cce5f015d37615310585eb42e9833"
+        }
+      ],
+      "fileName": "tests/test_ci_context.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_claude_code_deep-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fef8d7b6a98557acc9c4a66064cacc6954870037098343792bfc2cad5ce0ce77"
+        }
+      ],
+      "fileName": "tests/test_claude_code_deep.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_compatibility-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4347afa52a8f40a61677cc0b95b7bb97c2c6955831923ee926c381fdc287e422"
+        }
+      ],
+      "fileName": "tests/test_compatibility.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_component_graph-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "da13d75ba986a33b0371af83d3b081d1c8c803c2e3db9c93c6c9d7454f0211ce"
+        }
+      ],
+      "fileName": "tests/test_component_graph.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_component_hash-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "021b4d3dd7ace8af3a1d0f36e380a1251146bd0e6016f234888420e52abf0098"
+        }
+      ],
+      "fileName": "tests/test_component_hash.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_confidence_arbitration-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ada779ecdf315ea33170a62da953f28fe90f18ae2032b5bf4077b831eddfea80"
+        }
+      ],
+      "fileName": "tests/test_confidence_arbitration.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_control_mappings-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "477870c72ccd29bed0f4cfd0b0c85fe4f4bc184d09b6999493a81baadbc41865"
+        }
+      ],
+      "fileName": "tests/test_control_mappings.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_crewai_framework-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b40ac6839e80b4e80cea6a28e4f6239b4eb10399e8fc0ccd0b51ca971338297a"
+        }
+      ],
+      "fileName": "tests/test_crewai_framework.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_cursorrules_framework-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "17e5543fe4648fa3fd31bf12c36174d8d545ac22c54645dafc6874535c0d9c2f"
+        }
+      ],
+      "fileName": "tests/test_cursorrules_framework.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_env_dependency-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fda1d4dfa849f8e710c8c85311653c9ce8e434dc814b0b2ea4911a30f05fe5db"
+        }
+      ],
+      "fileName": "tests/test_env_dependency.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_escalation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c8863d776fa69c6b57e3bff4761313a11a55eff86c7a6402b2acd7340ff0dd85"
+        }
+      ],
+      "fileName": "tests/test_escalation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_evidence_type-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "725a47aebbae0fe66c7cfb1ba00c3c5d40bc2fc39326e56107d477726e481a9f"
+        }
+      ],
+      "fileName": "tests/test_evidence_type.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_fingerprints-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c68f7b6d93bdcee2268c72cc967cb26eabf5458837f2b5247bf61fdb3f6b74c0"
+        }
+      ],
+      "fileName": "tests/test_fingerprints.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_github_action-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d634588422d964cfb0b394435fdcb0b9f650ba6e4269809db6543bb3893cd2db"
+        }
+      ],
+      "fileName": "tests/test_github_action.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_governance_analyzer-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "62f6b64bd85763243260e2bcac39c8c87213be156c649fd7c003ab6f22074e93"
+        }
+      ],
+      "fileName": "tests/test_governance_analyzer.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_html_report-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "5b9c1d15e1a7067a3a2e9e8b1853172716d1f06e95b4e623159bf52b63cee171"
+        }
+      ],
+      "fileName": "tests/test_html_report.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_init_and_rules-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c6aee005e1455d07890d2a8164f51810c6cbfedf10d304c67405a95a14904a15"
+        }
+      ],
+      "fileName": "tests/test_init_and_rules.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_kya_integration-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "865a4fa8cec7bf28211aeed77a852a530eac77d05b8aa355693651c6183998f2"
+        }
+      ],
+      "fileName": "tests/test_kya_integration.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_kya_manifest-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cad63b574e81c895edcf1c5731ef10be986128749cb4843cfb7befea4208c3fe"
+        }
+      ],
+      "fileName": "tests/test_kya_manifest.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_langgraph_framework-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e35fa263693fb5133deedcc0ab20cd7b301c0edace24633bb8216098a7b9df8d"
+        }
+      ],
+      "fileName": "tests/test_langgraph_framework.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_llamaindex_framework-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "34b383c40592f3370177d64da19e902a107915a4c0c9369229df81eca4b7005e"
+        }
+      ],
+      "fileName": "tests/test_llamaindex_framework.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_mcp_tool_poisoning-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2cd82a59dbf0ee17c87c1c31e56e30f4bbf280ab1d19cf0fe5b96329eeb8bb82"
+        }
+      ],
+      "fileName": "tests/test_mcp_tool_poisoning.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_mcp_validation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4b5692d88388ee9d7e79661fd798cd06a880eccab0f3c5446f47561690d01076"
+        }
+      ],
+      "fileName": "tests/test_mcp_validation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_n8n_workflow-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "eba91f48a1ba75f70764ca8d1ba33d6a6040cfcb04602c5a2f06ba21edb09b8c"
+        }
+      ],
+      "fileName": "tests/test_n8n_workflow.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_parser_aggregation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f7533f159a0a5beb9975600013e6f2a6f2daa6e4c1a7f84a22b77590b77de082"
+        }
+      ],
+      "fileName": "tests/test_parser_aggregation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_phase15-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "60445ff4f92a3e3023b0aa487c8acf02621f6b3f621b90c56cf6edb57a899b33"
+        }
+      ],
+      "fileName": "tests/test_phase15.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_policy-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "84b44bf09b108ece53978e10e5d32c0bf444c1d38bebcaa3b2b12bb5eaa71f4d"
+        }
+      ],
+      "fileName": "tests/test_policy.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_pr_comment-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "58caec5a0e134a6563a4ee3521665dee9d423cf4c70d255efe200a9e27a88921"
+        }
+      ],
+      "fileName": "tests/test_pr_comment.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_pr_comment_cli-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f7d317f365e4cedd92e83a39377dccaf592373c82add5d043856e93b4a375066"
+        }
+      ],
+      "fileName": "tests/test_pr_comment_cli.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_registry-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "861ca4627eb19ff7dedeede86c774b6164bd56b01379c364a7953b079f04834c"
+        }
+      ],
+      "fileName": "tests/test_registry.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_registry_cli-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "db161a8710a81bbce28fc9136e0db76228e04669ffc2714dc4f6d3968322c8ed"
+        }
+      ],
+      "fileName": "tests/test_registry_cli.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_registry_html-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "dc42328a8025d4b4697a316186dd4de3288e195988b77677cfd4aa6c6b58fff1"
+        }
+      ],
+      "fileName": "tests/test_registry_html.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_release_fixes-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ead781abc5da2a37ac0d07ef09e8bcccbbbaeb66c0aa89706751131c6a6983ba"
+        }
+      ],
+      "fileName": "tests/test_release_fixes.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_release_validation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c8241a9b433eb9aa1cdefbee762577cd0c5387b36d05ef0c227e6403d0373ad9"
+        }
+      ],
+      "fileName": "tests/test_release_validation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_rules_loader_determinism-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4b95ddf54d86d42b9afb56b23d9f55dd140e600078b9fc5fd15cd98de918bbc2"
+        }
+      ],
+      "fileName": "tests/test_rules_loader_determinism.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_sarif-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3d7f703fdbe07f8ecf10510df46c8358570946f0cef76eb9f960a49b0fb6660a"
+        }
+      ],
+      "fileName": "tests/test_sarif.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_scan_phase11-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "9589a800243d54f8bfefd495a665fe3e832b25f1036b3d0db5cee569c2801e76"
+        }
+      ],
+      "fileName": "tests/test_scan_phase11.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_scorecard-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6e7f384cbeb002e0802d799a5bfe35d07eaf90e60b1793b41bfb8415059923ad"
+        }
+      ],
+      "fileName": "tests/test_scorecard.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_scoring-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8701f82240f5889966e660881c16c1b8ac71d3f673e1b23171098be866c50d9f"
+        }
+      ],
+      "fileName": "tests/test_scoring.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_semantic-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fcb19441847acf1c1510905d336394d17572b4639bc6b0267963502859d1f960"
+        }
+      ],
+      "fileName": "tests/test_semantic.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_severity-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1fe150618de226c3e14b663f95a81fb15825462a22d78b4b0980c91636033e7d"
+        }
+      ],
+      "fileName": "tests/test_severity.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_suppressions-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b945efbddd644d3f9b1b73454d3bb0665040f5948679096d8661661398087c69"
+        }
+      ],
+      "fileName": "tests/test_suppressions.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_target_taxonomy_engine-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fcbb8611bb3402fbc39e223ca9e3a8f2396267de4f7b4b8dfe399d414e84461c"
+        }
+      ],
+      "fileName": "tests/test_target_taxonomy_engine.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_telemetry-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a5ce192af943556265386fa9fc23c4175d54ac2e3c068b3e978785bf4aa8347d"
+        }
+      ],
+      "fileName": "tests/test_telemetry.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_tool_identity-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "83123950493520eafab897d742059e3278b5733bbf25084c8c1264758609f608"
+        }
+      ],
+      "fileName": "tests/test_tool_identity.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_tool_implementation-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1ee7ee74ef6077d1e65354eda9bb67daf67673729f28647d39f7707780a1c4e6"
+        }
+      ],
+      "fileName": "tests/test_tool_implementation.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_version-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4d7c157dd4d0b8076325ecec15ad9a3592c66794f07b43fa53b98b2d17a8c783"
+        }
+      ],
+      "fileName": "tests/test_version.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    },
+    {
+      "SPDXID": "SPDXRef-File-tests-test_windsurf_framework-py",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7e71a15c1a5b3c6f151286bfb11669680607fcf833eff4e619ed67cf7625b613"
+        }
+      ],
+      "fileName": "tests/test_windsurf_framework.py",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "Copyright 2026 IkarusCareer"
+    }
+  ]
+}

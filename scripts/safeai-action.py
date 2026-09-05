@@ -62,6 +62,13 @@ def build_install_command(version, find_links=""):
     letting CI exercise the real install command without depending on a
     published version. Dependencies such as PyYAML still resolve from PyPI, so
     we deliberately avoid ``--no-index`` here.
+
+    NOTE: Hash pinning (--require-hashes) is not used here because this is a
+    published GitHub Action that installs a user-specified version from PyPI.
+    The action user controls the version via the ``version`` input; hashes
+    cannot be embedded at action-define time for arbitrary versions. Users who
+    require hash verification should pin the action to a specific commit SHA
+    and use a private PyPI mirror with hash-checked packages.
     """
     if version:
         spec = f"{DIST}=={version}"

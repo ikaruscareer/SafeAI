@@ -162,7 +162,7 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
   capability-relevant keywords (shell, filesystem, HTTP, database) in the
   IDE's rules config, JSON, YAML, or free text
 
-Maturity is on the scale defined in [`FRAMEWORK_SUPPORT.md`](FRAMEWORK_SUPPORT.md):
+Maturity is on the scale defined in [`docs/reference/FRAMEWORK_SUPPORT.md`](docs/reference/FRAMEWORK_SUPPORT.md):
 **Partial** = reliable detection and discovery with capability/risk analysis over
 common patterns; **Experimental** = detection and basic artifact discovery with
 limited framework-specific analysis. No framework is rated fully **Supported**
@@ -250,8 +250,8 @@ What you get on the first run:
 
 **KYA records static evidence, not runtime truth.** It answers "what does the
 source/configuration say this agent can do?" — never "what is this agent doing
-in production?" See [REGISTRY.md](REGISTRY.md), [KYA_MANIFEST.md](KYA_MANIFEST.md),
-and [LIMITATIONS.md](LIMITATIONS.md).
+in production?" See [docs/reference/REGISTRY.md](docs/reference/REGISTRY.md), [docs/reference/KYA_MANIFEST.md](docs/reference/KYA_MANIFEST.md),
+and [docs/reference/LIMITATIONS.md](docs/reference/LIMITATIONS.md).
 
 CI note: registry persistence is auto-disabled for bare CI jobs (the `CI`
 env var). Use `--registry "$RUNNER_TEMP/registry.db"`, set `SAFEAI_REGISTRY`
@@ -284,7 +284,7 @@ pip install -e ".[dev]"
 
 ## Privacy & Telemetry
 
-SafeAI collects no data by default. Usage telemetry is opt-in, anonymous, and fully documented in [`PRIVACY.md`](PRIVACY.md). If you do nothing, nothing is ever sent. See `PRIVACY.md` for the complete data contract, what is never collected, and how to disable telemetry.
+SafeAI collects no data by default. Usage telemetry is opt-in, anonymous, and fully documented in [`PRIVACY.md`](./PRIVACY.md). If you do nothing, nothing is ever sent. See [`PRIVACY.md`](./PRIVACY.md) for the complete data contract, what is never collected, and how to disable telemetry.
 
 ---
 
@@ -361,7 +361,7 @@ python -m safeai registry export --format json --output safeai-kya-inventory.jso
 
 ## Example Output
 
-> See [REPORTING_GUIDE.md](./REPORTING_GUIDE.md) for a complete guide to
+> See [docs/guides/REPORTING_GUIDE.md](docs/guides/REPORTING_GUIDE.md) for a complete guide to
 > interpreting each output format (HTML, JSON, SARIF, PR comments, scorecard,
 > registry) and triaging findings.
 
@@ -399,307 +399,29 @@ Findings:
 
 ## CI/CD Integration
 
-### GitHub Actions — SafeAI Static Analysis
-
-[![SafeAI Static Analysis](https://img.shields.io/badge/Available%20on-GitHub%20Marketplace-2088FF?logo=github)](https://github.com/marketplace/actions/safeai-static-analysis)
-
-SafeAI ships a ready-to-use composite action for GitHub-hosted runners. The
-action is a thin, pure-Python driver: it installs the `SafeAI-Static-Analyzer`
-PyPI distribution into the runner's Python, runs `python -m safeai scan` on
-your repository, preserves the tool's native exit codes, and always writes a
-SARIF 2.1.0 artifact (even when the scan fails). It never evaluates any input
-through a shell, never executes your agent code, and makes no network calls
-beyond installing the PyPI package.
-
-Use it with `uses: ikaruscareer/SafeAI@<ref>` (see [Version pinning](#version-pinning)).
+SafeAI ships a [GitHub Actions Marketplace action](https://github.com/marketplace/actions/safeai-static-analysis) and supports all major CI platforms.
 
 ```yaml
+# GitHub Actions — minimal workflow
 name: safeai-scan
-on:
-  push:
-  pull_request:
-
+on: [push, pull_request]
 permissions:
   contents: read
-
 jobs:
-  safeai-scan:
+  scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Scan with SafeAI
-        id: safeai
-        uses: ikaruscareer/SafeAI@v1.0.0
-        with:
-          path: .
-          fail-on: critical
-
-      - name: Upload SARIF to GitHub Advanced Security
+        with: { python-version: '3.12' }
+      - uses: ikaruscareer/SafeAI@v1
+        with: { path: '.', fail-on: critical }
+      - uses: github/codeql-action/upload-sarif@v3
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ${{ steps.safeai.outputs.sarif-path }}
+        with: { sarif_file: ${{ steps.safeai.outputs.sarif-path }} }
 ```
 
-The `if: always()` on the upload step matters: SafeAI fails the job when a
-finding meets the `fail-on` threshold, but the SARIF file is still written so
-code-scanning alerts are still created. `permissions: contents: read` is the
-least privilege the action needs — it only reads your repository and writes
-reports inside the workspace.
-
-#### Inputs
-
-| Input | Default | Description |
-|-------|---------|-------------|
-| `path` | `.` | Directory or file to scan. Relative paths are resolved against `GITHUB_WORKSPACE`. |
-| `version` | *(latest stable)* | Exact SafeAI PyPI version to install (e.g. `1.5.0`). Empty installs the latest release of `SafeAI-Static-Analyzer`. |
-| `fail-on` | `critical` | Minimum severity that fails the job: `critical`, `high`, or `medium`. |
-| `sarif` | `safeai-results.sarif` | SARIF 2.1.0 output path, relative to the repo root. Empty string disables SARIF. |
-| `rules` | *(none)* | Path to a custom rules directory (`--rules`). |
-| `baseline` | *(none)* | Prior `safeai-manifest.json`/JSON report for new/regressed and escalation comparison (`--baseline`). |
-| `fail-on-new` | `false` | With `baseline`: fail only on NEW or REGRESSED findings at or above `fail-on` (`--fail-on-new`). |
-| `fail-on-escalation` | *(none)* | Minimum capability-escalation severity that fails the job: `critical`, `high`, or `medium`. Requires `baseline`. |
-| `no-registry` | `true` | Skip local KYA registry persistence (`--no-registry`), keeping scans ephemeral. |
-| `extra-args` | `[]` | Extra scan arguments as a JSON array of strings (e.g. `["--verbose"]`). Never shell-evaluated. |
-
-#### Outputs
-
-| Output | Description |
-|--------|-------------|
-| `sarif-path` | Absolute path to the written SARIF file (empty if SARIF was disabled or the scan did not produce one). |
-
-#### Exit behavior
-
-The action passes SafeAI's exit code through unchanged:
-
-| Code | Condition |
-|------|-----------|
-| 0 | No findings at or above `fail-on`; policy outcome not `deny`. |
-| 1 | Finding at or above threshold, new/regressed finding with `fail-on-new`, escalation with `fail-on-escalation`, or policy `deny`. |
-| 2 | Operational error — missing scan path, invalid input, or missing Python 3.11+. |
-
-Even on exit 1, the SARIF file (and any HTML/JSON reports you request via
-`extra-args`) are written so downstream steps can keep working. The action
-prints a GitHub `::warning::` if a scan failed without producing SARIF.
-
-#### More examples
-
-PR gating on new findings + escalation review:
-
-```yaml
-- name: Scan with SafeAI
-  uses: ikaruscareer/SafeAI@v1.0.0
-  with:
-    path: .
-    baseline: safeai-manifest.json
-    fail-on-new: 'true'
-    fail-on-escalation: high
-    sarif: safeai-results.sarif
-```
-
-Custom rules, verbose logs, and an HTML report (all argv-passed, no shell):
-
-```yaml
-- name: Scan with SafeAI
-  uses: ikaruscareer/SafeAI@v1.0.0
-  with:
-    path: ./agents
-    rules: .safeai/rules
-    extra-args: '["--verbose", "--html", "report.html"]'
-```
-
-#### Version pinning
-
-Exact versioning is required for Marketplace-verified actions. Pin to a
-release tag:
-
-```yaml
-uses: ikaruscareer/SafeAI@v1.0.0
-```
-
-and optionally relax to the major tag `@v1` for bugfix updates. For the
-strictest supply-chain posture, pin to a full commit SHA:
-
-```yaml
-uses: ikaruscareer/SafeAI@<40-char-commit-sha>
-```
-
-The `version` input is independent: it controls the SafeAI **PyPI** package
-installed into the runner, while the `uses:` ref controls which **action**
-release you run.
-
-**Recommended posture — pin both.** The `version` input defaults to the
-*latest stable* SafeAI release on PyPI (per the Marketplace design), but
-pinning it makes every scan reproducible and avoids surprising tool/action
-pairings. Set the `version` input to the exact release the action was
-validated against:
-
-```yaml
-- uses: ikaruscareer/SafeAI@v1.0.0
-  with:
-    version: "1.5.0"
-```
-
-If you rely on the default, know that SafeAI may upgrade underneath you on a
-future run; combined with `uses: @v1`, that is two moving parts. For
-maximum supply-chain control, pin the action to a commit SHA *and* set an
-explicit `version`.
-
-#### Troubleshooting
-
-- **`SafeAI requires Python 3.11+`** — the runner's default Python is too old
-  or missing. Add `actions/setup-python@v5` with `python-version: '3.12'`
-  before this action.
-- **Scan fails but you expected it to pass** — lower the threshold or switch
-  to baseline-gated `fail-on-new`, which only fails on regressions.
-- **No SARIF uploaded despite `if: always()`** — confirm the `sarif` input is
-  non-empty and that `${{ steps.safeai.outputs.sarif-path }}` is referenced
-  with the same `id:` you set on the action step.
-- **Security scanners flag `${{ inputs.* }}` interpolation** — this is safe:
-  action inputs are passed to the driver as environment variables with
-  `env:`, and the driver hands them to the tool as an argv list. No input is
-  ever interpolated into `run:`.
-- **Registry warnings** — `no-registry: true` is the default precisely so
-  scans on shared runners stay ephemeral and never touch a shared
-  `~/.safeai/registry.db`.
-
-The action's own test workflow (`.github/workflows/action-test.yml`) runs the
-action against fixture repositories, builds and inspects the wheel, and
-validates SARIF output on every commit.
-
-### GitHub Actions (manual workflow)
-
-A self-scan workflow is also included at `.github/workflows/ci.yml`. To use
-SafeAI directly in your project:
-
-```yaml
-jobs:
-  safeai-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install SafeAI
-        run: |
-          pip install -e .
-      - name: Run scan
-        run: |
-          python -m safeai scan . \
-            --sarif results.sarif \
-            --html report.html \
-            --manifest safeai-manifest.json \
-            --no-registry
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
-```
-
-### GitLab CI
-
-```yaml
-safeai-scan:
-  image: python:3.12
-  script:
-    - pip install -e .
-    - python -m safeai scan . --sarif results.sarif --html report.html --no-registry
-  artifacts:
-    paths:
-      - results.sarif
-      - report.html
-```
-
-### Azure DevOps
-
-```yaml
-- task: PythonScript@0
-  inputs:
-    scriptSource: 'inline'
-    script: |
-      import subprocess
-      subprocess.run(["pip", "install", "-e", "."])
-      subprocess.run(["python", "-m", "safeai", "scan", ".", "--sarif", "$(Build.ArtifactStagingDirectory)/results.sarif", "--no-registry"])
-```
-
-### Capability escalation in CI
-
-A capability *escalation* is a change between two scans where a tool gains
-more authority than it had before — a new shell capability, a filesystem
-access widening from read to write, a new MCP server, an approval gate
-being removed, and so on (see `RULES_REFERENCE.md` and `KYA_MANIFEST.md`
-for the full rule list). Reviewing these on every pull request is more
-targeted than reviewing every finding, because most findings on a mature
-codebase are pre-existing and already accepted; an escalation is new by
-definition.
-
-`--fail-on-escalation` gates the scan on escalation severity, and
-`--pr-comment` writes a short Markdown summary you can post as a PR
-comment. SafeAI itself never posts anything anywhere and makes no network
-calls of any kind — generating the comment and publishing it are two
-separate steps, and the second one is entirely up to your CI workflow.
-
-```yaml
-name: safeai-escalation-check
-on:
-  pull_request:
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  safeai-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install SafeAI
-        run: pip install -e .
-
-      - name: Fetch baseline manifest from the base branch
-        run: |
-          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
-          git show "origin/${{ github.event.pull_request.base.ref }}:safeai-manifest.json" \
-            > safeai-manifest.json || echo '{}' > safeai-manifest.json
-
-      - name: Run scan
-        run: |
-          safeai scan . \
-            --baseline safeai-manifest.json \
-            --pr-comment comment.md \
-            --fail-on-escalation high
-
-      - name: Post or update PR comment
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr comment "${{ github.event.pull_request.number }}" \
-            --edit-last --body-file comment.md \
-            || gh pr comment "${{ github.event.pull_request.number }}" \
-            --body-file comment.md
-```
-
-The `gh pr comment --edit-last` call updates SafeAI's own previous comment
-in place on repeat pushes, rather than adding a new one each time; it fails
-when there is no previous comment to edit (for example, on the first push),
-so the fallback plain `gh pr comment` handles that case. The `--fail-on-escalation`
-step runs before the comment step so the workflow's exit code still reflects
-the scan outcome; `if: always()` on the comment step makes sure the comment
-is posted even when the scan step fails the job.
-
-### SARIF Integration
-
-SafeAI outputs SARIF 2.1.0 format, compatible with GitHub Advanced Security, Azure DevOps, and other SARIF-compliant tools.
+See [CI/CD Integration Guide](./docs/ci-integration.md) for GitHub Actions, GitLab CI, Azure DevOps, and escalation-gating examples.
 
 ---
 
@@ -756,13 +478,15 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get involved.
 
 ## Documentation
 
-- [Release Notes](./RELEASE_NOTES.md) — changelog for all versions
-- [Upgrade Guide](./UPGRADE.md) — v1.x → v2.0.0 migration
-- [Support Matrix](./SUPPORT_MATRIX.md) — Python versions, platforms, adapters, CI
-- [Release Channels](./RELEASE_CHANNELS.md) — main, stable, prerelease, maintenance
-- [Security Policy](./SECURITY.md) — vulnerability reporting and response targets
-- [Known Limitations](./LIMITATIONS.md) — what SafeAI does and does not do
-- [Roadmap](./ROADMAP.md) — future plans and feature requests
+| Document | Description |
+|----------|-------------|
+| [Roadmap](./ROADMAP.md) | Future plans and feature requests |
+| [Contributing](./CONTRIBUTING.md) | How to get involved |
+| [Security](./SECURITY.md) | Vulnerability reporting and response |
+| [Privacy](./PRIVACY.md) | Telemetry and data handling |
+| [Release Notes](./docs/release/RELEASE_NOTES.md) | Changelog for all versions |
+| [Upgrade Guide](./docs/release/UPGRADE.md) | v1.x → v2.0.0 migration |
+| [CI/CD Integration](./docs/ci-integration.md) | GitHub Actions, GitLab CI, Azure DevOps examples |
 
 ---
 

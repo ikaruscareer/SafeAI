@@ -28,7 +28,11 @@ report.sarif
 safeai-manifest.json
 safeai-scorecard.json
 safeai-scorecard.md
+out.json
 community-scans/reports/
+
+# Temporary files
+gpg-key-config.txt
 
 # KYA local registry (private, machine-local state)
 .safeai/registry.db

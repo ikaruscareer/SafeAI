@@ -24,12 +24,19 @@ jobs:
         with:
           persist-credentials: false
 
+      # The default GITHUB_TOKEN cannot read classic branch protection rules.
+      # To fix the Branch-Protection check, create a fine-grained PAT with
+      # "Repository administration" (read) permission and store it as
+      # SCORECARD_GITHUB_TOKEN. See:
+      # https://github.com/ossf/scorecard-action/blob/main/docs/authentication/fine-grained-auth-token.md
       - name: Run analysis
         uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
         with:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
+        env:
+          SCORECARD_GITHUB_TOKEN: ${{ secrets.SCORECARD_GITHUB_TOKEN }}
 
       - name: Upload SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9

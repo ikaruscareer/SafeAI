@@ -183,26 +183,29 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ## v2.1 — CI/CD Hardening & Developer Experience *(planned)*
 
-*Goal: make SafeAI a true CI gate with rich developer feedback, and bring governance into the IDE.*
+*Goal: make SafeAI a true CI gate with rich developer feedback, bring governance into the IDE, and make installation trivial.*
 
 **Status: ⏳ planned. Target: Q4 2026.**
 
 ### CI/CD hardening
 - ⏳ **Quality gates** — configurable threshold profiles (`--fail-on-score-under N`, `--fail-on-severity critical|high`, `--fail-on-rule GOV_*`). GitHub Actions status-check integration with named gate outputs. Exit-code semantics documented and stable. Extends the existing `--fail-on`, `--fail-on-escalation`, `--scorecard-fail-under` mechanisms into a unified gating model.
 - ⏳ **PR decoration (auto-posting)** — auto-post `--pr-comment` summaries to GitHub PRs via the GitHub API (currently the comment is stdout-only and must be posted manually). Inline diff annotations for new findings on changed lines. GitLab MR and Azure DevOps PR support.
+- ⏳ **Scored risk indicators** — per-finding risk scores combining severity, exploitability, and policy context. Extends the existing security scorecard (0–10) with granular per-finding prioritisation. `--fail-on-risk-over N` threshold. Policy-based risk escalation (e.g., findings in production-agent profiles score higher).
 
 ### Developer experience
+- ⏳ **Standalone binaries** — PyInstaller-packaged `safeai` binary for Linux, macOS, Windows. No Python installation required. Single-file download for CI runners and local use. SHA-256 checksums and Sigstore attestation for each binary.
+- ⏳ **Interactive MCP consent** — deeper MCP analysis with explicit user control. When SafeAI discovers MCP servers, prompt the user to approve deep analysis (tool descriptions, schema inspection, capability extraction) rather than scanning everything by default. `--mcp-consent prompt` (interactive) vs `--mcp-consent auto` (current behavior) vs `--mcp-consent deny` (skip MCP). Respects the offline guarantee — consent is local, never transmitted.
 - ⏳ **VS Code extension MVP** — real-time governance feedback in the IDE. Parse open files with SafeAI's analyzers, surface findings as diagnostics, show capability surface in the status bar. Uses the existing scanner as a library (`safeai.engine.scan.run_scan`), no LSP server required.
 - ⏳ **Documentation and examples** — showcase all v2.1 features with real agent repositories (LangGraph, CrewAI, Claude Code). Add to `examples/` directory with runnable scan scripts.
 
 ### Exit criterion
-> A developer sees SafeAI findings as inline PR comments and VS Code diagnostics, and CI blocks merges on configurable quality thresholds.
+> A developer sees SafeAI findings as inline PR comments and VS Code diagnostics, CI blocks merges on configurable quality thresholds, and installation is a single binary download with no Python required.
 
 ---
 
 ## v2.2 — Visibility & Intelligence *(planned)*
 
-*Goal: show progress over time, visualise agent architecture, and assist triage with AI.*
+*Goal: show progress over time, visualise agent architecture, assist triage with AI, and detect multi-tool exfiltration chains.*
 
 **Status: ⏳ planned. Target: Q1 2027.**
 
@@ -212,11 +215,12 @@ These are the items that go deeper on your existing capabilities, but are not ye
 ### Architecture visualisation
 - ⏳ **Architecture maps in HTML reports** — visual component diagrams showing agent → tool → MCP server → workflow relationships. Rendered as SVG or embedded Mermaid in the HTML report. Extends `analysis/component_graph.py` with a view layer.
 
-### AI-assisted triage
+### Advanced analysis
+- ⏳ **Toxic flow analysis pilot** — multi-tool exfiltration chain detection. Trace data flow across tool boundaries: user input → prompt → tool call → external API → file write → network request. Detect chains where untrusted input reaches an exfiltration sink (HTTP POST, file upload, database write) without passing through a sanitisation step. Extends `DataFlowAnalyzer` with cross-tool taint tracking. New `TOXIC_FLOW_*` rule family.
 - ⏳ **Exploitability validation pilot** — AI-assisted triage for `GOV_*` findings. Given a governance gap (e.g., `GOV_TIMEOUT_MISSING`), generate a plain-English exploitability explanation and suggested remediation. Uses a local template engine (no external API calls), extending the existing remediation text in `safeai/kya/enrich.py`.
 
 ### Exit criterion
-> A team lead can view a trend chart showing governance score improvement over 30 days, see an architecture diagram of their agent in the HTML report, and get AI-assisted remediation guidance for each governance finding.
+> A team lead can view a trend chart showing governance score improvement over 30 days, see an architecture diagram of their agent in the HTML report, detect multi-tool exfiltration chains, and get AI-assisted remediation guidance for each governance finding.
 
 ---
 
@@ -289,7 +293,10 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 ## EE1 — Organisational Evidence Registry
 *The first thing to sell. Aggregation and ownership, not analytics.*
 - Self-hosted central registry of an org-wide KYA inventory from CI-submitted manifests and local exports.
+- **Auto-discovery** — "scan all my agents" workflows. Automatically discover agent repositories across GitHub orgs, GitLab groups, and Azure DevOps projects. Schedule periodic scans and populate the registry without manual `safeai scan` invocations. Uses GitHub/GitLab/Azure APIs to enumerate repos, then triggers CI scans via webhook or scheduled workflow.
+- **Background monitoring MVP** — continuous agent inventory with change detection. Registry polls repos on a schedule, detects new/changed/removed agents, flags drift from approved baseline. Alert on new governance findings, policy violations, or capability escalations. Dashboard shows fleet-wide health at a glance.
 - **Web dashboard MVP** — central view for multiple agent projects. Portfolio view across repositories, teams and environments; portfolio-level diffs; trend charts; architecture diagrams. Built on the registry data, served as a self-hosted web application.
+- **Skill Inspector web UI** — ad-hoc scanning for non-CLI users. Upload a repository URL or drag-and-drop files, get instant scan results with interactive findings exploration. No CLI installation required. Built on the same scanner engine, served alongside the dashboard.
 - Ownership model: business owner, technical owner, environment, lifecycle status, review date, approval state.
 - Central exception management: verified approver identity, approval workflow, expiry enforcement and notification, org-wide stale-waiver reporting (the identity-backed half of the Community CE 1.4 suppressions item).
 - PR risk ownership and security-review assignment routing.
@@ -302,6 +309,7 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 - Signed attestations and tamper-evident, immutable scan evidence with retention controls.
 - Reproducibility guarantee per decision: exact scanner version, ruleset, policy and configuration hash.
 - Assurance-boundary declarations (from CE 1.4) carried into every attestation.
+- **Enterprise integration hooks** — webhooks for scan completion, policy violation, and drift detection events. SIEM export (Syslog, CEF, LEEF) for integration with Splunk, Elastic, Microsoft Sentinel. MDM deployment guides (Intune, Jamf, Workspace ONE) for pushing SafeAI binaries to managed developer machines. Jira/ServiceNow ticket creation for high-severity findings.
 - DevSecOps integrations: GitHub, GitLab, Azure DevOps, Jenkins, Jira, ServiceNow, SIEM, GRC, artifact stores.
 - Trend analysis and executive reporting — only once ownership, schemas and workflow are stable.
 

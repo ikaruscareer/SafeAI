@@ -98,7 +98,7 @@ def _persist_tool_surface(conn, manifest, scan_id, stats):
 def get_tool_snapshots(conn, scan_id):
     """Return the stored per-tool surface for a scan, sorted by tool key."""
     rows = conn.execute(
-        "SELECT tool_key, tool_kind, tool_name, framework, capabilities_json, access_summary "
+        "SELECT agent_id, tool_key, tool_kind, tool_name, framework, capabilities_json, access_summary "
         "FROM agent_tool_snapshots WHERE scan_id = ? ORDER BY tool_key",
         (scan_id,),
     ).fetchall()
@@ -109,6 +109,7 @@ def get_tool_snapshots(conn, scan_id):
         except (TypeError, ValueError):
             capabilities = []
         surface.append({
+            "agent_id": row["agent_id"],
             "tool_key": row["tool_key"],
             "tool": {
                 "kind": row["tool_kind"],

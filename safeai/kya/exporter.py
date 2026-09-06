@@ -11,14 +11,50 @@ from safeai.kya import STATIC_ANALYSIS_DISCLAIMER
 from safeai.kya.registry import (
     agent_history,
     get_agent,
+    get_agent_metadata,
     get_scan_findings,
+    get_tool_snapshots,
     latest_scan_id,
     list_agents,
+    list_components,
     list_projects,
 )
 from safeai.kya.util import utc_now_iso
 
-EXPORT_SCHEMA_VERSION = "1.0"
+EXPORT_SCHEMA_VERSION = "1.1"
+
+
+def _portable_components(conn, scan_id):
+    components = []
+    for row in list_components(conn, scan_id=scan_id):
+        data = row.get("data")
+        if isinstance(data, dict):
+            components.append(data)
+            continue
+        components.append({
+            "type": row.get("component_type"),
+            "subtype": row.get("component_subtype"),
+            "name": row.get("name"),
+            "path": row.get("file_path"),
+            "source": row.get("source"),
+            "line": row.get("line"),
+            "content_hash": row.get("content_hash"),
+        })
+    return components
+
+
+def _portable_lifecycle(conn, project_id, fingerprints):
+    if not fingerprints:
+        return []
+    rows = conn.execute(
+        "SELECT fl.*, fl.scan_id AS source_scan_id FROM finding_lifecycle fl "
+        "JOIN scans s ON s.scan_id = fl.scan_id WHERE s.project_id = ? ORDER BY fl.id",
+        (project_id,),
+    ).fetchall()
+    return [
+        {key: value for key, value in dict(row).items() if key not in {"id", "scan_id"}}
+        for row in rows if row["fingerprint"] in fingerprints
+    ]
 
 
 def export_inventory(conn, *, project_id=None, include_history=False, include_suppressed=False):
@@ -52,6 +88,7 @@ def export_inventory(conn, *, project_id=None, include_history=False, include_su
                     f for f in (record.get("findings") or [])
                     if include_suppressed or f.get("status") != "suppressed"
                 ],
+                "metadata": get_agent_metadata(conn, record["agent_id"]),
             }
             if include_history:
                 entry["history"] = agent_history(conn, record["agent_id"])
@@ -61,6 +98,10 @@ def export_inventory(conn, *, project_id=None, include_history=False, include_su
         latest_findings = get_scan_findings(conn, latest) if latest else []
         if not include_suppressed:
             latest_findings = [f for f in latest_findings if f.get("status") != "suppressed"]
+        exported_fingerprints = {
+            finding.get("fingerprint") for finding in latest_findings
+            if finding.get("fingerprint")
+        }
 
         export_projects.append({
             "project_id": pid,
@@ -69,6 +110,9 @@ def export_inventory(conn, *, project_id=None, include_history=False, include_su
             "agents": agents,
             "latest_scan_id": latest,
             "latest_findings": latest_findings,
+            "component_snapshots": _portable_components(conn, latest) if latest else [],
+            "tool_snapshots": get_tool_snapshots(conn, latest) if latest else [],
+            "finding_lifecycle": _portable_lifecycle(conn, pid, exported_fingerprints),
         })
 
     return {

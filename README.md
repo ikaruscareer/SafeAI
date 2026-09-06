@@ -235,6 +235,9 @@ safeai registry list --format html > registry.html   # shareable HTML inventory
 safeai registry show <agent-id>            # latest KYA record
 safeai registry history <agent-id>         # all scans for an agent
 safeai registry diff <agent-id> --from previous --to latest
+safeai registry export --output inventory.json
+safeai registry import inventory.json --dry-run
+safeai registry import inventory.json       # atomic, idempotent merge
 safeai registry export --format json --output inventory.json
 safeai registry export --format html --output inventory.html
 ```

@@ -115,16 +115,179 @@ def test_registry_export(kya_project, tmp_path):
     with open(out_path) as fh:
         document = json.load(fh)
     assert document["export_type"] == "safeai.kya.inventory"
-    assert document["schema_version"] == "1.0"
+    assert document["schema_version"] == "1.1"
     project = document["projects"][0]
     assert project["agents"]
     assert project["agents"][0]["history"]
     assert project["latest_findings"]
     assert "limitations" in document
+    assert "component_snapshots" in project
+    assert "tool_snapshots" in project
+    assert "finding_lifecycle" in project
 
     with open(out_path, encoding="utf-8") as fh:
         raw = fh.read()
     assert "sk-1234567890abcdefghij" not in raw
+
+
+def test_registry_import_is_complete_and_idempotent(kya_project, tmp_path, capsys):
+    _two_scans(kya_project, tmp_path)
+    source = kya_project["registry"]
+    agent_id = _agent_id(source)
+
+    from safeai.kya.registry import connect, latest_scan_id, set_agent_metadata
+
+    conn = connect(source)
+    try:
+        set_agent_metadata(
+            conn,
+            agent_id,
+            owner="source-team",
+            environment="production",
+            purpose="risk review",
+        )
+        scan_id = latest_scan_id(conn)
+        conn.execute(
+            "INSERT INTO component_snapshots(scan_id, component_type, name, file_path, "
+            "data_json, first_seen_scan, last_seen_scan, content_hash) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                scan_id,
+                "prompt",
+                "system-prompt",
+                "prompts/system.txt",
+                json.dumps({"type": "prompt", "name": "system-prompt", "path": "prompts/system.txt"}),
+                scan_id,
+                scan_id,
+                "component-hash",
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    inventory = os.path.join(str(tmp_path), "portable.json")
+    assert main([
+        "registry", "export", "--registry", source, "--output", inventory,
+        "--include-history",
+    ]) == 0
+    capsys.readouterr()
+
+    target = os.path.join(str(tmp_path), "imported", "registry.db")
+    assert main(["registry", "import", inventory, "--registry", target]) == 0
+    first_output = capsys.readouterr().out
+    assert "Imported inventory" in first_output
+
+    conn = connect(target)
+    try:
+        first_counts = {
+            table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            for table in (
+                "projects", "scans", "agents", "agent_snapshots", "findings",
+                "scan_findings", "component_snapshots", "finding_lifecycle",
+                "agent_tool_snapshots", "agent_metadata",
+            )
+        }
+        metadata = conn.execute(
+            "SELECT owner, environment, purpose FROM agent_metadata WHERE agent_id = ?",
+            (agent_id,),
+        ).fetchone()
+        assert tuple(metadata) == ("source-team", "production", "risk review")
+        assert first_counts["scans"] == 1
+        assert first_counts["agents"] >= 1
+        assert first_counts["findings"] >= 1
+        assert first_counts["component_snapshots"] >= 1
+        assert first_counts["finding_lifecycle"] >= 1
+        assert first_counts["agent_tool_snapshots"] >= 1
+    finally:
+        conn.close()
+
+    assert main(["registry", "import", inventory, "--registry", target]) == 0
+    capsys.readouterr()
+    conn = connect(target)
+    try:
+        second_counts = {
+            table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            for table in first_counts
+        }
+    finally:
+        conn.close()
+    assert second_counts == first_counts
+
+
+def test_registry_import_metadata_merge_dry_run_and_force(kya_project, tmp_path, capsys):
+    main([
+        "scan", kya_project["root"], "--registry", kya_project["registry"],
+        "--sarif", os.path.join(tmp_path, "r.sarif"),
+    ])
+    source = kya_project["registry"]
+    agent_id = _agent_id(source)
+    from safeai.kya.registry import connect, set_agent_metadata
+
+    conn = connect(source)
+    try:
+        set_agent_metadata(conn, agent_id, owner="source", environment="production")
+        conn.commit()
+    finally:
+        conn.close()
+    inventory = os.path.join(str(tmp_path), "portable.json")
+    main(["registry", "export", "--registry", source, "--output", inventory])
+    capsys.readouterr()
+
+    absent = os.path.join(str(tmp_path), "dry-run", "registry.db")
+    assert main(["registry", "import", inventory, "--registry", absent, "--dry-run"]) == 0
+    assert "Would import inventory" in capsys.readouterr().out
+    assert not os.path.exists(absent)
+
+    target = os.path.join(str(tmp_path), "target", "registry.db")
+    main(["registry", "import", inventory, "--registry", target])
+    capsys.readouterr()
+    conn = connect(target)
+    try:
+        conn.execute(
+            "UPDATE agent_metadata SET owner = ?, environment = ? WHERE agent_id = ?",
+            ("local", "staging", agent_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    main(["registry", "import", inventory, "--registry", target])
+    capsys.readouterr()
+    conn = connect(target)
+    try:
+        row = conn.execute(
+            "SELECT owner, environment FROM agent_metadata WHERE agent_id = ?", (agent_id,)
+        ).fetchone()
+        assert tuple(row) == ("local", "staging")
+    finally:
+        conn.close()
+
+    main(["registry", "import", inventory, "--registry", target, "--force"])
+    capsys.readouterr()
+    conn = connect(target)
+    try:
+        row = conn.execute(
+            "SELECT owner, environment FROM agent_metadata WHERE agent_id = ?", (agent_id,)
+        ).fetchone()
+        assert tuple(row) == ("source", "production")
+    finally:
+        conn.close()
+
+
+def test_registry_import_rejects_corrupt_and_invalid_json(tmp_path, capsys):
+    corrupt = tmp_path / "corrupt.json"
+    corrupt.write_text("{not json", encoding="utf-8")
+    target = tmp_path / "registry.db"
+    assert main(["registry", "import", str(corrupt), "--registry", str(target)]) == 2
+    assert "Unable to read inventory" in capsys.readouterr().err
+    assert not target.exists()
+
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text(json.dumps({"schema_version": "1.1", "projects": []}), encoding="utf-8")
+    assert main(["registry", "import", str(invalid), "--registry", str(target)]) == 2
+    assert "export_type" in capsys.readouterr().err
+    assert not target.exists()
 
 
 def test_registry_export_excludes_suppressed_by_default(kya_project, tmp_path):

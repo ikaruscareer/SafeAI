@@ -159,6 +159,8 @@ def _build_parser():
                             help="Preview rows that would be imported without writing")
     reg_import.add_argument("--force", action="store_true",
                             help="Overwrite existing agent metadata with imported values")
+    reg_import.add_argument("--backup", action="store_true",
+                            help="Save a .bak snapshot before --force overwrites metadata")
 
     reg_meta = reg_sub.add_parser("metadata", help="View or set agent metadata (owner, environment)")
     _common(reg_meta)

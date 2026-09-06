@@ -7,16 +7,27 @@ import scan ID and table-native identities are preserved.
 """
 
 import json
+import os
 
 from safeai.kya.exporter import EXPORT_SCHEMA_VERSION
 from safeai.kya.registry import RegistryError
 from safeai.kya.util import sha256_text, utc_now_iso
 
 SUPPORTED_SCHEMA_VERSIONS = {"1.0", EXPORT_SCHEMA_VERSION}
+MAX_INVENTORY_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 def load_inventory(path):
     """Load and validate a portable inventory JSON document."""
+    try:
+        file_size = os.path.getsize(path)
+    except OSError as exc:
+        raise RegistryError(f"Unable to read inventory {path}: {exc}") from exc
+    if file_size > MAX_INVENTORY_SIZE:
+        raise RegistryError(
+            f"Inventory exceeds 10MB limit ({file_size:,} bytes). "
+            "Split the inventory into smaller per-project exports."
+        )
     try:
         with open(path, encoding="utf-8") as fh:
             document = json.load(fh)

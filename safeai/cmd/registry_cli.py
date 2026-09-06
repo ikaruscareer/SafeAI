@@ -336,6 +336,7 @@ def cmd_export(args):
 
 def cmd_import(args):
     """Import a portable inventory, or preview its deterministic merge plan."""
+    import shutil
     from safeai.kya.importer import import_inventory, load_inventory, plan_import
     from safeai.kya.registry import init_registry, migrate
 
@@ -348,6 +349,10 @@ def cmd_import(args):
     elif args.dry_run:
         conn = connect(args.registry_path)
     else:
+        if args.force and args.backup and registry_exists(args.registry_path):
+            backup_path = args.registry_path + ".bak"
+            shutil.copy2(args.registry_path, backup_path)
+            print(f"Backup saved to {backup_path}")
         conn, _ = init_registry(args.registry_path)
     try:
         if args.dry_run:

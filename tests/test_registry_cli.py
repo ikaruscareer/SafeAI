@@ -290,6 +290,86 @@ def test_registry_import_rejects_corrupt_and_invalid_json(tmp_path, capsys):
     assert not target.exists()
 
 
+def test_registry_import_rejects_oversized_inventory(tmp_path, capsys):
+    oversized = tmp_path / "huge.json"
+    # Create a JSON file exceeding the 10MB limit
+    huge_payload = {"data": "x" * (11 * 1024 * 1024)}
+    oversized.write_text(json.dumps(huge_payload), encoding="utf-8")
+    target = tmp_path / "registry.db"
+    assert main(["registry", "import", str(oversized), "--registry", str(target)]) == 2
+    assert "exceeds 10MB limit" in capsys.readouterr().err
+    assert not target.exists()
+
+
+def test_registry_import_backup_flag(kya_project, tmp_path, capsys):
+    from pathlib import Path
+
+    main([
+        "scan", kya_project["root"], "--registry", kya_project["registry"],
+        "--sarif", os.path.join(tmp_path, "r.sarif"),
+    ])
+    source = kya_project["registry"]
+    agent_id = _agent_id(source)
+    from safeai.kya.registry import connect, set_agent_metadata
+
+    conn = connect(source)
+    try:
+        set_agent_metadata(conn, agent_id, owner="original", environment="staging")
+        conn.commit()
+    finally:
+        conn.close()
+
+    inventory = os.path.join(str(tmp_path), "portable.json")
+    main(["registry", "export", "--registry", source, "--output", inventory])
+    capsys.readouterr()
+
+    target = os.path.join(str(tmp_path), "target", "registry.db")
+    main(["registry", "import", inventory, "--registry", target])
+    capsys.readouterr()
+
+    # Overwrite metadata locally
+    conn = connect(target)
+    try:
+        conn.execute(
+            "UPDATE agent_metadata SET owner = ?, environment = ? WHERE agent_id = ?",
+            ("local-owner", "production", agent_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    # Import with --force and --backup
+    main(["registry", "import", inventory, "--registry", target, "--force", "--backup"])
+    output = capsys.readouterr().out
+    assert "Backup saved to" in output
+    backup_path = Path(target + ".bak")
+    assert backup_path.exists()
+
+    # Verify backup contains the pre-import state
+    import sqlite3
+    backup_conn = sqlite3.connect(str(backup_path))
+    backup_conn.row_factory = sqlite3.Row
+    try:
+        row = backup_conn.execute(
+            "SELECT owner, environment FROM agent_metadata WHERE agent_id = ?",
+            (agent_id,),
+        ).fetchone()
+        assert tuple(row) == ("local-owner", "production")
+    finally:
+        backup_conn.close()
+
+    # Verify target has the imported values
+    conn = connect(target)
+    try:
+        row = conn.execute(
+            "SELECT owner, environment FROM agent_metadata WHERE agent_id = ?",
+            (agent_id,),
+        ).fetchone()
+        assert tuple(row) == ("original", "staging")
+    finally:
+        conn.close()
+
+
 def test_registry_export_excludes_suppressed_by_default(kya_project, tmp_path):
     main(["scan", kya_project["root"], "--registry", kya_project["registry"],
           "--sarif", os.path.join(tmp_path, "r.sarif")])

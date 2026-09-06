@@ -2,11 +2,11 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **37 beginner-friendly issues** designed for first-time contributors (12 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **46 beginner-friendly issues** designed for first-time contributors (20 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
-> **23 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
+> **26 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
 
 ---
 
@@ -252,11 +252,124 @@ These issues have been implemented by community contributors and are now part of
   2. Add `TestMCPToolPatterns` class in `tests/test_compatibility.py`
   3. All tests pass
 
+### 35. Scan LangChain and share results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/langchain/`
+- **Description:** Scan the LangChain repository with SafeAI and share your results. This helps us understand SafeAI's coverage of one of the most popular LLM frameworks.
+- **Acceptance criteria:**
+  1. Clone `langchain-ai/langchain`
+  2. Run `python -m safeai scan /tmp/langchain --html langchain.html --scorecard langchain-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/langchain/` with your results
+  4. Add a README.md summarizing your findings (use `community-scans/reports/template/README.md` as a template)
+  5. Submit a PR
+
+### 36. Scan AutoGen and share results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/autogen/`
+- **Description:** Scan the Microsoft AutoGen repository with SafeAI and share your results. AutoGen is a popular multi-agent framework.
+- **Acceptance criteria:**
+  1. Clone `microsoft/autogen`
+  2. Run `python -m safeai scan /tmp/autogen --html autogen.html --scorecard autogen-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/autogen/` with your results
+  4. Add a README.md summarizing your findings
+  5. Submit a PR
+
+### 37. Scan Haystack and share results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/haystack/`
+- **Description:** Scan the Haystack repository with SafeAI and share your results. Haystack is a popular RAG framework.
+- **Acceptance criteria:**
+  1. Clone `deepset-ai/haystack`
+  2. Run `python -m safeai scan /tmp/haystack --html haystack.html --scorecard haystack-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/haystack/` with your results
+  4. Add a README.md summarizing your findings
+  5. Submit a PR
+
+### 38. Scan DSPy and share results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/dspy/`
+- **Description:** Scan the DSPy repository with SafeAI and share your results. DSPy is a popular framework for programming with LLMs.
+- **Acceptance criteria:**
+  1. Clone `stanfordnlp/dspy`
+  2. Run `python -m safeai scan /tmp/dspy --html dspy.html --scorecard dspy-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/dspy/` with your results
+  4. Add a README.md summarizing your findings
+  5. Submit a PR
+
+### 39. Scan MetaGPT and share results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/metagpt/`
+- **Description:** Scan the MetaGPT repository with SafeAI and share your results. MetaGPT is a popular multi-agent framework.
+- **Acceptance criteria:**
+  1. Clone `geekan/MetaGPT`
+  2. Run `python -m safeai scan /tmp/metagpt --html metagpt.html --scorecard metagpt-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/metagpt/` with your results
+  4. Add a README.md summarizing your findings
+  5. Submit a PR
+
+### 40. Scan 5 frameworks and compare results
+- **Difficulty:** Easy | **Effort:** 2 hours
+- **Suggested files:** `community-scans/reports/<your-username>/comparison/`
+- **Description:** Scan 5 different frameworks (your choice) and create a comparison report. This helps us understand how SafeAI performs across different framework architectures.
+- **Acceptance criteria:**
+  1. Choose 5 frameworks from the target list
+  2. Scan each framework with SafeAI
+  3. Create `community-scans/reports/<your-username>/comparison/` with:
+     - Individual scan results for each framework
+     - A `COMPARISON.md` file comparing:
+       - Trust scores across frameworks
+       - Types of findings detected
+       - Capabilities detected
+       - Any patterns you noticed
+  4. Submit a PR
+
+### 41. Test SafeAI against a framework not in the target list
+- **Difficulty:** Easy | **Effort:** 1 hour
+- **Suggested files:** `community-scans/reports/<your-username>/<framework>/`
+- **Description:** Scan an AI framework that's NOT in our target list. This helps us discover new frameworks and expand coverage.
+- **Acceptance criteria:**
+  1. Choose an AI framework not in `community-scans/targets.yml`
+  2. Scan it with SafeAI
+  3. Create `community-scans/reports/<your-username>/<framework>/` with your results
+  4. Add a README.md summarizing:
+     - What you found
+     - Whether SafeAI detected the framework
+     - Any issues or suggestions
+  5. Submit a PR with your results AND a suggestion to add the framework to targets.yml
+
+### 42. Create a scan automation script
+- **Difficulty:** Medium | **Effort:** 2 hours
+- **Suggested files:** `scripts/scan_framework.py`
+- **Description:** Create a script that automates scanning multiple frameworks and generates a comparison report. This would make it easier for contributors to scan many frameworks.
+- **Acceptance criteria:**
+  1. Create `scripts/scan_framework.py` that:
+     - Takes a list of framework names or URLs
+     - Clones each framework
+     - Runs SafeAI scan
+     - Collects results
+     - Generates a comparison report
+  2. Add usage instructions to `community-scans/SCAN_AND_SHARE.md`
+  3. Test with at least 3 frameworks
+  4. Submit a PR
+
+### 43. Add framework-specific scan tips
+- **Difficulty:** Easy | **Effort:** 1 hour
+- **Suggested files:** `community-scans/FRAMEWORK_TIPS.md`
+- **Description:** Document framework-specific tips for scanning. Some frameworks require special handling (e.g., monorepos, large codebases, unusual directory structures).
+- **Acceptance criteria:**
+  1. Scan at least 3 frameworks and document any issues or special handling required
+  2. Create `community-scans/FRAMEWORK_TIPS.md` with:
+     - Framework-specific scan commands
+     - Known issues and workarounds
+     - Expected scan times
+     - Tips for interpreting results
+  3. Submit a PR
+
 ---
 
 ## Release Pipeline
 
-### 35. Add support-matrix consistency check to release checklist
+### 44. Add support-matrix consistency check to release checklist
 - **Difficulty:** Easy | **Effort:** 1–2 hours
 - **Suggested files:** `.github/workflows/release.yml` (checklist job), `scripts/check_release.py`
 - **Description:** Add a step to the release checklist that verifies `SUPPORT_MATRIX.md` is consistent with the actual codebase: adapter count matches `discover_parsers()` output, Python version classifiers match `pyproject.toml`, Action I/O matches `action.yml`. Fail the pipeline if any mismatch is found.
@@ -266,7 +379,7 @@ These issues have been implemented by community contributors and are now part of
   3. Mismatches cause the pipeline to fail with a clear error message
   4. Add the same check to `scripts/check_release.py`
 
-### 36. Add fixture coverage completeness check to release checklist
+### 45. Add fixture coverage completeness check to release checklist
 - **Difficulty:** Easy | **Effort:** 1–2 hours
 - **Suggested files:** `.github/workflows/release.yml` (checklist job), `tests/test_compatibility.py`
 - **Description:** Add a step to the release checklist that verifies every adapter registered via `discover_parsers()` has a corresponding golden fixture directory under `tests/fixtures/`. Fail the pipeline if any adapter is missing fixtures.
@@ -275,7 +388,7 @@ These issues have been implemented by community contributors and are now part of
   2. Missing fixtures cause the pipeline to fail with a clear error message listing the missing adapters
   3. Add a `test_fixture_coverage_completeness` test in `tests/test_compatibility.py`
 
-### 37. Wire check_release.py into the release pipeline
+### 46. Wire check_release.py into the release pipeline
 - **Difficulty:** Easy | **Effort:** 1 hour
 - **Suggested files:** `.github/workflows/release.yml`, `scripts/check_release.py`
 - **Description:** The standalone `scripts/check_release.py` script duplicates some checks from the inline pipeline steps but is never invoked by the workflow. Add a step to the checklist job that runs `python scripts/check_release.py` to consolidate all pre-release checks in one place.

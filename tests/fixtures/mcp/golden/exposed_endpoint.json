@@ -1,0 +1,20 @@
+{
+  "mcp": {
+    "version": "1.1",
+    "auth": {"type": "oauth2"},
+    "permissions": {"status:read": true},
+    "transports": ["https"],
+    "endpoints": ["http://0.0.0.0:8080/mcp"],
+    "resources": [],
+    "servers": [
+      {"name": "status", "command": "npx @safeai/status-server"}
+    ],
+    "tools": [
+      {
+        "name": "service_status",
+        "description": "Read the public service status.",
+        "parameters": {"service": {"type": "string", "maxLength": 80}}
+      }
+    ]
+  }
+}

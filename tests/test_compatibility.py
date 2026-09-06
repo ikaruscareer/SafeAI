@@ -175,6 +175,33 @@ class TestLlamaIndexGolden:
         assert model["artifacts"]["agents"]
 
 
+class TestMCPToolPatterns:
+    """Representative MCP configurations exercise security findings end to end."""
+
+    FIXTURE = os.path.join(FIXTURES, "mcp", "golden")
+
+    @classmethod
+    def _finding_ids(cls, fixture_name):
+        report = run_scan(cls.FIXTURE)
+        return {
+            finding["rule_id"]
+            for finding in report["findings"]
+            if os.path.basename(finding.get("file", "")) == fixture_name
+        }
+
+    def test_clean_server_has_no_security_findings(self):
+        assert self._finding_ids("clean_server.json") == set()
+
+    def test_poisoned_tool_detected(self):
+        assert "MCP_TOOL_DESCRIPTION_INJECTION" in self._finding_ids("poisoned_tool.json")
+
+    def test_missing_auth_detected(self):
+        assert "MCP_AUTH_MISSING" in self._finding_ids("missing_auth.json")
+
+    def test_exposed_endpoint_detected(self):
+        assert "MCP_ENDPOINT_EXPOSURE" in self._finding_ids("exposed_endpoint.json")
+
+
 # ── JSON report contract ───────────────────────────────────────────────
 
 

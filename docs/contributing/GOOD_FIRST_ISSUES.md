@@ -2,7 +2,7 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **46 beginner-friendly issues** designed for first-time contributors (20 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **53 beginner-friendly issues** designed for first-time contributors (27 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
@@ -261,7 +261,8 @@ These issues have been implemented by community contributors and are now part of
   2. Run `python -m safeai scan /tmp/langchain --html langchain.html --scorecard langchain-scorecard.md --no-registry`
   3. Create `community-scans/reports/<your-username>/langchain/` with your results
   4. Add a README.md summarizing your findings (use `community-scans/reports/template/README.md` as a template)
-  5. Submit a PR
+  5. Document any false positives in `false-positives.md` (see [Reporting False Positives](#reporting-false-positives))
+  6. Submit a PR
 
 ### 36. Scan AutoGen and share results
 - **Difficulty:** Easy | **Effort:** 30 minutes
@@ -272,7 +273,8 @@ These issues have been implemented by community contributors and are now part of
   2. Run `python -m safeai scan /tmp/autogen --html autogen.html --scorecard autogen-scorecard.md --no-registry`
   3. Create `community-scans/reports/<your-username>/autogen/` with your results
   4. Add a README.md summarizing your findings
-  5. Submit a PR
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
 
 ### 37. Scan Haystack and share results
 - **Difficulty:** Easy | **Effort:** 30 minutes
@@ -283,7 +285,8 @@ These issues have been implemented by community contributors and are now part of
   2. Run `python -m safeai scan /tmp/haystack --html haystack.html --scorecard haystack-scorecard.md --no-registry`
   3. Create `community-scans/reports/<your-username>/haystack/` with your results
   4. Add a README.md summarizing your findings
-  5. Submit a PR
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
 
 ### 38. Scan DSPy and share results
 - **Difficulty:** Easy | **Effort:** 30 minutes
@@ -294,7 +297,8 @@ These issues have been implemented by community contributors and are now part of
   2. Run `python -m safeai scan /tmp/dspy --html dspy.html --scorecard dspy-scorecard.md --no-registry`
   3. Create `community-scans/reports/<your-username>/dspy/` with your results
   4. Add a README.md summarizing your findings
-  5. Submit a PR
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
 
 ### 39. Scan MetaGPT and share results
 - **Difficulty:** Easy | **Effort:** 30 minutes
@@ -305,7 +309,8 @@ These issues have been implemented by community contributors and are now part of
   2. Run `python -m safeai scan /tmp/metagpt --html metagpt.html --scorecard metagpt-scorecard.md --no-registry`
   3. Create `community-scans/reports/<your-username>/metagpt/` with your results
   4. Add a README.md summarizing your findings
-  5. Submit a PR
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
 
 ### 40. Scan 5 frameworks and compare results
 - **Difficulty:** Easy | **Effort:** 2 hours
@@ -321,7 +326,8 @@ These issues have been implemented by community contributors and are now part of
        - Types of findings detected
        - Capabilities detected
        - Any patterns you noticed
-  4. Submit a PR
+  4. Document any false positives in `false-positives.md`
+  5. Submit a PR
 
 ### 41. Test SafeAI against a framework not in the target list
 - **Difficulty:** Easy | **Effort:** 1 hour
@@ -335,7 +341,8 @@ These issues have been implemented by community contributors and are now part of
      - What you found
      - Whether SafeAI detected the framework
      - Any issues or suggestions
-  5. Submit a PR with your results AND a suggestion to add the framework to targets.yml
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR with your results AND a suggestion to add the framework to targets.yml
 
 ### 42. Create a scan automation script
 - **Difficulty:** Medium | **Effort:** 2 hours
@@ -364,6 +371,125 @@ These issues have been implemented by community contributors and are now part of
      - Expected scan times
      - Tips for interpreting results
   3. Submit a PR
+
+---
+
+## Framework Validation
+
+### 47. Scan a LangGraph project and report results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/langgraph/`
+- **Description:** Run SafeAI against a public LangGraph project and report the results. LangGraph is a stateful agent orchestration framework.
+- **Acceptance criteria:**
+  1. Clone `langchain-ai/langgraph`
+  2. Run `python -m safeai scan /tmp/langgraph --html langgraph.html --scorecard langgraph-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/langgraph/` with your results
+  4. Add a README.md summarizing your findings
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
+
+### 48. Scan a CrewAI project and report results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/crewai/`
+- **Description:** Run SafeAI against a public CrewAI project and report the results. CrewAI is a popular multi-agent framework.
+- **Acceptance criteria:**
+  1. Clone `crewAIInc/crewAI`
+  2. Run `python -m safeai scan /tmp/crewai --html crewai.html --scorecard crewai-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/crewai/` with your results
+  4. Add a README.md summarizing your findings
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
+
+### 49. Scan an MCP server and report results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/mcp-server/`
+- **Description:** Run SafeAI against a public MCP server and report the results. This tests SafeAI's MCP analysis capabilities.
+- **Acceptance criteria:**
+  1. Find and clone a public MCP server repository
+  2. Run `python -m safeai scan /tmp/mcp-server --html mcp-server.html --scorecard mcp-server-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/mcp-server/` with your results
+  4. Add a README.md summarizing your findings
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
+
+### 50. Scan a Claude Code project and report results
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** `community-scans/reports/<your-username>/claude-code/`
+- **Description:** Run SafeAI against a public Claude Code project and report the results. Claude Code has deep analysis support in SafeAI.
+- **Acceptance criteria:**
+  1. Find and clone a public Claude Code project
+  2. Run `python -m safeai scan /tmp/claude-code --html claude-code.html --scorecard claude-code-scorecard.md --no-registry`
+  3. Create `community-scans/reports/<your-username>/claude-code/` with your results
+  4. Add a README.md summarizing your findings
+  5. Document any false positives in `false-positives.md`
+  6. Submit a PR
+
+### 51. Find one SafeAI false positive
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** N/A (report via GitHub issue)
+- **Description:** Find one SafeAI false positive — a finding that SafeAI reports but is actually correct behavior. This is extremely valuable for improving SafeAI's accuracy.
+- **Acceptance criteria:**
+  1. Choose a project to scan (your own or a public one)
+  2. Run SafeAI scan and review findings
+  3. Identify one finding you believe is a false positive
+  4. Document the false positive with evidence
+  5. Create a GitHub issue with title `False positive: [rule_id] in [file]`
+
+### 52. Find one capability SafeAI misses
+- **Difficulty:** Easy | **Effort:** 30 minutes
+- **Suggested files:** N/A (report via GitHub issue)
+- **Description:** Find one capability that SafeAI fails to detect — a security-relevant feature in a framework that SafeAI doesn't identify. This is extremely valuable for expanding coverage.
+- **Acceptance criteria:**
+  1. Choose a framework to analyze
+  2. Identify a security-relevant capability it has
+  3. Run SafeAI scan to confirm it's not detected
+  4. Document the missed capability with evidence
+  5. Create a GitHub issue with title `Missed capability: [capability] in [framework]`
+
+### 53. Compare SafeAI findings with actual tool permissions
+- **Difficulty:** Easy | **Effort:** 1 hour
+- **Suggested files:** N/A (report via GitHub issue)
+- **Description:** Compare SafeAI's static analysis findings with a project's actual tool permissions and configuration. This validates whether SafeAI's findings align with real-world security posture.
+- **Acceptance criteria:**
+  1. Choose a project that uses tools/agents
+  2. Run SafeAI scan
+  3. Analyze the project's actual tool permissions
+  4. Compare findings with actual permissions
+  5. Document your comparison
+  6. Create a GitHub issue with title `Permission comparison: [project name]`
+
+---
+
+## Reporting False Positives
+
+False positives are findings that SafeAI reports but are actually safe behavior. Reporting false positives is extremely valuable for improving SafeAI's accuracy.
+
+### How to Report
+
+1. Create a `false-positives.md` file in your scan results directory
+2. For each false positive, include:
+   - **Rule ID** (e.g., `CAP_shell_execution`)
+   - **File and line number** (e.g., `app.py:42`)
+   - **What SafeAI reported** (e.g., "Shell execution detected")
+   - **Why you believe it's a false positive** (e.g., "This is a fixed command, not user-controlled")
+   - **Evidence** (e.g., the actual code context)
+3. Reference this in your PR description
+
+### Example
+
+```markdown
+# False Positives
+
+## 1. CAP_shell_execution in app.py:42
+
+**What SafeAI reported:** Shell execution detected
+**Why it's a false positive:** This is a fixed command running `git status`, not user-controlled input
+**Evidence:**
+```python
+import subprocess
+result = subprocess.run(["git", "status"], capture_output=True)  # Fixed command
+```
+```
 
 ---
 

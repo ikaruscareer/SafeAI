@@ -67,7 +67,13 @@ python -m pytest -v
 
 # Run with coverage
 python -m pytest --cov=safeai
+
+# Verify release metadata, rules, changelog, and Action I/O consistency
+python scripts/check_release.py
 ```
+
+The release workflow runs the same checker before building or publishing
+artifacts, so failures block the release at the pre-release checklist gate.
 
 ---
 

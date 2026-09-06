@@ -10,7 +10,7 @@ Usage::
                             [--fail-on <level>] [--fail-on-new]
                             [--fail-on-escalation <level>]
     safeai init [--profile <name>] [--force]
-    safeai registry list|show|history|diff|export|components ...
+    safeai registry list|show|history|diff|export|import|components ...
 
 KYA (Know Your Agent) behavior:
   * Every scan produces normalized findings (stable fingerprints,
@@ -151,6 +151,14 @@ def _build_parser():
     reg_export.add_argument("--project", help="Export a single project ID")
     reg_export.add_argument("--include-history", action="store_true")
     reg_export.add_argument("--include-suppressed", action="store_true")
+
+    reg_import = reg_sub.add_parser("import", help="Import a portable KYA inventory document")
+    _common(reg_import)
+    reg_import.add_argument("file", help="Portable inventory JSON file")
+    reg_import.add_argument("--dry-run", action="store_true",
+                            help="Preview rows that would be imported without writing")
+    reg_import.add_argument("--force", action="store_true",
+                            help="Overwrite existing agent metadata with imported values")
 
     reg_meta = reg_sub.add_parser("metadata", help="View or set agent metadata (owner, environment)")
     _common(reg_meta)
@@ -455,7 +463,7 @@ def main(argv=None):
         if not getattr(args, "registry_command", None):
             parser.error(
                 "registry requires a subcommand: "
-                "list|show|history|components|diff|export|metadata",
+                "list|show|history|components|diff|export|import|metadata",
             )
         from safeai.cmd.registry_cli import run_registry_command
         exit_code = run_registry_command(args)

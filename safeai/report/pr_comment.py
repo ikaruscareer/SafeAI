@@ -293,3 +293,108 @@ def write_pr_comment(report, path, ci_context=None):
     with open(path, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(text)
     return text
+
+
+def post_pr_comment(report, ci_context=None, token=None):
+    """Post or update the PR comment on GitHub.
+
+    Uses the GitHub API to find an existing comment with the MARKER and
+    update it, or create a new comment if none exists. Returns the comment
+    URL on success, None on failure.
+
+    Requires:
+    - ci_context with ``pr_number`` and ``repository``
+    - A GitHub token with ``pull_requests: write`` permission
+    """
+    import json
+    import os
+    import urllib.request
+    import urllib.error
+
+    if ci_context is None:
+        ci_context = {}
+    pr_number = ci_context.get("pr_number")
+    repository = ci_context.get("repository")
+    if not pr_number or not repository:
+        return None
+
+    token = token or os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        return None
+
+    text = render_pr_comment(report, ci_context=ci_context)
+    api_base = f"https://api.github.com/repos/{repository}"
+
+    # Find existing comment with our marker
+    comment_id = _find_existing_comment(api_base, pr_number, token)
+    if comment_id:
+        # Update existing comment
+        return _update_comment(api_base, comment_id, text, token)
+    else:
+        # Create new comment
+        return _create_comment(api_base, pr_number, text, token)
+
+
+def _find_existing_comment(api_base, pr_number, token):
+    """Find an existing SafeAI PR comment by marker."""
+    import json
+    import urllib.request
+    import urllib.error
+
+    url = f"{api_base}/issues/{pr_number}/comments?per_page=100"
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+    })
+    try:
+        with urllib.request.urlopen(req) as resp:
+            comments = json.loads(resp.read())
+            for comment in comments:
+                if MARKER in comment.get("body", ""):
+                    return comment["id"]
+    except (urllib.error.URLError, json.JSONDecodeError):
+        pass
+    return None
+
+
+def _create_comment(api_base, pr_number, text, token):
+    """Create a new PR comment."""
+    import json
+    import urllib.request
+    import urllib.error
+
+    url = f"{api_base}/issues/{pr_number}/comments"
+    data = json.dumps({"body": text}).encode()
+    req = urllib.request.Request(url, data=data, headers={
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+    })
+    try:
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read())
+            return result.get("html_url")
+    except (urllib.error.URLError, json.JSONDecodeError):
+        return None
+
+
+def _update_comment(api_base, comment_id, text, token):
+    """Update an existing PR comment."""
+    import json
+    import urllib.request
+    import urllib.error
+
+    url = f"{api_base}/issues/comments/{comment_id}"
+    data = json.dumps({"body": text}).encode()
+    req = urllib.request.Request(url, data=data, headers={
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+    })
+    req.get_method = lambda: "PATCH"
+    try:
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read())
+            return result.get("html_url")
+    except (urllib.error.URLError, json.JSONDecodeError):
+        return None

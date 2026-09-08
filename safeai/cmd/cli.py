@@ -67,6 +67,9 @@ def _build_parser():
                            "escalations to PATH (never posted anywhere)")
     scan.add_argument("--pr-comment-stdout", action="store_true",
                       help="Print the PR comment Markdown to stdout")
+    scan.add_argument("--pr-comment-post", action="store_true",
+                      help="Post or update the PR comment on GitHub (requires GITHUB_TOKEN "
+                           "and CI context with PR number and repository)")
     scan.add_argument("--fail-on-escalation", choices=["critical", "high", "medium"],
                       help="Fail the scan when a capability escalation at or above "
                            "this severity is detected (requires --baseline)")

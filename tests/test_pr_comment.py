@@ -278,3 +278,24 @@ def test_real_scan_renders_named_tools():
     assert len(text.splitlines()) <= MAX_LINES
     # Never echo configuration source into a PR comment.
     assert "bypassPermissions" not in text
+
+
+# --- post_pr_comment -----------------------------------------------------
+
+
+def test_post_pr_comment_returns_none_without_context():
+    """post_pr_comment returns None when CI context is missing."""
+    from safeai.report.pr_comment import post_pr_comment
+    result = post_pr_comment(typical_report(), ci_context={})
+    assert result is None
+
+
+def test_post_pr_comment_returns_none_without_token(monkeypatch):
+    """post_pr_comment returns None when GITHUB_TOKEN is not set."""
+    from safeai.report.pr_comment import post_pr_comment
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    result = post_pr_comment(typical_report(), ci_context={
+        "pr_number": 42,
+        "repository": "ikaruscareer/SafeAI",
+    })
+    assert result is None

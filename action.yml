@@ -79,6 +79,12 @@ inputs:
     description: 'Minimum score required for a successful workflow.'
     required: false
     default: ''
+  pr-comment-post:
+    description: >-
+      Post or update the PR comment on GitHub (maps to --pr-comment-post).
+      Requires a token with pull_requests: write permission.
+    required: false
+    default: 'false'
 
 outputs:
   sarif-path:

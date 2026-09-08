@@ -120,6 +120,7 @@ def test_action_inputs_map_to_real_cli_flags():
         "scorecard-json",      # --scorecard-json
         "scorecard-summary",   # --scorecard-summary
         "scorecard-fail-under", # --scorecard-fail-under
+        "pr-comment-post",     # --pr-comment-post
     }
     assert inputs == expected
 

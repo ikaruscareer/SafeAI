@@ -350,16 +350,25 @@ class ScanPostProcessor:
             write_html(self.report, self.args.html_path)
 
         # --- Reviewer-facing PR comment (written locally; never posted) ---
-        if self.args.pr_comment_path or self.args.pr_comment_stdout:
+        if self.args.pr_comment_path or self.args.pr_comment_stdout or self.args.pr_comment_post:
             from safeai.kya.ci_context import detect_ci_context
             from safeai.report.pr_comment import render_pr_comment
 
-            comment = render_pr_comment(self.report, ci_context=detect_ci_context())
+            ci_context = detect_ci_context()
+            comment = render_pr_comment(self.report, ci_context=ci_context)
             if self.args.pr_comment_path:
                 with open(self.args.pr_comment_path, "w", encoding="utf-8", newline="\n") as handle:
                     handle.write(comment)
             if self.args.pr_comment_stdout:
                 sys.stdout.write(comment)
+            if self.args.pr_comment_post:
+                from safeai.report.pr_comment import post_pr_comment
+                url = post_pr_comment(self.report, ci_context=ci_context)
+                if url:
+                    sys.stderr.write(f"safeai: PR comment posted: {url}\n")
+                else:
+                    sys.stderr.write("safeai: failed to post PR comment (check GITHUB_TOKEN "
+                                     "and CI context)\n")
 
         # --- SafeAI Security Scorecard ---
         scorecard_requested = any([

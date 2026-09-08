@@ -205,7 +205,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ## v2.2 — Visibility & Intelligence *(planned)*
 
-*Goal: show progress over time, visualise agent architecture, assist triage with AI, and detect multi-tool exfiltration chains.*
+*Goal: show progress over time, visualise agent architecture, assist triage with AI, detect multi-tool exfiltration chains, and produce machine-readable AI asset inventories.*
 
 **Status: ⏳ planned. Target: Q1 2027.**
 
@@ -215,12 +215,22 @@ These are the items that go deeper on your existing capabilities, but are not ye
 ### Architecture visualisation
 - ⏳ **Architecture maps in HTML reports** — visual component diagrams showing agent → tool → MCP server → workflow relationships. Rendered as SVG or embedded Mermaid in the HTML report. Extends `analysis/component_graph.py` with a view layer.
 
+### AI-BOM (AI Bill of Materials)
+- ⏳ **AI-BOM generator** — produce a machine-readable AI-BOM (JSON, CycloneDX-compatible) listing discovered models, agents, MCP servers, datasets, vector stores, and their relationships. Map each asset to repositories, owners, and governance signals already detected by SafeAI. Output as a CI artifact (`--ai-bom ai-bom.json`) and optionally as a GitHub release asset.
+  - **Asset types:** models (name, provider, parameter count), agents (framework, capabilities), MCP servers (tools, resources), datasets (references), vector stores (indexes), workflows (graphs)
+  - **Relationships:** agent → model, agent → tool, agent → MCP server, tool → capability, finding → asset
+  - **Metadata:** repository, file path, owner (from KYA metadata), governance status, risk score per asset
+  - **Standards alignment:** CycloneDX 1.6+ JSON schema (BOM-Link for relationships), SPDX 3.0 where applicable
+  - **CI integration:** `safeai scan . --ai-bom bom.json` produces the BOM alongside existing reports
+  - **Release integration:** optional `ai-bom.json` attached to GitHub releases for supply-chain transparency
+  - Extends existing `export_inventory()` in `safeai/kya/exporter.py` with a CycloneDX-compatible view layer
+
 ### Advanced analysis
 - ⏳ **Toxic flow analysis pilot** — multi-tool exfiltration chain detection. Trace data flow across tool boundaries: user input → prompt → tool call → external API → file write → network request. Detect chains where untrusted input reaches an exfiltration sink (HTTP POST, file upload, database write) without passing through a sanitisation step. Extends `DataFlowAnalyzer` with cross-tool taint tracking. New `TOXIC_FLOW_*` rule family.
 - ⏳ **Exploitability validation pilot** — AI-assisted triage for `GOV_*` findings. Given a governance gap (e.g., `GOV_TIMEOUT_MISSING`), generate a plain-English exploitability explanation and suggested remediation. Uses a local template engine (no external API calls), extending the existing remediation text in `safeai/kya/enrich.py`.
 
 ### Exit criterion
-> A team lead can view a trend chart showing governance score improvement over 30 days, see an architecture diagram of their agent in the HTML report, detect multi-tool exfiltration chains, and get AI-assisted remediation guidance for each governance finding.
+> A team lead can view a trend chart showing governance score improvement over 30 days, see an architecture diagram of their agent in the HTML report, export a CycloneDX-compatible AI-BOM for compliance, detect multi-tool exfiltration chains, and get AI-assisted remediation guidance for each governance finding.
 
 ---
 
@@ -302,6 +312,7 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 - PR risk ownership and security-review assignment routing.
 - SSO, RBAC, audit logs.
 - Registry coverage reporting: unscanned / stale / drifted repositories and agents.
+- **Org-wide AI-BOM aggregation** — centralised AI-BOM across all scanned repositories. Aggregate models, agents, MCP servers, datasets, and vector stores into a single compliance-ready inventory. Dashboard shows asset counts, ownership coverage, governance status per asset type. Export as CycloneDX 1.6 JSON for regulatory submissions.
 
 ## EE2 — Policy Governance and Evidence Integrity
 - Private rule and policy registries, org-wide distribution and version pinning.

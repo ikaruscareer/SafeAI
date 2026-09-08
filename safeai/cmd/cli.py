@@ -9,6 +9,7 @@ Usage::
                             [--pr-comment <path>] [--pr-comment-stdout]
                             [--fail-on <level>] [--fail-on-new]
                             [--fail-on-escalation <level>]
+                            [--fail-on-rule <pattern>] [--fail-on-category <name>]
     safeai init [--profile <name>] [--force]
     safeai registry list|show|history|diff|export|import|components ...
 
@@ -94,6 +95,16 @@ def _build_parser():
                       help="Fail the scan when the overall score is below SCORE "
                            "(0-10). This is an additional score-based gate and does "
                            "not change --fail-on/--fail-on-new/--fail-on-escalation.")
+    scan.add_argument("--fail-on-rule", dest="fail_on_rule", nargs="+", metavar="PATTERN",
+                      help="Fail when any finding matches a rule ID pattern "
+                           "(glob-style: GOV_*, MCP_*, ESC_*, etc.). Multiple "
+                           "patterns are OR'd. Example: --fail-on-rule GOV_* MCP_*")
+    scan.add_argument("--fail-on-category", dest="fail_on_category", nargs="+", metavar="NAME",
+                      choices=["security", "governance", "capability", "dataflow",
+                               "prompt", "data_leakage", "mcp", "dependency"],
+                      help="Fail when any finding belongs to this category. "
+                           "Multiple categories are OR'd. "
+                           "Example: --fail-on-category security governance")
     scan.add_argument("--mcp-ide-scopes", action="store_true",
                       help="Discover MCP configs in IDE scopes (.cursor/, .windsurf/, "
                            ".vscode/) in addition to the scanned repo")

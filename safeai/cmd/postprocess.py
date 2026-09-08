@@ -406,6 +406,7 @@ class ScanPostProcessor:
         print_summary(self.report)
 
     def _compute_exit_code(self):
+        import fnmatch
         from safeai.severity import SEVERITIES
 
         LEVELS = list(SEVERITIES)
@@ -455,5 +456,46 @@ class ScanPostProcessor:
             score = self.scorecard["safeai_security_scorecard"]["summary"]["score"]
             if score < scorecard_fail_under:
                 fail = True
+
+        # --fail-on-rule: fail when any finding matches a rule ID pattern.
+        # Patterns are glob-style (fnmatch): GOV_*, MCP_*, ESC_COMBO_*, etc.
+        # Multiple patterns are OR'd (any match triggers failure).
+        fail_on_rule = getattr(self.args, "fail_on_rule", None) or []
+        if fail_on_rule:
+            for finding in candidates:
+                rule_id = finding.get("rule_id", "")
+                for pattern in fail_on_rule:
+                    if fnmatch.fnmatch(rule_id, pattern):
+                        fail = True
+                        break
+                if fail:
+                    break
+
+        # --fail-on-category: fail when any finding belongs to a category.
+        # Categories are mapped from rule_id prefixes. Multiple categories
+        # are OR'd (any match triggers failure).
+        fail_on_category = getattr(self.args, "fail_on_category", None) or []
+        if fail_on_category:
+            _CATEGORY_MAP = {
+                "security": {"DATA_LEAKAGE", "DATAFLOW", "PROMPT", "PROMPT_FILE"},
+                "governance": {"GOV_"},
+                "capability": {"CAP_", "ESC_"},
+                "dataflow": {"DATAFLOW", "TOXIC_FLOW"},
+                "prompt": {"PROMPT", "PROMPT_FILE"},
+                "mcp": {"MCP_"},
+                "dependency": {"DEP_"},
+            }
+            for finding in candidates:
+                rule_id = finding.get("rule_id", "")
+                for cat in fail_on_category:
+                    prefixes = _CATEGORY_MAP.get(cat, set())
+                    for prefix in prefixes:
+                        if rule_id.startswith(prefix):
+                            fail = True
+                            break
+                    if fail:
+                        break
+                if fail:
+                    break
 
         return 1 if fail else 0

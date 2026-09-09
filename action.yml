@@ -137,5 +137,6 @@ runs:
         INPUT_SCORECARD_JSON: ${{ inputs.scorecard-json }}
         INPUT_SCORECARD_SUMMARY: ${{ inputs.scorecard-summary }}
         INPUT_SCORECARD_FAIL_UNDER: ${{ inputs.scorecard-fail-under }}
+        INPUT_PR_COMMENT_POST: ${{ inputs.pr-comment-post }}
       run: |-
           "$SAFEAI_PY" "${{ github.action_path }}/scripts/safeai-action.py"

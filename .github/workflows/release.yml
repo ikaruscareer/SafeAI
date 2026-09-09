@@ -199,7 +199,7 @@ jobs:
               action = yaml.safe_load(f)
           inputs = set(action['inputs'].keys())
           outputs = set(action['outputs'].keys())
-          expected_inputs = {'path','version','fail-on','sarif','rules','baseline','fail-on-new','fail-on-escalation','no-registry','extra-args','scorecard','scorecard-json','scorecard-summary','scorecard-fail-under'}
+          expected_inputs = {'path','version','fail-on','sarif','rules','baseline','fail-on-new','fail-on-escalation','no-registry','extra-args','scorecard','scorecard-json','scorecard-summary','scorecard-fail-under','pr-comment-post'}
           expected_outputs = {'sarif-path','scorecard-path','safeai-version'}
           missing_i = expected_inputs - inputs
           missing_o = expected_outputs - outputs

@@ -1,0 +1,6 @@
+name: azure_support_triage
+model: gpt-4-deployment
+deployment: azure-openai-gpt4
+tools:
+  - lookup_ticket
+  - classify_request

@@ -350,16 +350,25 @@ class ScanPostProcessor:
             write_html(self.report, self.args.html_path)
 
         # --- Reviewer-facing PR comment (written locally; never posted) ---
-        if self.args.pr_comment_path or self.args.pr_comment_stdout:
+        if self.args.pr_comment_path or self.args.pr_comment_stdout or self.args.pr_comment_post:
             from safeai.kya.ci_context import detect_ci_context
             from safeai.report.pr_comment import render_pr_comment
 
-            comment = render_pr_comment(self.report, ci_context=detect_ci_context())
+            ci_context = detect_ci_context()
+            comment = render_pr_comment(self.report, ci_context=ci_context)
             if self.args.pr_comment_path:
                 with open(self.args.pr_comment_path, "w", encoding="utf-8", newline="\n") as handle:
                     handle.write(comment)
             if self.args.pr_comment_stdout:
                 sys.stdout.write(comment)
+            if self.args.pr_comment_post:
+                from safeai.report.pr_comment import post_pr_comment
+                url = post_pr_comment(self.report, ci_context=ci_context)
+                if url:
+                    sys.stderr.write(f"safeai: PR comment posted: {url}\n")
+                else:
+                    sys.stderr.write("safeai: failed to post PR comment (check GITHUB_TOKEN "
+                                     "and CI context)\n")
 
         # --- SafeAI Security Scorecard ---
         scorecard_requested = any([
@@ -406,6 +415,8 @@ class ScanPostProcessor:
         print_summary(self.report)
 
     def _compute_exit_code(self):
+        import fnmatch
+
         from safeai.severity import SEVERITIES
 
         LEVELS = list(SEVERITIES)
@@ -455,5 +466,46 @@ class ScanPostProcessor:
             score = self.scorecard["safeai_security_scorecard"]["summary"]["score"]
             if score < scorecard_fail_under:
                 fail = True
+
+        # --fail-on-rule: fail when any finding matches a rule ID pattern.
+        # Patterns are glob-style (fnmatch): GOV_*, MCP_*, ESC_COMBO_*, etc.
+        # Multiple patterns are OR'd (any match triggers failure).
+        fail_on_rule = getattr(self.args, "fail_on_rule", None) or []
+        if fail_on_rule:
+            for finding in candidates:
+                rule_id = finding.get("rule_id", "")
+                for pattern in fail_on_rule:
+                    if fnmatch.fnmatch(rule_id, pattern):
+                        fail = True
+                        break
+                if fail:
+                    break
+
+        # --fail-on-category: fail when any finding belongs to a category.
+        # Categories are mapped from rule_id prefixes. Multiple categories
+        # are OR'd (any match triggers failure).
+        fail_on_category = getattr(self.args, "fail_on_category", None) or []
+        if fail_on_category:
+            _CATEGORY_MAP = {
+                "security": {"DATA_LEAKAGE", "DATAFLOW", "PROMPT", "PROMPT_FILE"},
+                "governance": {"GOV_"},
+                "capability": {"CAP_", "ESC_"},
+                "dataflow": {"DATAFLOW", "TOXIC_FLOW"},
+                "prompt": {"PROMPT", "PROMPT_FILE"},
+                "mcp": {"MCP_"},
+                "dependency": {"DEP_"},
+            }
+            for finding in candidates:
+                rule_id = finding.get("rule_id", "")
+                for cat in fail_on_category:
+                    prefixes = _CATEGORY_MAP.get(cat, set())
+                    for prefix in prefixes:
+                        if rule_id.startswith(prefix):
+                            fail = True
+                            break
+                    if fail:
+                        break
+                if fail:
+                    break
 
         return 1 if fail else 0

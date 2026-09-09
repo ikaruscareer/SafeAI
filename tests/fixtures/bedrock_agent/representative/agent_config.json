@@ -1,0 +1,6 @@
+{
+  "name": "bedrock_support_triage",
+  "actions": ["lookup_ticket", "classify_request", "escalate_ticket"],
+  "model": "anthropic.claude-v2",
+  "description": "Triage incoming support requests using bedrock agent"
+}

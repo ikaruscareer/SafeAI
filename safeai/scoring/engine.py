@@ -10,13 +10,13 @@ same score.
 from safeai.severity import SEVERITY_POINTS
 
 CATEGORY_WEIGHTS = {
-    "Capability": 1.0,
-    "Governance": 1.0,
-    "Safety": 1.0,
-    "Identity": 1.0,
-    "Integration": 1.0,
-    "Autonomy": 1.0,
-    "Enterprise Readiness": 1.0,
+    "Capability": 1.2,      # Core agent capabilities - high impact on trust
+    "Governance": 1.0,      # Operational controls - moderate impact
+    "Safety": 1.3,          # Safety-critical findings - highest impact
+    "Identity": 1.1,        # Identity/auth issues - significant impact
+    "Integration": 1.0,     # External integrations - moderate impact
+    "Autonomy": 1.2,        # Autonomous decision-making - high impact
+    "Enterprise Readiness": 0.8,  # Enterprise features - lower impact
 }
 
 

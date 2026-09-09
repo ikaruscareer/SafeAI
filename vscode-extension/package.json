@@ -1,0 +1,79 @@
+{
+  "name": "safeai-static-analyzer",
+  "displayName": "SafeAI Static Analyzer",
+  "description": "Scan AI-agent code for capabilities, risks, and policy violations",
+  "version": "0.0.1",
+  "publisher": "ikaruscareer",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Security",
+    "Linters"
+  ],
+  "keywords": [
+    "ai",
+    "security",
+    "static-analysis",
+    "llm",
+    "agents",
+    "mcp",
+    "sarif"
+  ],
+  "activationEvents": [
+    "onCommand:safeai.scan",
+    "onLanguage:python"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "safeai.scan",
+        "title": "SafeAI: Scan Workspace"
+      },
+      {
+        "command": "safeai.scanFile",
+        "title": "SafeAI: Scan Active File"
+      }
+    ],
+    "configuration": {
+      "title": "SafeAI Static Analyzer",
+      "properties": {
+        "safeai.executablePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the safeai executable. Leave empty to use the Python module."
+        },
+        "safeai.failOn": {
+          "type": "string",
+          "default": "critical",
+          "enum": [
+            "critical",
+            "high",
+            "medium"
+          ],
+          "description": "Minimum severity that triggers a problem marker."
+        },
+        "safeai.noRegistry": {
+          "type": "boolean",
+          "default": true,
+          "description": "Do not create or update the local KYA registry."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.5.0"
+  }
+}

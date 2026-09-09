@@ -250,7 +250,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install build tools
-        run: pip install --require-hashes -r requirements-build.txt
+        run: |
+          pip install --require-hashes -r requirements-build.txt
+          pip install twine
 
       - name: Build package
         run: python -m build

@@ -367,7 +367,7 @@ jobs:
           path: attestations/
 
       - name: Attest build provenance (Sigstore)
-        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184ef3e0a7dc8 # v2.2.3
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             dist/*.whl

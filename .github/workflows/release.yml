@@ -377,7 +377,7 @@ jobs:
         run: |
           mkdir -p signed
           cp dist/*.whl dist/*.tar.gz signed/
-          cp dist/SHA256SUMS signed/
+          cp attestations/SHA256SUMS signed/
           cp attestations/provenance.json signed/
           for f in attestations/release-artifacts/*.spdx.json; do
             [ -f "$f" ] || continue

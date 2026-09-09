@@ -306,10 +306,7 @@ def post_pr_comment(report, ci_context=None, token=None):
     - ci_context with ``pr_number`` and ``repository``
     - A GitHub token with ``pull_requests: write`` permission
     """
-    import json
     import os
-    import urllib.request
-    import urllib.error
 
     if ci_context is None:
         ci_context = {}
@@ -338,8 +335,8 @@ def post_pr_comment(report, ci_context=None, token=None):
 def _find_existing_comment(api_base, pr_number, token):
     """Find an existing SafeAI PR comment by marker."""
     import json
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     url = f"{api_base}/issues/{pr_number}/comments?per_page=100"
     req = urllib.request.Request(url, headers={
@@ -360,8 +357,8 @@ def _find_existing_comment(api_base, pr_number, token):
 def _create_comment(api_base, pr_number, text, token):
     """Create a new PR comment."""
     import json
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     url = f"{api_base}/issues/{pr_number}/comments"
     data = json.dumps({"body": text}).encode()
@@ -381,8 +378,8 @@ def _create_comment(api_base, pr_number, text, token):
 def _update_comment(api_base, comment_id, text, token):
     """Update an existing PR comment."""
     import json
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     url = f"{api_base}/issues/comments/{comment_id}"
     data = json.dumps({"body": text}).encode()

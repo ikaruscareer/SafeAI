@@ -53,7 +53,7 @@ def main():
     # Report
     binary = dist_dir / ("safeai.exe" if sys.platform == "win32" else "safeai")
     size_mb = binary.stat().st_size / (1024 * 1024)
-    print(f"\nBuild complete:")
+    print("\nBuild complete:")
     print(f"  Binary: {binary}")
     print(f"  Size: {size_mb:.1f} MB")
     print(f"  Zip: {zip_path}")

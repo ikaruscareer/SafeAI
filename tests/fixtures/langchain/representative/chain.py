@@ -1,7 +1,7 @@
-from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, initialize_agent
-from langchain.tools import Tool
+from langchain.agents import initialize_agent
 from langchain.memory import ConversationBufferMemory
+from langchain.tools import Tool
+from langchain_openai import ChatOpenAI
 
 memory = ConversationBufferMemory()
 model = ChatOpenAI(model="synthetic-model")

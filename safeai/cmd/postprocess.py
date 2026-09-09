@@ -416,6 +416,7 @@ class ScanPostProcessor:
 
     def _compute_exit_code(self):
         import fnmatch
+
         from safeai.severity import SEVERITIES
 
         LEVELS = list(SEVERITIES)

@@ -377,8 +377,8 @@ jobs:
         run: |
           mkdir -p signed
           cp dist/*.whl dist/*.tar.gz signed/
-          cp attestations/SHA256SUMS signed/
-          cp attestations/provenance.json signed/
+          cp attestations/dist/SHA256SUMS signed/
+          cp attestations/dist/provenance.json signed/
           for f in attestations/release-artifacts/*.spdx.json; do
             [ -f "$f" ] || continue
             cp "$f" signed/
@@ -464,5 +464,5 @@ jobs:
             gh release upload "$TAG" "$f" --clobber 2>/dev/null || true
           done
           # Upload provenance
-          gh release upload "$TAG" attestations/provenance.json --clobber 2>/dev/null || true
+          gh release upload "$TAG" attestations/dist/provenance.json --clobber 2>/dev/null || true
           echo "All artifacts uploaded to release $TAG"

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-09-09
+
+**PyPI release fix.** Version 2.1.0 was already published; bumped to 2.1.1.
+
+### Fixed
+- Release pipeline: PyPI publish step now uses trusted publishing (OIDC).
+- Release pipeline: artifact paths corrected for downloaded attestations.
+- Release pipeline: GitHub release created before artifact upload.
+
 ## [2.1.0] - 2026-09-09
 
 **CI/CD Hardening & Developer Experience.** Makes SafeAI a true CI gate with

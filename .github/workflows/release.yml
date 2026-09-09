@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --require-hashes -r requirements.txt
-          pip install --no-deps -e .
+          pip install --no-deps -e ".[dev]"
 
       - name: "Check: canonical release checklist"
         run: python scripts/check_release.py

@@ -1,0 +1,9 @@
+name: support_triage_dify
+app:
+  type: workflow
+model: gpt-4
+tools:
+  - name: lookup_ticket
+  - name: classify_request
+agents:
+  - name: triage_agent

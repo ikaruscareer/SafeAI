@@ -33,7 +33,7 @@
 | LangGraph | `langgraph` | LangGraph framework | Python imports |
 | LlamaIndex | `llamaindex` | LlamaIndex framework | Python imports |
 | Mastra | `mastra` | Mastra framework | Python imports |
-| Microsoft Agent | `microsoft_agent` | Microsoft Agent Framework | Python imports |
+| Microsoft Agent | `microsoft_agent_framework` | Microsoft Agent Framework | Python imports |
 | n8n | `n8n` | n8n workflow | JSON workflow files |
 | OpenAI Agents | `openai_agents` | OpenAI Agents SDK | Python imports |
 | Semantic Kernel | `semantic_kernel` | Semantic Kernel | Python imports |
@@ -87,6 +87,7 @@
 | `scorecard-json` | No | `safeai-scorecard.json` | JSON scorecard path |
 | `scorecard-summary` | No | `true` | Write scorecard to job summary |
 | `scorecard-fail-under` | No | `''` | Minimum score threshold |
+| `pr-comment-post` | No | `false` | Post PR comment on GitHub |
 
 ### Outputs
 

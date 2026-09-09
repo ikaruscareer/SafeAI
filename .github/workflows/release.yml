@@ -93,6 +93,82 @@ jobs:
       - name: "Check: compatibility tests pass"
         run: python -m pytest tests/test_compatibility.py -q --tb=short
 
+      - name: "Check: fixture coverage completeness"
+        run: |
+          python -c "
+          import os
+          FIXTURES = 'tests/fixtures'
+          from safeai.frameworks import discover_parsers
+          parsers = discover_parsers()
+          frameworks = set()
+          for parser in parsers:
+              for test_file, test_content in [('test.py', ''), ('test.json', '{}'), ('test.yaml', '')]:
+                  result = parser.parse(test_file, test_content)
+                  if isinstance(result, dict) and 'framework' in result:
+                      frameworks.add(result['framework'])
+                      break
+          # Map framework names to fixture directory names
+          FRAMEWORK_TO_FIXTURE = {'microsoft_agent_framework': 'microsoft_agent'}
+          with_fixtures = set()
+          for entry in os.scandir(FIXTURES):
+              if entry.is_dir() and entry.name not in ('mcp', 'action', 'regression', 'claude_code'):
+                  rep = os.path.join(entry.path, 'representative')
+                  if os.path.isdir(rep):
+                      fw_name = FRAMEWORK_TO_FIXTURE.get(entry.name, entry.name)
+                      with_fixtures.add(fw_name)
+          if os.path.isdir(os.path.join(FIXTURES, 'claude_code', 'compatibility')):
+              with_fixtures.add('claude_code')
+          missing = frameworks - with_fixtures
+          if missing:
+              print(f'Frameworks missing golden fixtures: {sorted(missing)}')
+              exit(1)
+          print(f'All {len(frameworks)} frameworks have golden fixtures')
+          "
+
+      - name: "Check: support-matrix consistency"
+        run: |
+          python -c "
+          import re, yaml
+          # Read SUPPORT_MATRIX.md
+          with open('docs/reference/SUPPORT_MATRIX.md') as f:
+              content = f.read()
+          # Extract adapter names from the Framework Adapters table
+          adapter_pattern = r'\| \x60([a-z_]+)\x60 \|'
+          matrix_adapters = set(re.findall(adapter_pattern, content))
+          # Extract adapter names from registered parsers
+          from safeai.frameworks import discover_parsers
+          parsers = discover_parsers()
+          code_adapters = set()
+          for parser in parsers:
+              result = parser.parse('test.py', '')
+              if isinstance(result, dict) and 'framework' in result:
+                  code_adapters.add(result['framework'])
+              elif hasattr(parser, 'name'):
+                  code_adapters.add(parser.name)
+          # Compare
+          missing_in_matrix = code_adapters - matrix_adapters
+          missing_in_code = matrix_adapters - code_adapters
+          if missing_in_matrix:
+              print(f'Adapters in code but not in SUPPORT_MATRIX.md: {sorted(missing_in_matrix)}')
+              exit(1)
+          if missing_in_code:
+              print(f'Adapters in SUPPORT_MATRIX.md but not in code: {sorted(missing_in_code)}')
+              exit(1)
+          print(f'SUPPORT_MATRIX.md is consistent with {len(code_adapters)} adapters')
+          # Check Action inputs
+          with open('action.yml') as f:
+              action = yaml.safe_load(f)
+          action_inputs = set(action['inputs'].keys())
+          # Extract input names from SUPPORT_MATRIX.md
+          input_pattern = r'\| \x60([a-z-]+)\x60 \|'
+          matrix_inputs = set(re.findall(input_pattern, content))
+          missing_inputs = action_inputs - matrix_inputs
+          if missing_inputs:
+              print(f'Action inputs in code but not in SUPPORT_MATRIX.md: {sorted(missing_inputs)}')
+              exit(1)
+          print(f'SUPPORT_MATRIX.md Action inputs are consistent')
+          "
+
       - name: "Check: SARIF output is valid"
         run: |
           python -c "

@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-09
+
+**CI/CD Hardening & Developer Experience.** Makes SafeAI a true CI gate with
+rich developer feedback, brings governance into the IDE, and makes installation
+trivial with standalone binaries.
+
+### Added — Quality Gates
+- **`--fail-on-rule`** — fail when any finding matches a rule ID pattern
+  (glob-style: `GOV_*`, `MCP_*`, `ESC_*`, etc.).
+- **`--fail-on-category`** — fail when any finding belongs to a category
+  (security, governance, capability, dataflow, prompt, mcp, dependency).
+
+### Added — PR Decoration Auto-Posting
+- **`--pr-comment-post`** — post or update the PR comment on GitHub via the
+  GitHub API. Uses marker to find and update existing comments.
+- GitHub Action input `pr-comment-post` added.
+
+### Added — Extended MCP Tool-Poisoning Detection
+- **`MCP_TOOL_SCHEMA_INJECTION`** — detects hidden instructions in input_schema
+  property descriptions, titles, and default values.
+- **`MCP_RESOURCE_DESCRIPTION_INJECTION`** — detects hidden instructions in MCP
+  resource descriptions.
+
+### Added — Standalone Binaries
+- PyInstaller spec file and build script for creating standalone binaries.
+- No Python installation required for end users.
+
+### Added — VS Code Extension MVP
+- Workspace scan and file scan commands.
+- Inline diagnostics (problem markers) for findings.
+
+### Added — Test Coverage
+- Golden fixtures for 7 new adapters: azure_foundry, bedrock_agent, dify,
+  haystack, langchain, mastra, microsoft_agent.
+- `TestFixtureCoverageCompleteness` test prevents silent coverage regression.
+
+### Fixed
+- **Issue #93** — Claude Code permission precedence correctly implements
+  `deny > ask > allow`.
+- **Issue #120** — SUPPORT_MATRIX.md now consistent with code.
+- **Issue #121** — Fixture coverage completeness check added to release CI.
+- **Issue #15** — Trust score category weights differentiated.
+
+### Changed
+- Version bumped to 2.1.0.
+- 780 tests passing (up from 751 in v2.0.1).
+
 ## [2.0.1] - 2026-09-03
 
 **Release hardening.** Consolidated release pipeline with mandatory

@@ -373,10 +373,22 @@ jobs:
             dist/*.whl
             dist/*.tar.gz
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
+
+      - name: Sign artifacts with Cosign (keyless)
+        run: |
+          for f in dist/*.whl dist/*.tar.gz; do
+            cosign sign-blob --yes --output-signature "${f}.sig" --output-certificate "${f}.pem" "$f"
+          done
+          echo "Cosign signatures:"
+          ls -la dist/*.sig dist/*.pem
+
       - name: Prepare release assets
         run: |
           mkdir -p signed
           cp dist/*.whl dist/*.tar.gz signed/
+          cp dist/*.sig dist/*.pem signed/
           cp attestations/dist/SHA256SUMS signed/
           cp attestations/dist/provenance.json signed/
           for f in attestations/release-artifacts/*.spdx.json; do

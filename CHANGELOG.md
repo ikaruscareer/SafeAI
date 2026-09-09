@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-09-09
+
+**Cosign signing for OpenSSF Scorecard.** Adds keyless Cosign signatures to
+release artifacts to satisfy the Signed-Releases check.
+
+### Added
+- Cosign keyless signing of wheel and tarball artifacts in release workflow.
+
 ## [2.1.1] - 2026-09-09
 
 **PyPI release fix.** Version 2.1.0 was already published; bumped to 2.1.1.

@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-09
+
+**CI/CD Hardening & Developer Experience.** Makes SafeAI a true CI gate with
+rich developer feedback, brings governance into the IDE, and makes installation
+trivial with standalone binaries.
+
+### Added — Quality Gates
+- **`--fail-on-rule`** — fail when any finding matches a rule ID pattern
+  (glob-style: `GOV_*`, `MCP_*`, `ESC_*`, etc.).
+- **`--fail-on-category`** — fail when any finding belongs to a category
+  (security, governance, capability, dataflow, prompt, mcp, dependency).
+- Multiple patterns/categories are OR'd (any match triggers failure).
+
+### Added — PR Decoration Auto-Posting
+- **`--pr-comment-post`** — post or update the PR comment on GitHub via the
+  GitHub API. Uses marker to find and update existing comments (no duplicates).
+  Requires `GITHUB_TOKEN` with `pull_requests: write` permission.
+- GitHub Action input `pr-comment-post` added.
+
+### Added — Extended MCP Tool-Poisoning Detection
+- **`MCP_TOOL_SCHEMA_INJECTION`** — detects hidden instructions in input_schema
+  property descriptions, titles, and default values.
+- **`MCP_RESOURCE_DESCRIPTION_INJECTION`** — detects hidden instructions in MCP
+  resource descriptions.
+- Obfuscated injection patterns detected (base64, unicode escapes).
+
+### Added — Standalone Binaries
+- PyInstaller spec file and build script for creating standalone binaries.
+- No Python installation required for end users.
+- Build command: `python scripts/build_standalone.py`
+
+### Added — VS Code Extension MVP
+- Workspace scan and file scan commands.
+- Inline diagnostics (problem markers) for findings.
+- Configuration for executable path, fail-on severity, and registry.
+
+### Added — Test Coverage
+- Golden fixtures for 7 new adapters: azure_foundry, bedrock_agent, dify,
+  haystack, langchain, mastra, microsoft_agent.
+- Golden test classes for 10 adapters total.
+- `TestFixtureCoverageCompleteness` test prevents silent coverage regression.
+- CI step to verify fixture coverage completeness.
+
+### Added — Documentation
+- `FRAMEWORK_TIPS.md` — framework-specific scan tips for all 17 adapters.
+- Support-matrix consistency check in release CI.
+
+### Fixed
+- **Issue #93** — Claude Code permission precedence correctly implements
+  `deny > ask > allow` (fixed in v2.0.1, verified in v2.1.0).
+- **Issue #120** — SUPPORT_MATRIX.md now consistent with code (adapter names,
+  Action inputs).
+- **Issue #121** — Fixture coverage completeness check added to release CI.
+- **Issue #15** — Trust score category weights differentiated (Safety: 1.3,
+  Capability: 1.2, Autonomy: 1.2, Identity: 1.1, Enterprise Readiness: 0.8).
+
+### Changed
+- Version bumped to 2.1.0.
+- 780 tests passing (up from 751 in v2.0.1).
+
 ## [2.0.1] - 2026-09-03
 
 **Release hardening.** Consolidated release pipeline with mandatory

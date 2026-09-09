@@ -62,7 +62,7 @@ jobs:
           import yaml, sys
           with open('safeai/rules/base_rules.yaml') as f:
               rules = yaml.safe_load(f)
-          required = {'id', 'severity', 'message'}
+          required = {'id', 'severity', 'description'}
           bad = [r for r in rules if not required.issubset(r.keys())]
           if bad:
               for r in bad:

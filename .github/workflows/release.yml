@@ -121,9 +121,14 @@ jobs:
           # Read SUPPORT_MATRIX.md
           with open('docs/reference/SUPPORT_MATRIX.md') as f:
               content = f.read()
-          # Extract adapter names from the Framework Adapters table
-          adapter_pattern = r'\| \x60([a-z0-9_]+)\x60 \|'
-          matrix_adapters = set(re.findall(adapter_pattern, content))
+          # Extract adapter names from the Framework Adapters table only
+          # Find the table between "## Framework Adapters" and the next "##"
+          framework_section = re.search(r'## Framework Adapters\n(.*?)(?=\n## |\Z)', content, re.DOTALL)
+          if framework_section:
+              adapter_pattern = r'\| \x60([a-z0-9_]+)\x60 \|'
+              matrix_adapters = set(re.findall(adapter_pattern, framework_section.group(1)))
+          else:
+              matrix_adapters = set()
           # Extract adapter names from registered parsers
           from safeai.frameworks import discover_parsers
           parsers = discover_parsers()

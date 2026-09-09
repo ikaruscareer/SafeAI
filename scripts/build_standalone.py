@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build standalone SafeAI binaries using PyInstaller.
 
 Usage:

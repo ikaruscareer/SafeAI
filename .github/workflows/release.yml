@@ -454,16 +454,18 @@ jobs:
           TAG: ${{ needs.checklist.outputs.version }}
         run: |
           TAG="v${TAG}"
+          # Create release if it doesn't exist
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes
           # Upload signed artifacts
           for f in signed/*; do
             [ -f "$f" ] || continue
-            gh release upload "$TAG" "$f" --clobber 2>/dev/null || true
+            gh release upload "$TAG" "$f" --clobber
           done
           # Upload SBOM
           for f in attestations/release-artifacts/*; do
             [ -f "$f" ] || continue
-            gh release upload "$TAG" "$f" --clobber 2>/dev/null || true
+            gh release upload "$TAG" "$f" --clobber
           done
           # Upload provenance
-          gh release upload "$TAG" attestations/dist/provenance.json --clobber 2>/dev/null || true
+          gh release upload "$TAG" attestations/dist/provenance.json --clobber
           echo "All artifacts uploaded to release $TAG"

@@ -452,6 +452,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.checklist.outputs.version }}
+          GH_REPO: ${{ github.repository }}
         run: |
           TAG="v${TAG}"
           # Create release if it doesn't exist

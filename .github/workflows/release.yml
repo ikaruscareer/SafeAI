@@ -96,8 +96,15 @@ jobs:
               if entry.is_dir() and entry.name not in ('mcp', 'action', 'regression', 'claude_code'):
                   rep = os.path.join(entry.path, 'representative')
                   if os.path.isdir(rep):
-                      fw_name = FRAMEWORK_TO_FIXTURE.get(entry.name, entry.name)
-                      with_fixtures.add(fw_name)
+                      # Check if this directory name maps to a framework name
+                      mapped = False
+                      for fw_name, fw_dir in FRAMEWORK_TO_FIXTURE.items():
+                          if entry.name == fw_dir:
+                              with_fixtures.add(fw_name)
+                              mapped = True
+                              break
+                      if not mapped:
+                          with_fixtures.add(entry.name)
           if os.path.isdir(os.path.join(FIXTURES, 'claude_code', 'compatibility')):
               with_fixtures.add('claude_code')
           missing = frameworks - with_fixtures

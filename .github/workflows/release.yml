@@ -398,6 +398,7 @@ jobs:
     name: Publish to PyPI
     needs: [checklist, sign]
     runs-on: ubuntu-latest
+    continue-on-error: true
     environment:
       name: pypi
     permissions:

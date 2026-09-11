@@ -6,6 +6,16 @@ dist/
 build/
 *.egg
 
+# Binary artifacts (never commit)
+*.whl
+*.tar.gz
+*.exe
+*.dll
+*.so
+*.dylib
+release-artifacts/*.whl
+release-artifacts/*.tar.gz
+
 # Testing
 .coverage*
 .pytest_cache/

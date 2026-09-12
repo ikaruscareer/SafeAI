@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ikaruscareer/SafeAI/schemas/safeai-manifest/v1.0.0.json",
+  "title": "SafeAI KYA Manifest Contract v1.0.0",
+  "description": "Portable, offline, static-analysis KYA evidence document (safeai-manifest.json). Only fields genuinely emitted by safeai/kya/manifest.py build_manifest() are required; everything else is optional. Unknown optional fields MUST be ignored by 1.x readers.",
+  "type": "object",
+  "required": ["schema_version", "manifest_type", "safeai", "project", "agents", "findings", "summary", "assurance_boundary", "limitations"],
+  "properties": {
+    "schema_version": {
+      "description": "Legacy document version string. Contract v1.0.0 accepts 1.0, 1.1, 1.2 (additive).",
+      "type": "string",
+      "enum": ["1.0", "1.1", "1.2"]
+    },
+    "contract": {
+      "description": "Machine-readable contract identity, distinct from package version. Optional on pre-2.2 manifests.",
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "safeai-manifest"},
+        "version": {"type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$"},
+        "compatibility": {
+          "type": "object",
+          "properties": {
+            "minimum_reader_version": {"type": "string"}
+          }
+        }
+      }
+    },
+    "manifest_type": {"const": "safeai.kya"},
+    "generated_at": {"type": ["string", "null"]},
+    "safeai": {
+      "type": "object",
+      "required": ["version"],
+      "properties": {
+        "version": {"type": "string"},
+        "ruleset_version": {"type": ["string", "null"]},
+        "config_hash": {"type": ["string", "null"]},
+        "custom_rules_dir": {"type": ["string", "null"]},
+        "custom_rules_count": {"type": "integer"},
+        "builtin_rules_count": {"type": "integer"},
+        "rule_pack_ids": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "project": {
+      "type": "object",
+      "required": ["project_id"],
+      "properties": {
+        "project_id": {"type": "string", "minLength": 1},
+        "name": {"type": ["string", "null"]},
+        "source_root": {"type": ["string", "null"]},
+        "repository": {"type": "object"}
+      }
+    },
+    "scan": {
+      "type": "object",
+      "properties": {
+        "scan_id": {"type": ["string", "null"]},
+        "started_at": {"type": ["string", "null"]},
+        "completed_at": {"type": ["string", "null"]},
+        "files_scanned": {"type": "integer"},
+        "analysis_coverage": {"type": "object"}
+      }
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agent_id"],
+        "properties": {
+          "agent_id": {"type": "string", "minLength": 1},
+          "name": {"type": ["string", "null"]},
+          "framework": {"type": "string"}
+        }
+      }
+    },
+    "tool_surface": {"type": "array"},
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string"},
+          "name": {"type": ["string", "null"]},
+          "path": {"type": ["string", "null"]},
+          "content_hash": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "dependency_inventory": {"type": "array"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "severity"],
+        "properties": {
+          "finding_id": {"type": ["string", "null"]},
+          "rule_id": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["critical", "high", "medium", "low", "info"]},
+          "title": {"type": ["string", "null"]},
+          "message": {"type": "string"},
+          "remediation": {"type": ["string", "null"]},
+          "confidence": {"type": ["string", "null"]},
+          "provenance": {"type": "object"},
+          "location": {"type": "object"},
+          "fingerprint": {"type": ["string", "null"]},
+          "status": {"type": "string"}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["policy_decision"],
+      "properties": {
+        "risk_score": {"type": ["number", "null"]},
+        "severity_counts": {"type": "object"},
+        "capability_counts": {"type": "object"},
+        "agent_count": {"type": "integer"},
+        "component_count": {"type": "integer"},
+        "dependency_count": {"type": "integer"},
+        "policy_decision": {
+          "type": "object",
+          "required": ["outcome"],
+          "properties": {
+            "outcome": {"enum": ["pass", "warn", "review-required", "block", "accepted-exception"]}
+          }
+        }
+      }
+    },
+    "assurance_boundary": {"type": "object"},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "integrity": {
+      "description": "Offline integrity block (added in contract v1.0.0, Workstream 2). Absent on pre-2.2 manifests.",
+      "type": "object",
+      "required": ["algorithm", "canonicalization", "payload_sha256"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "canonicalization": {"const": "safeai-manifest-v1"},
+        "payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "verified": {"type": "boolean"}
+      }
+    }
+  }
+}

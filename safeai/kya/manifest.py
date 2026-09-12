@@ -20,6 +20,7 @@ from safeai.kya import (
     STATIC_ANALYSIS_DISCLAIMER,
 )
 from safeai.kya.assurance import build_assurance_boundary
+from safeai.kya.contract import contract_block
 from safeai.kya.fingerprints import normalize_path
 from safeai.kya.util import confidence_label, redact_secrets, sha256_text
 from safeai.severity import SEVERITIES
@@ -102,6 +103,7 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
     manifest = {
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "manifest_type": MANIFEST_TYPE,
+        "contract": contract_block(),
         "generated_at": scan_meta.get("completed_at"),
         "safeai": {
             "version": safeai_meta.get("version"),

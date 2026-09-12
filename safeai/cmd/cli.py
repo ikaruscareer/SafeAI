@@ -12,6 +12,7 @@ Usage::
                             [--fail-on-rule <pattern>] [--fail-on-category <name>]
     safeai init [--profile <name>] [--force]
     safeai registry list|show|history|diff|export|import|components ...
+    safeai manifest validate|verify <file>
 
 KYA (Know Your Agent) behavior:
   * Every scan produces normalized findings (stable fingerprints,
@@ -189,6 +190,13 @@ def _build_parser():
     meta_get.add_argument("agent_id")
 
     sub.add_parser("welcome", help="Guided first-run experience for new users")
+
+    manifest = sub.add_parser("manifest", help="Validate or verify a KYA manifest (offline)")
+    manifest_sub = manifest.add_subparsers(dest="manifest_command")
+    man_validate = manifest_sub.add_parser("validate", help="Validate a manifest against Contract v1")
+    man_validate.add_argument("file", help="Path to safeai-manifest.json")
+    man_verify = manifest_sub.add_parser("verify", help="Verify a manifest integrity digest (offline)")
+    man_verify.add_argument("file", help="Path to safeai-manifest.json")
 
     telemetry = sub.add_parser("telemetry", help="Manage opt-in usage telemetry")
     telemetry.add_argument(
@@ -483,6 +491,11 @@ def main(argv=None):
         exit_code = run_registry_command(args)
     elif args.command == "welcome":
         exit_code = _run_welcome()
+    elif args.command == "manifest":
+        if not getattr(args, "manifest_command", None):
+            parser.error("manifest requires a subcommand: validate|verify")
+        from safeai.cmd.manifest_cli import run_manifest_command
+        exit_code = run_manifest_command(args)
     elif args.command == "telemetry":
         exit_code = _run_telemetry(args)
     else:

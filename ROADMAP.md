@@ -2,9 +2,25 @@
 
 SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI agents and workflows.
 
-This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
+This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.0.1 is shipped. Community Edition **CE 1.4 (Reviewable Change)** is complete; **CE 1.5 (True Capability Surface)** env inventory + correlation shipped; **CE 1.6 (AI Component Records)** — component version/hash, impact-query CLI shipped in v1.9.0; unpinned-reference detection and lockfile-style integrity remain planned; **CE 1.8 (Code-Level Authority & Provenance)** is complete (tool↔implementation mapping, command-aware MCP resolution, target taxonomy, finding lifecycle, stale suppression guard, agent metadata, prompt/data-leakage depth, cross-component graph); **v1.9.0** is shipped (component depth, ecosystem foundations, `safeai init`, governance signal detection, data-flow analysis, control mappings); **v2.0.0** is shipped (governance depth: runaway-loop/recursion-guard detection, Windsurf adapter, failure-class coverage matrix, evidence-type schema v1.3); **v2.0.1** is shipped (release hardening: consolidated pipeline, GPG-signed artifacts, cross-platform verification, regression fixtures, scanner metadata); **CE 2.0** (plugin ecosystem, static IaC authority correlation) — `safeai init` and control mappings shipped; plugin SDK, portable registry import, per-scan plugin versions remain planned; **CE-V** (pre-deployment validation packs) are planned; the entire Corporate Edition remains planned.
+> **Current state:** v2.1.2 is shipped (CI/CD hardening, quality gates, PR auto-posting, MCP poisoning depth, standalone binaries, VS Code MVP, Cosign-signed releases, PyPI trusted publishing). **CE 2.2 — Manifest Contract & Proof is in progress** (this release: manifest contract, offline integrity, escalation remediation, benchmark evidence, governance clarity, re-baselined roadmap).
+
+---
+
+## Status at a glance (maintained)
+
+| Theme | Shipped | Remaining | Explicitly not in Community core |
+|---|---|---|---|
+| KYA scanner core & capability discovery | 17 adapters, 79 rules, 13 analyzers, AST+regex evidence | Adapter depth, precision tuning | Live IAM reads, runtime monitoring |
+| Reviewable Change / ChangeGuard | 14 `ESC_*` rules, diffs, PR comments, remediation catalog (CE 2.2) | — | Auto-fix, auto-created PRs |
+| Governance, lifecycle, suppressions | `GOV_*` family, failure matrix, lifecycle, policy profiles, waivers | — | Compliance certification |
+| True Capability Surface | Env inventory, dep correlation, tool↔impl map, target taxonomy, dataflow | — | Proven deployment authority |
+| AI component records | Registry schema v5, impact queries, component diffs/graph | Lockfile-style integrity (CE 2.3) | Central component registry SaaS |
+| Ecosystem / plugin SDK | `@register_parser`, `--rules` loader, `safeai init` | Stable plugin API + pack lifecycle (**CE 2.3**) | Hosted marketplace |
+| Static IaC authority correlation | — | Terraform/CFN/K8s/Helm parsing (**CE 2.4**) | Live cloud/K8s API reads |
+| Pre-deployment validation packs | — | Capability-informed offline test plans (**CE-V**) | Runtime red-team engine, sandboxing |
+| Corporate evidence plane | — | Aggregation, SSO/RBAC, retention, reconciliation (**EE0–EE4**) | Second scanner, observability product |
 
 ---
 
@@ -14,10 +30,10 @@ This document describes the roadmap across **two editions**: the open-source **C
 |---|---|---|
 | **Phase 1** — What can this AI application do? | Capability, tool, MCP, prompt discovery | ✅ Shipped |
 | **Phase 2** — What changed since the last approved version? | Tool-centric escalation diffs, PR review, governed waivers, lifecycle | ✅ Shipped |
-| **Phase 3** — Does declared capability match deployed authority? | Static IaC correlation (CE); live IAM reconciliation (Corporate) | 🔄 CE 2.0 / EE3 |
+| **Phase 3** — Does declared capability match deployed authority? | Static IaC correlation (CE); live IAM reconciliation (Corporate) | 🔄 CE 2.4 / EE3 |
 | **Phase 4** — Does the agent resist manipulation at its risk surfaces? | Capability-informed validation packs, adversarial regression | ⏳ CE-V (planned) |
-| **Phase 5** — Is the CI gate enforcing quality and are developers getting feedback? | Quality gates, PR decoration, IDE integration | ⏳ v2.1 (planned) |
-| **Phase 6** — Can we see progress over time and understand agent architecture? | Trend tracking, architecture maps, AI-assisted triage | ⏳ v2.2 (planned) |
+| **Phase 5** — Is the CI gate enforcing quality and are developers getting feedback? | Quality gates, PR decoration, IDE integration | ✅ Shipped (v2.1) |
+| **Phase 6** — Can evidence be exchanged, verified, and trusted? | Manifest contract, integrity, remediation, benchmarks | 🔄 CE 2.2 (this release) |
 
 ---
 
@@ -181,11 +197,11 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ---
 
-## v2.1 — CI/CD Hardening & Developer Experience *(in development)*
+## v2.1 — CI/CD Hardening & Developer Experience *(shipped: v2.1.0 → v2.1.2)*
 
 *Goal: make SafeAI a true CI gate with rich developer feedback, bring governance into the IDE, and make installation trivial.*
 
-**Status: ⏳ in development. Target: Q4 2026.**
+**Status: ✅ shipped.** All six items delivered; release pipeline hardened across v2.1.1 (PyPI trusted publishing) and v2.1.2 (Cosign keyless signing for the OpenSSF Signed-Releases check).
 
 ### CI/CD hardening
 - ✅ **Quality gates** — configurable threshold profiles (`--fail-on-score-under N`, `--fail-on-severity critical|high`, `--fail-on-rule GOV_*`). GitHub Actions status-check integration with named gate outputs. Exit-code semantics documented and stable. Extends the existing `--fail-on`, `--fail-on-escalation`, `--scorecard-fail-under` mechanisms into a unified gating model. **Shipped in v2.1-dev** (`--fail-on-rule`, `--fail-on-category`).
@@ -200,17 +216,55 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - ⏳ **Documentation and examples** — showcase all v2.1 features with real agent repositories (LangGraph, CrewAI, Claude Code). Add to `examples/` directory with runnable scan scripts.
 
 ### Exit criterion
-> A developer sees SafeAI findings as inline PR comments and VS Code diagnostics, CI blocks merges on configurable quality thresholds, and installation is a single binary download with no Python required.
+> ✅ **Achieved.** A developer sees SafeAI findings as inline PR comments and VS Code diagnostics, CI blocks merges on configurable quality thresholds, and installation is a single binary download with no Python required.
 >
-> **v2.1 status:** 5/6 items shipped. Documentation and examples pending.
+> **v2.1 status:** 6/6 items shipped (v2.1.0), plus release hardening (v2.1.1 PyPI trusted publishing, v2.1.2 Cosign signing).
 
 ---
 
-## v2.2 — Visibility & Intelligence *(planned)*
+## CE 2.2 — Manifest Contract & Proof *(this release)*
 
-*Goal: show progress over time, visualise agent architecture, assist triage with AI, detect multi-tool exfiltration chains, and produce machine-readable AI asset inventories.*
+*Goal: make KYA evidence exchangeable, verifiable, actionable, and honest — the governance, trust, evidence, and developer-confidence release.*
 
-**Status: ⏳ planned. Target: Q1 2027.**
+**Status: 🔄 in progress.**
+
+- ✅ **Manifest Contract v1** — published JSON Schema (`schemas/safeai-manifest/v1.0.0.json`), `contract{}` metadata distinct from package version, `safeai manifest validate` (stdlib-only), compatibility policy and docs (`docs/manifest/`).
+- ✅ **Offline manifest integrity** — canonical SHA-256 digest on every manifest and registry export, `safeai manifest verify`, `registry import --require-integrity` (default off), GPG-envelope docs (hash integrity only, no custom crypto).
+- ✅ **Escalation remediation** — structured remediation for all 14 `ESC_*` rules, rendered in JSON/manifest/HTML/terminal/PR-comment/scorecard within existing caps; SARIF intentionally carries finding-level remediation only (documented).
+- ✅ **Benchmark and regression evidence** — 20-fixture pinned corpus (`benchmarks/catalog.yml`), offline runner (`scripts/run_benchmarks.py`), published results and non-claims (`BENCHMARKS.md`), release-blocking full corpus + PR smoke subset.
+- ✅ **Governance clarity** — `DCO.md` + CI sign-off check, `docs/GOVERNANCE_AND_EDITIONS.md`, MCP scope/export-privacy policy, ADRs 0001–0004.
+- ✅ **Roadmap re-baselining** — this document.
+
+### Exit criterion
+> A downstream consumer can validate a manifest against a published contract, detect post-generation edits offline, act on every escalation with structured guidance, and check the public benchmark before trusting a release — all without accounts, network, or execution.
+
+---
+
+## CE 2.3 — Plugin SDK and Rule Ecosystem *(planned)*
+
+*Goal: grow coverage through contribution without a hosted marketplace.*
+
+- Stable plugin API (adapters, analyzers, rules, policy packs, report enrichers).
+- Adapter/rule/policy-pack lifecycle: versioning, pinning, per-scan recording.
+- Fixture requirements and compatibility policy for community packs.
+- Curated community packages, signed where practical, distributed as versioned artifacts — no hosted marketplace.
+- Lockfile-style component integrity (deferred from CE 1.6).
+
+## CE 2.4 — Static IaC Authority Correlation *(planned)*
+
+*Goal: answer the authority question without leaving the repository (community Phase 3, offline half).*
+
+- Parse in-repo IaC incrementally: Terraform, CloudFormation, Kubernetes manifests, Helm, serverless configs.
+- Compare declared capability against granted authority, both directions: capability without grant (probable breakage), grant without capability (excess authority).
+- Report confidence honestly: repository IaC is not proof of deployed state; the assurance boundary must say so.
+
+---
+
+## v2.2 — Visibility & Intelligence *(superseded)*
+
+The earlier "Visibility & Intelligence" sketch (trend tracking, architecture maps, AI-BOM, toxic-flow analysis, exploitability pilot, MCP consent, risk scores) is **deferred, not dropped**. Its items are re-sequenced: contract/proof work ships as CE 2.2 (this release); AI-BOM aggregation stays with EE1; validation-adjacent pilots belong to CE-V scoping. Nothing below implies these capabilities exist today.
+
+*Original sketch retained for reference — all items ⏳ planned, none shipped:*
 
 ### Trend tracking
 - ⏳ **Baseline trend tracking** — historical score/compliance charts across scans. Registry stores per-scan score snapshots; `safeai trend` CLI command renders ASCII sparklines or exports JSON for external dashboards. Show "improving / declining / stable" trend indicators on the scorecard.
@@ -234,8 +288,8 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - ⏳ **Interactive MCP consent** — deeper MCP analysis with explicit user control. When SafeAI discovers MCP servers, prompt the user to approve deep analysis (tool descriptions, schema inspection, capability extraction) rather than scanning everything by default. `--mcp-consent prompt` (interactive) vs `--mcp-consent auto` (current behavior) vs `--mcp-consent deny` (skip MCP). Respects the offline guarantee — consent is local, never transmitted.
 - ⏳ **Scored risk indicators** — per-finding risk scores combining severity, exploitability, and policy context. Extends the existing security scorecard (0–10) with granular per-finding prioritisation. `--fail-on-risk-over N` threshold. Policy-based risk escalation (e.g., findings in production-agent profiles score higher).
 
-### Exit criterion
-> A team lead can view a trend chart showing governance score improvement over 30 days, see an architecture diagram of their agent in the HTML report, export a CycloneDX-compatible AI-BOM for compliance, detect multi-tool exfiltration chains, and get AI-assisted remediation guidance for each governance finding.
+### Exit criterion (deferred sketch — not a commitment)
+> *Would have been:* a team lead views trend charts, architecture diagrams, AI-BOM exports, exfiltration chains, and AI-assisted remediation. Re-scoped into CE 2.2 (proof), CE-V (validation), and EE1 (aggregation).
 
 ---
 
@@ -273,8 +327,22 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ---
 
-## CE permanent guarantees
+## Explicitly not in Community core (not doing)
 
+Preserved strategic exclusions — requested features the Community scanner will not adopt:
+
+- No runtime sandboxing, interception, identity issuance, or production monitoring in core.
+- No general hallucination score, jailbreak platform, or red-team engine.
+- No hosted reputation feed, hosted service, dashboard, or SaaS registry.
+- No live IAM reads (AWS/Azure/GCP), Kubernetes API access, or telemetry ingestion.
+- No compliance certification claims; mappings are taxonomy, not coverage.
+- No user/global machine configuration scanning by default.
+- No automatic code modification, auto-remediation, or automatic PR creation.
+- No plugin marketplace; no model hallucination scoring; no exploit generation.
+
+---
+
+## CE permanent guarantees
 - ✅ **Local by default** — no account, server, daemon, telemetry or external network calls.
 - **Amended 2026-08-30:** SafeAI remains local-by-default and offline-by-default. An **opt-in only** usage-telemetry mechanism was added in v2.0.0; it is disabled unless a user explicitly enables it, is auto-disabled in CI, never transmits scan content, and can be permanently disabled with one command or one environment variable. See `PRIVACY.md` for the full data contract.
 - ✅ **Source-private by default** — references and evidence, not raw source.
@@ -359,6 +427,9 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 
 ## Registry of latest shipped work (this branch, see CHANGELOG/releases)
 
+- **v2.1.x** — ✅ **Shipped.** v2.1.0: quality gates (`--fail-on-rule`, `--fail-on-category`), PR auto-posting (`--pr-comment-post`), MCP poisoning depth (schema/resource injection), standalone binaries, VS Code MVP, golden fixtures for all 17 adapters. v2.1.1: PyPI trusted publishing. v2.1.2: Cosign keyless signing (OpenSSF Signed-Releases).
+- **CE 2.2 (in progress)** — Manifest Contract v1, offline integrity, escalation remediation catalog, 20-fixture benchmark corpus, DCO + edition boundary + ADRs, this re-baselined roadmap.
+
 - **v1.7.0** — IDE-scoped MCP discovery (Cursor, Windsurf, VS Code), named policy profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`), registry freshness indicators, `--strict-suppressions` CI failure, component registry persistence (schema v3 `component_snapshots`), component-change diffs (self-comparison bug fixed).
 - **v1.8.0 (curated: "True Authority & Complete Lifecycle")** — ✅ **Shipped.** CE 1.4 + CE 1.5 + CE 1.8 closure: Finding Lifecycle Event Engine (`finding_lifecycle` / schema v4, `ESC_RECURRING_RISK`), Stale Suppression Guard (fingerprint-bound waivers), Agent Enrichment Schema (`safeai registry metadata set` / `agent_metadata` table), Tool ↔ Implementation Mapping, Command-Aware MCP Resolution (`assurance: resolved` vs `unresolved-command`), Target Taxonomy Engine (Database / Object Storage / SaaS API buckets). **Plus depth:** prompt risk depth (multi-line, cross-file, indirect injection, XML/HTML injection), data leakage depth (private keys, JWT, AWS keys, connection strings, base64/hex, per-pattern severity), cross-component analysis (`component_graph.py` — skill→tool→workflow→MCP→model relationships). **Community:** expanded from 5 to 25 community scan targets; `safeai welcome` guided first-run experience. **Gate for CE 2.0.**
 - **v1.9.0 (curated: "Component Depth & Ecosystem Foundations")** — ✅ **Shipped.** CE 1.6 depth (component version/hash in `component_snapshots` schema v5, `safeai registry components` impact-query CLI with dedup/type-filter/agent-resolution). CE 1.4/1.5 leftovers: **Governance signal detection** (`GovernanceAnalyzer`, 8 `GOV_*` rules — timeout, retry, approval, audit, rate limiting, circuit breaker, backpressure, health check; per-tool dedup, ±10-line source confirmation). **Heuristic data-flow depth** (`DataFlowAnalyzer`, 6 `DATAFLOW_*` rules — prompt, tool_call, shell, file_write, http_request, database; placeholder-aware confidence, `.py`-only filter). **Adapter completion** (AutoGen tightened, LangGraph `add_conditional_edges`, browser rule split). CE 2.0 foundations (`safeai init`, control mappings — OWASP LLM/Agentic + NIST AI RMF). **Post-review fixes:** governance dedup granularity, AutoGen/LangGraph detection hardened, orchestrator null guard, mojibake fixed. **564 tests passing, 76 built-in rules.**
@@ -377,9 +448,10 @@ The v1.8.0 architectural review found substantial shipped surface that the
 roadmap never enumerated. Captured here so future curation does not re-discover
 it:
 
-- **15 framework adapters** (`safeai/frameworks/`): azure_foundry, bedrock_agent,
-  claude_code, crewai, dify, google_adk, haystack, langchain, langgraph,
-  llamaindex, mastra, microsoft_agent, n8n, openai_agents, semantic_kernel. All
+- **18 framework parser packages** (`safeai/frameworks/`): autogen,
+  azure_foundry, bedrock_agent, claude_code, crewai, cursorrules, dify,
+  google_adk, haystack, langchain, langgraph, llamaindex, mastra,
+  microsoft_agent, n8n, openai_agents, semantic_kernel, windsurf. All
   load via `@register_parser`; the `safeai.parsers` entry-point group is declared
   but currently empty (third-party plugins not yet wired).
 - **13 analyzers** (`safeai/analyzers/`): capability, claude_code, data_leakage,

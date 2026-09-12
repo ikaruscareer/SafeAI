@@ -339,7 +339,8 @@ def cmd_import(args):
     from safeai.kya.importer import import_inventory, load_inventory, plan_import
     from safeai.kya.registry import init_registry, migrate
 
-    document = load_inventory(args.file)
+    document = load_inventory(args.file,
+                              require_integrity=getattr(args, "require_integrity", False))
     if args.dry_run and not registry_exists(args.registry_path):
         conn = sqlite3.connect(":memory:")
         conn.row_factory = sqlite3.Row

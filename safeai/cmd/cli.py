@@ -174,6 +174,10 @@ def _build_parser():
                             help="Preview rows that would be imported without writing")
     reg_import.add_argument("--force", action="store_true",
                             help="Overwrite existing agent metadata with imported values")
+    reg_import.add_argument("--require-integrity", action="store_true",
+                            help="Reject inventories whose integrity digest is "
+                                 "missing or invalid (default: accept, for "
+                                 "backward compatibility)")
 
     reg_meta = reg_sub.add_parser("metadata", help="View or set agent metadata (owner, environment)")
     _common(reg_meta)

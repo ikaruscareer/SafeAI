@@ -22,6 +22,7 @@ from safeai.kya import (
 from safeai.kya.assurance import build_assurance_boundary
 from safeai.kya.contract import contract_block
 from safeai.kya.fingerprints import normalize_path
+from safeai.kya.integrity import stamp_integrity
 from safeai.kya.util import confidence_label, redact_secrets, sha256_text
 from safeai.severity import SEVERITIES
 
@@ -176,7 +177,10 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
         "assurance_boundary": report.get("assurance_boundary") or build_assurance_boundary(report),
         "limitations": limitations or [STATIC_ANALYSIS_DISCLAIMER],
     }
-    return manifest
+    # Offline integrity: digest covers the canonical payload (this block
+    # itself plus volatile scan-event fields are excluded). See
+    # docs/manifest/INTEGRITY.md.
+    return stamp_integrity(manifest)
 
 
 def serialize_manifest(manifest):

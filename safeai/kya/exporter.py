@@ -8,6 +8,7 @@ contains raw source code or unredacted secret values.
 import json
 
 from safeai.kya import STATIC_ANALYSIS_DISCLAIMER
+from safeai.kya.integrity import stamp_integrity
 from safeai.kya.registry import (
     agent_history,
     get_agent,
@@ -115,13 +116,16 @@ def export_inventory(conn, *, project_id=None, include_history=False, include_su
             "finding_lifecycle": _portable_lifecycle(conn, pid, exported_fingerprints),
         })
 
-    return {
+    document = {
         "schema_version": EXPORT_SCHEMA_VERSION,
         "export_type": "safeai.kya.inventory",
         "generated_at": utc_now_iso(),
         "projects": export_projects,
         "limitations": [STATIC_ANALYSIS_DISCLAIMER],
     }
+    # Offline integrity (same canonicalization as manifests; generated_at
+    # is volatile and excluded from the digest).
+    return stamp_integrity(document)
 
 
 def write_export(document, path):

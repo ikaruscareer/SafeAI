@@ -15,14 +15,25 @@ from safeai.kya.util import sha256_text, utc_now_iso
 SUPPORTED_SCHEMA_VERSIONS = {"1.0", EXPORT_SCHEMA_VERSION}
 
 
-def load_inventory(path):
-    """Load and validate a portable inventory JSON document."""
+def load_inventory(path, *, require_integrity=False):
+    """Load and validate a portable inventory JSON document.
+
+    ``require_integrity`` rejects documents whose integrity digest is
+    missing or invalid. Default ``False`` preserves backward
+    compatibility with pre-2.2 exports.
+    """
     try:
         with open(path, encoding="utf-8") as fh:
             document = json.load(fh)
     except (OSError, json.JSONDecodeError) as exc:
         raise RegistryError(f"Unable to read inventory {path}: {exc}") from exc
     validate_inventory(document)
+    if require_integrity:
+        from safeai.kya.integrity import OK, verify_document
+        status, detail = verify_document(document)
+        if status != OK:
+            raise RegistryError(
+                f"Integrity check failed ({status}): {detail}")
     return document
 
 

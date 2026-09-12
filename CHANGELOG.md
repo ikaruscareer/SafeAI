@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-09-12
+
+**Contract & Proof.** Governance, trust, evidence, and developer-confidence
+release: a versioned KYA manifest contract, offline integrity, structured
+escalation remediation, a reproducible benchmark corpus, and public
+Community/Corporate governance clarity. Offline, static, and backward
+compatible throughout.
+
+### Added — Manifest Contract v1
+- Published JSON Schema `schemas/safeai-manifest/v1.0.0.json` plus
+  `docs/manifest/{README,COMPATIBILITY,EXAMPLES}.md`.
+- `contract{}` block on every manifest; `safeai manifest validate` (stdlib-only).
+
+### Added — Offline Manifest Integrity
+- Canonical SHA-256 digest on manifests and registry exports;
+  `safeai manifest verify`; `registry import --require-integrity`
+  (default off); GPG-envelope docs (`docs/manifest/INTEGRITY.md`).
+
+### Added — Escalation Remediation
+- Structured remediation for all 14 `ESC_*` rules, rendered in JSON,
+  manifest, HTML, terminal, PR comment, and scorecard.
+
+### Added — Benchmarks
+- 20-fixture corpus (`benchmarks/catalog.yml`), offline runner
+  (`scripts/run_benchmarks.py`), published results (`BENCHMARKS.md`).
+
+### Added — Governance
+- `DCO.md` with CI sign-off check; `docs/GOVERNANCE_AND_EDITIONS.md`;
+  MCP scope/export-privacy policy; ADRs 0001–0004; re-baselined `ROADMAP.md`.
+
 ## [2.1.2] - 2026-09-09
 
 **Cosign signing for OpenSSF Scorecard.** Adds keyless Cosign signatures to

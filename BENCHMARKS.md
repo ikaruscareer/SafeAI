@@ -57,12 +57,13 @@ Runner: `scripts/run_benchmarks.py`. Per-fixture docs: `benchmarks/README.md`.
 
 | SafeAI | Corpus | Pass | Fail | Notes |
 |---|---|---|---|---|
+| 2.2.0 | v1.0 (20) | 19 | 0 | 1 limitation note (mcp-attribution-limitation); full corpus ~1s |
 | 2.1.2 | v1.0 (20) | 19 | 0 | 1 limitation note (mcp-attribution-limitation); full corpus ~1s |
 
-Breakdown at 2.1.2: framework recognition 8/8 applicable; capability
+Breakdown at 2.2.0: framework recognition 8/8 applicable; capability
 detection pinned on 4 fixtures; escalation detection 2/2; governance
 detection via `GOV_*` pins on crewai/runaway-loop; negative controls 2/2
-quiet. Raw payload: `benchmarks/results/2.1.2.json`.
+quiet. Raw payload: `benchmarks/results/2.2.0.json`.
 
 ## Warning
 

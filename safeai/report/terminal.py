@@ -6,6 +6,14 @@ severity counts, and a per-finding list.
 """
 
 
+def _first_sentence(text):
+    """First sentence of a remediation string (single-line, capped)."""
+    sentence = str(text).strip().split(". ")[0].rstrip(".")
+    if len(sentence) > 160:
+        sentence = sentence[:157] + "..."
+    return sentence
+
+
 def print_summary(report):
     print("SafeAI Scan Summary")
     print("Files:", report["files_scanned"])
@@ -104,6 +112,10 @@ def print_summary(report):
         status = f.get("status")
         tag = f" [{status}]" if status and status != "new" else ""
         print(f"[{f['severity']}] {f['file']}:{f['line']} - {f['message']}{tag}")
+        # Concise next action for high/critical findings only; the full
+        # remediation text lives in JSON/HTML/SARIF reports.
+        if str(f.get("severity", "")).lower() in ("high", "critical") and f.get("remediation"):
+            print(f"  Next: {_first_sentence(f['remediation'])}")
 
     if kya_agents is not None or registry:
         print()

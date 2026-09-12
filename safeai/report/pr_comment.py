@@ -138,6 +138,22 @@ def _access_phrase(block):
     return str(block["status"] or "changed")
 
 
+def _recommended_action(escalation):
+    """One concise action for critical/high escalations (else None).
+
+    Tolerates escalations without remediation (old reports, hand-built
+    fixtures): those render exactly as before.
+    """
+    if str(escalation.get("severity", "")).lower() not in ("critical", "high"):
+        return None
+    remediation = escalation.get("remediation") or {}
+    actions = remediation.get("recommended_actions") or []
+    if not actions:
+        summary = (remediation.get("summary") or "").strip()
+        return summary or None
+    return str(actions[0]).strip() or None
+
+
 def _render_block(block):
     """Two lines per tool: what it is, then why it matters."""
     mark = _SEVERITY_MARK.get(block["severity"], block["severity"])
@@ -153,6 +169,9 @@ def _render_block(block):
         parts.append(f"+{extra} more {_plural(extra, 'escalation')}")
     if parts:
         lines.append("  " + " · ".join(parts))
+    action = _recommended_action(primary)
+    if action:
+        lines.append(f"  → {action}")
     lines.append("")
     return lines
 
@@ -226,7 +245,9 @@ def _truncate(lines, total_blocks, shown_blocks):
     remaining = total_blocks - shown_blocks
     if len(lines) + 2 <= MAX_LINES and remaining <= 0:
         return lines
-    budget = MAX_LINES - 3  # truncation notice, blank line, footer
+    # Budget accounts for everything appended afterwards: the truncation
+    # notice + blank line here, plus the caller's blank line + footer.
+    budget = MAX_LINES - 4
     trimmed = lines[:budget]
     while trimmed and trimmed[-1] == "":
         trimmed.pop()

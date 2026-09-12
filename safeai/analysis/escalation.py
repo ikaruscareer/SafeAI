@@ -20,6 +20,7 @@ from safeai.analysis.capabilities import (
     is_escalation,
     max_access_mode,
 )
+from safeai.analysis.escalation_remediation import remediation_for
 from safeai.severity import ESCALATION_SEVERITIES
 from safeai.severity import rank as severity_rank
 
@@ -471,6 +472,7 @@ def classify_escalations(before_state, after_state, status, evaluate_combination
                 "evidence": match["evidence"],
                 "confidence": match["confidence"],
                 "inferred": bool(match["inferred"]),
+                "remediation": remediation_for(rule["id"]),
             })
 
     for rule in generic_rules:
@@ -492,6 +494,7 @@ def classify_escalations(before_state, after_state, status, evaluate_combination
                 "evidence": match["evidence"],
                 "confidence": match["confidence"],
                 "inferred": bool(match["inferred"]),
+                "remediation": remediation_for(rule["id"]),
             })
 
     escalations.sort(key=lambda e: (-severity_rank(e["severity"]), e["id"]))

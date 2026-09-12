@@ -145,6 +145,24 @@ def validate_manifest(document):
                  f"must be one of {', '.join(POLICY_OUTCOMES)}, "
                  f"got {decision.get('outcome')!r}")
 
+    # --- escalations (optional; present when a baseline diff exists) -------
+    escalations = document.get("escalations")
+    if escalations is not None:
+        if not isinstance(escalations, list):
+            _err(errors, "$.escalations", "must be an array")
+        else:
+            for i, escalation in enumerate(escalations):
+                base = f"$.escalations[{i}]"
+                if not isinstance(escalation, dict):
+                    _err(errors, base, "must be an object")
+                    continue
+                if not escalation.get("id"):
+                    _err(errors, f"{base}.id", "must be a non-empty string")
+                if escalation.get("severity") not in SEVERITIES:
+                    _err(errors, f"{base}.severity",
+                         f"must be one of {', '.join(SEVERITIES)}, "
+                         f"got {escalation.get('severity')!r}")
+
     # --- assurance boundary / limitations ---------------------------------
     if "assurance_boundary" not in document:
         _err(errors, "$.assurance_boundary", "is required (static-evidence statement)")

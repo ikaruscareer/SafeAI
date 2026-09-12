@@ -72,6 +72,26 @@ def _capability_counts(agents, report):
     return dict(sorted(counts.items()))
 
 
+def _escalation_entries(report):
+    """Flatten capability-diff escalations (with remediation) for the manifest."""
+    entries = []
+    diff = report.get("capability_diff") or {}
+    for tool in diff.get("tools") or []:
+        for escalation in tool.get("escalations") or []:
+            entries.append({
+                "tool_key": tool.get("tool_key"),
+                "id": escalation.get("id"),
+                "severity": escalation.get("severity", "medium"),
+                "summary": escalation.get("summary"),
+                "before": escalation.get("before"),
+                "after": escalation.get("after"),
+                "confidence": escalation.get("confidence"),
+                "remediation": escalation.get("remediation"),
+            })
+    entries.sort(key=lambda e: (str(e.get("tool_key")), str(e.get("id"))))
+    return entries
+
+
 def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
                    policy_decision=None, limitations=None):
     """Assemble the canonical manifest dict from a normalized scan report.
@@ -162,6 +182,7 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
             for e in (report.get("dependency_inventory") or [])
         ],
         "findings": findings,
+        "escalations": _escalation_entries(report),
         "summary": {
             "risk_score": trust.get("overall_ai_risk_score"),
             "severity_counts": severity_counts,

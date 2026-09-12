@@ -87,8 +87,7 @@
       }
     },
     "dependency_inventory": {"type": "array"},
-    "findings": {
-      "type": "array",
+    "findings": {      "type": "array",
       "items": {
         "type": "object",
         "required": ["rule_id", "severity"],
@@ -128,6 +127,24 @@
     },
     "assurance_boundary": {"type": "object"},
     "limitations": {"type": "array", "items": {"type": "string"}},
+    "escalations": {
+      "description": "Flattened capability-diff escalations with structured remediation (absent when no baseline).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity"],
+        "properties": {
+          "tool_key": {"type": ["string", "null"]},
+          "id": {"type": "string"},
+          "severity": {"enum": ["critical", "high", "medium", "low", "info"]},
+          "summary": {"type": ["string", "null"]},
+          "before": {"type": ["string", "null"]},
+          "after": {"type": ["string", "null"]},
+          "confidence": {"type": ["string", "null"]},
+          "remediation": {"type": "object"}
+        }
+      }
+    },
     "integrity": {
       "description": "Offline integrity block (added in contract v1.0.0, Workstream 2). Absent on pre-2.2 manifests.",
       "type": "object",

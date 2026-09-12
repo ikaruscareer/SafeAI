@@ -333,6 +333,23 @@ SafeAI *detected*. A tool can have dangerous capabilities with zero findings
 Review both: capabilities tell you the attack surface; findings tell you
 where the surface is exposed.
 
+### Escalation remediation coverage
+
+Every `ESC_*` escalation carries structured remediation (`summary`,
+`why_it_matters`, `review_questions`, `recommended_actions`,
+`safe_configuration_patterns`, `limitations`). Per-output behavior is
+intentional:
+
+| Output | Escalation remediation |
+|--------|------------------------|
+| JSON report | Full structured object on each escalation in `capability_diff` |
+| `safeai-manifest.json` | Full structured object in top-level `escalations` |
+| HTML | Collapsible "Remediation" per escalation |
+| Terminal | Concise `Next:` action for high/critical findings (escalation detail lives in JSON/HTML) |
+| PR comment | One recommended action per critical/high escalation (60-line cap preserved) |
+| Scorecard | `Remediation focus` theme summary (counts, not raw text) |
+| SARIF | Intentionally not duplicated: escalations are baseline diffs without file locations, and SARIF results require locations. Finding-level remediation is in SARIF rule help and result properties. |
+
 ---
 
 ## Triage Workflow

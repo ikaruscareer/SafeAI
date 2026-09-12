@@ -467,6 +467,28 @@ def write_scorecard_json(scorecard: dict, path: str) -> None:
         fh.write("\n")
 
 
+def _remediation_theme_lines(top_findings):
+    """Summarize remediation themes (counts only, not raw remediation).
+
+    Groups top findings by remediation text so reviewers see where effort
+    concentrates, instead of re-reading every raw recommendation.
+    Deterministic: count desc, then text asc. Capped at 3 themes.
+    """
+    counts = {}
+    for finding in top_findings:
+        remediation = (finding.get("remediation") or "").strip()
+        if remediation:
+            counts[remediation] = counts.get(remediation, 0) + 1
+    if not counts:
+        return ["- No remediation guidance recorded."]
+    themes = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:3]
+    lines = []
+    for text, count in themes:
+        short = text if len(text) <= 120 else text[:117] + "..."
+        lines.append(f"- {count}x — {_escape_md(short)}")
+    return lines
+
+
 def write_scorecard_md(scorecard: dict, path: str) -> None:
     """Write the scorecard as Markdown. ``path`` may be ``"-"`` for stdout."""
     if path == "-":
@@ -548,6 +570,13 @@ def render_scorecard_md(scorecard: dict) -> str:
             lines.append(f"  - Location: `{_escape_md(file)}:{line}`")
         if remediation:
             lines.append(f"  - Remediation: {remediation}")
+
+    lines.extend([
+        "",
+        "## Remediation focus",
+        "",
+    ])
+    lines.extend(_remediation_theme_lines(top_findings))
 
     lines.extend([
         "",

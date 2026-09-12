@@ -75,6 +75,9 @@ jobs:
       - name: "Check: compatibility tests pass"
         run: python -m pytest tests/test_compatibility.py -q --tb=short
 
+      - name: "Check: benchmarks pass (full corpus, release-blocking)"
+        run: python scripts/run_benchmarks.py --subset full
+
       - name: "Check: fixture coverage completeness"
         run: |
           python -c "

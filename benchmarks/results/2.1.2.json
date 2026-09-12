@@ -1,0 +1,420 @@
+{
+  "benchmark_version": "1.0",
+  "failures": 0,
+  "fixture_count": 20,
+  "passes": 19,
+  "results": [
+    {
+      "duration_s": 0.06,
+      "id": "action-clean-negative",
+      "intent": "negative",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "langgraph"
+        ],
+        "rules": [
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.031,
+      "id": "action-medium-http",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "langgraph"
+        ],
+        "rules": [
+          "CAP_http:medium",
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.032,
+      "id": "action-risky-shell",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "langgraph"
+        ],
+        "rules": [
+          "CAP_shell:high",
+          "CAP_subprocess_shell:critical",
+          "DATAFLOW_prompt:high",
+          "DATAFLOW_shell:critical",
+          "DATA_LEAKAGE:high",
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "PROMPT_INDIRECT_INJECTION:medium",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.032,
+      "id": "claude-code-deny-allow",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "claude_code"
+        ],
+        "rules": [
+          "CAP_filesystem:medium",
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "MCP_AUTH_MISSING:high",
+          "MCP_SCHEMA_REQUIRED:medium",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.03,
+      "id": "claude-code-wildcard",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "claude_code"
+        ],
+        "rules": [
+          "CAP_filesystem:medium",
+          "CC_WILDCARD_PERMISSION:high",
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.033,
+      "id": "crewai-delegation",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "crewai"
+        ],
+        "rules": [
+          "CAP_filesystem:medium",
+          "CAP_http:medium",
+          "ENV_DEP_INVENTORY:info",
+          "GOV_APPROVAL_MISSING:medium",
+          "GOV_AUDIT_MISSING:medium",
+          "GOV_BACKPRESSURE_MISSING:low",
+          "GOV_CIRCUIT_BREAKER_MISSING:medium",
+          "GOV_HEALTH_CHECK_MISSING:medium",
+          "GOV_MAX_ITERATIONS_MISSING:high",
+          "GOV_RATE_LIMIT_MISSING:medium",
+          "GOV_RECURSION_GUARD_MISSING:medium",
+          "GOV_RETRY_MISSING:medium",
+          "GOV_TIMEOUT_MISSING:medium",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.031,
+      "id": "dataflow-shell-flow",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [],
+        "rules": [
+          "CAP_file_write:medium",
+          "CAP_filesystem:medium",
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.077,
+      "id": "esc-mcp-read-to-mutate",
+      "intent": "escalation",
+      "mismatches": [],
+      "observed": {
+        "escalations": [
+          "ESC_MCP_READ_TO_MUTATE"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.092,
+      "id": "esc-mcp-server-added",
+      "intent": "escalation",
+      "mismatches": [],
+      "observed": {
+        "escalations": [
+          "ESC_ACCESS_MODE_INCREASED",
+          "ESC_MCP_SERVER_ADDED",
+          "ESC_SHELL_ADDED",
+          "ESC_WRITE_TOOL_ADDED"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.03,
+      "id": "governance-suppression-quiet",
+      "intent": "negative",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "cursorrules"
+        ],
+        "rules": [
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.032,
+      "id": "langchain-tools",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "langchain"
+        ],
+        "rules": [
+          "CAP_filesystem:medium",
+          "ENV_DEP_INVENTORY:info",
+          "GOV_APPROVAL_MISSING:medium",
+          "GOV_AUDIT_MISSING:medium",
+          "GOV_BACKPRESSURE_MISSING:low",
+          "GOV_CIRCUIT_BREAKER_MISSING:medium",
+          "GOV_HEALTH_CHECK_MISSING:medium",
+          "GOV_MAX_ITERATIONS_MISSING:high",
+          "GOV_RATE_LIMIT_MISSING:medium",
+          "GOV_RECURSION_GUARD_MISSING:medium",
+          "GOV_RETRY_MISSING:medium",
+          "GOV_TIMEOUT_MISSING:medium",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.033,
+      "id": "langgraph-conditional",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "langchain",
+          "langgraph"
+        ],
+        "rules": [
+          "CAP_filesystem:medium",
+          "ENV_DEP_INVENTORY:info",
+          "GOV_APPROVAL_MISSING:medium",
+          "GOV_AUDIT_MISSING:medium",
+          "GOV_BACKPRESSURE_MISSING:low",
+          "GOV_CIRCUIT_BREAKER_MISSING:medium",
+          "GOV_HEALTH_CHECK_MISSING:medium",
+          "GOV_MAX_ITERATIONS_MISSING:high",
+          "GOV_RATE_LIMIT_MISSING:medium",
+          "GOV_RECURSION_GUARD_MISSING:medium",
+          "GOV_RETRY_MISSING:medium",
+          "GOV_TIMEOUT_MISSING:medium",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.033,
+      "id": "llamaindex-rag",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "llamaindex"
+        ],
+        "rules": [
+          "CAP_db:medium",
+          "CAP_filesystem:medium",
+          "DEP_ORPHANED_TOOL:low",
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.033,
+      "id": "mcp-attribution-limitation",
+      "intent": "limitation",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [],
+        "rules": [
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "MCP_AUTH_MISSING:high",
+          "MCP_ENDPOINT_EXPOSURE:high",
+          "MCP_SCHEMA_REQUIRED:medium",
+          "MCP_TOOL_DESCRIPTION_INJECTION:high"
+        ]
+      },
+      "status": "limitation"
+    },
+    {
+      "duration_s": 0.041,
+      "id": "mcp-clean-transport",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [],
+        "rules": [
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "MCP_TRANSPORT_INSECURE:high",
+          "MCP_UNRESOLVED_COMMAND:medium"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.033,
+      "id": "mcp-golden-posture",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [],
+        "rules": [
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "MCP_AUTH_MISSING:high",
+          "MCP_ENDPOINT_EXPOSURE:high",
+          "MCP_SCHEMA_REQUIRED:medium",
+          "MCP_TOOL_DESCRIPTION_INJECTION:high"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.032,
+      "id": "mcp-poisoned-description",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [],
+        "rules": [
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "MCP_TOOL_DESCRIPTION_INJECTION:high",
+          "MCP_TRANSPORT_INSECURE:high",
+          "MCP_UNRESOLVED_COMMAND:medium"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.031,
+      "id": "n8n-workflow",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "n8n"
+        ],
+        "rules": [
+          "CAP_db:medium",
+          "CAP_filesystem:medium",
+          "CAP_http:medium",
+          "CAP_shell:high",
+          "DEP_ORPHANED_TOOL:low",
+          "ENV_DEP_INVENTORY:info",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_ORPHAN_IMPLEMENTED:low",
+          "WORKFLOW_NO_APPROVAL:medium"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.035,
+      "id": "runaway-loop-governance",
+      "intent": "regression",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "crewai"
+        ],
+        "rules": [
+          "CAP_AUTONOMY:high",
+          "ENV_DEP_INVENTORY:info",
+          "GOV_APPROVAL_MISSING:medium",
+          "GOV_AUDIT_MISSING:medium",
+          "GOV_BACKPRESSURE_MISSING:low",
+          "GOV_CIRCUIT_BREAKER_MISSING:medium",
+          "GOV_HEALTH_CHECK_MISSING:medium",
+          "GOV_MAX_ITERATIONS_MISSING:high",
+          "GOV_RATE_LIMIT_MISSING:medium",
+          "GOV_RECURSION_GUARD_MISSING:medium",
+          "GOV_RETRY_MISSING:medium",
+          "GOV_TIMEOUT_MISSING:medium",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_DANGEROUS_PARAMS:high",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    },
+    {
+      "duration_s": 0.032,
+      "id": "semantic-kernel-validation",
+      "intent": "positive",
+      "mismatches": [],
+      "observed": {
+        "frameworks": [
+          "semantic_kernel"
+        ],
+        "rules": [
+          "CAP_filesystem:medium",
+          "ENV_DEP_INVENTORY:info",
+          "GOV_APPROVAL_MISSING:medium",
+          "GOV_AUDIT_MISSING:medium",
+          "GOV_BACKPRESSURE_MISSING:low",
+          "GOV_CIRCUIT_BREAKER_MISSING:medium",
+          "GOV_HEALTH_CHECK_MISSING:medium",
+          "GOV_MAX_ITERATIONS_MISSING:high",
+          "GOV_RATE_LIMIT_MISSING:medium",
+          "GOV_RECURSION_GUARD_MISSING:medium",
+          "GOV_RETRY_MISSING:medium",
+          "GOV_TIMEOUT_MISSING:medium",
+          "MCP_ASSETS_DISCOVERED:info",
+          "TOOL_MISSING_VALIDATION:medium",
+          "TOOL_ORPHAN_IMPLEMENTED:low"
+        ]
+      },
+      "status": "pass"
+    }
+  ],
+  "safeai_version": "2.1.2",
+  "subset": "full"
+}

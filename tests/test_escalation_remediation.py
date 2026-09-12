@@ -266,7 +266,8 @@ def test_sarif_does_not_duplicate_escalations(tmp_path):
     path = str(tmp_path / "r.sarif")
     write_sarif(report, path)
     import json as _json
-    sarif = _json.loads(open(path, encoding="utf-8").read())
+    with open(path, encoding="utf-8") as _fh:
+        sarif = _json.loads(_fh.read())
     rule_ids = {r["id"] for r in sarif["runs"][0]["tool"]["driver"]["rules"]}
     assert "CAP_shell" in rule_ids
     assert "ESC_SHELL_ADDED" not in rule_ids

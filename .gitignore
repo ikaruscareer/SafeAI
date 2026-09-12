@@ -15,6 +15,10 @@ build/
 *.dylib
 release-artifacts/*.whl
 release-artifacts/*.tar.gz
+# Generated per-release evidence (lives on GitHub Releases, not in-repo)
+release-artifacts/safeai-*.spdx.json
+release-artifacts/safeai-*-provenance.json
+release-artifacts/SHA256SUMS
 
 # Testing
 .coverage*

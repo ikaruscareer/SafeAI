@@ -20,6 +20,8 @@ Design constraints, all enforced by tests:
 * Nothing is posted anywhere. This module returns a string.
 """
 
+import sys
+
 from safeai.analysis.tool_identity import display_name
 from safeai.kya.assurance import BOUNDARY_SENTENCE
 from safeai.severity import ESCALATION_SEVERITIES
@@ -342,6 +344,13 @@ def post_pr_comment(report, ci_context=None, token=None):
 
     text = render_pr_comment(report, ci_context=ci_context)
     api_base = f"https://api.github.com/repos/{repository}"
+
+    # Explicit integration boundary: the scanner is offline by default;
+    # this is the one path that makes a network request, and it says so.
+    sys.stderr.write(
+        "Integration mode enabled: SafeAI is making an explicit GitHub API "
+        "request to post/update a PR comment.\n"
+    )
 
     # Find existing comment with our marker
     comment_id = _find_existing_comment(api_base, pr_number, token)

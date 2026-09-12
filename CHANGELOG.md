@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-09-12
+
+**Release-evidence integrity + offline-boundary clarity.**
+
+### Fixed — Release asset scoping
+- Release automation uploads only artifacts built for the running tag;
+  historical SBOM/provenance can no longer leak into a release.
+- New `scripts/verify_release_assets.py` gate fails the release on foreign
+  versions, unversioned `provenance.json`, missing Cosign sidecars, or
+  SHA256SUMS mismatches; SLSA provenance is version-named.
+- Removed committed historical release evidence from `release-artifacts/`
+  (generated evidence lives on GitHub Releases, not in-repo).
+
+### Changed — Offline boundary
+- Promise sharpened: "Offline and source-private by default. Network
+  activity occurs only through explicitly enabled integration commands
+  (currently only `--pr-comment-post`)."
+- `--pr-comment-post` announces itself on stderr before requesting and
+  documents token scope (`pull-requests: write`) and transmitted data
+  (rendered redacted comment only) in `docs/guides/REPORTING_GUIDE.md`.
+
 ## [2.2.0] - 2026-09-12
 
 **Contract & Proof.** Governance, trust, evidence, and developer-confidence

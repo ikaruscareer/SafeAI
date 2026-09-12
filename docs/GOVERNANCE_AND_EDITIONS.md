@@ -29,7 +29,10 @@ contributors and users. Linked from `README.md`, `CONTRIBUTING.md`, and
 ## Explicit non-negotiables
 
 - Community scans do not phone home: no network calls, no telemetry
-  unless explicitly opted in, no accounts.
+  unless explicitly opted in, no accounts. Network activity occurs only
+  through explicitly enabled integration commands (currently only
+  `--pr-comment-post`, which announces itself; see
+  `docs/guides/REPORTING_GUIDE.md`).
 - Corporate is never required to use Community Edition.
 - Corporate never receives deliberately superior detection verdicts —
   detection gating by edition is forbidden.

@@ -8,7 +8,7 @@
 
 Enjoying SafeAI? A ⭐ on [GitHub](https://github.com/ikaruscareer/SafeAI) helps more security teams find it.
 
-**SafeAI** is a static analysis tool that scans AI application source code for security risks, capability exposure, and governance gaps. It runs entirely offline, never executes agents or calls LLMs, and integrates into CI/CD pipelines.
+**SafeAI** is a static analysis tool that scans AI application source code for security risks, capability exposure, and governance gaps. It is offline and source-private by default — it never executes agents or calls LLMs, and network activity occurs only through explicitly enabled integration commands (currently only `--pr-comment-post`). It integrates into CI/CD pipelines.
 
 > 🌐 [safeai-analyzer.ikaruscareer.com](https://safeai-analyzer.ikaruscareer.com) — project landing page
 

@@ -4,7 +4,7 @@ SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI 
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.1.2 is shipped (CI/CD hardening, quality gates, PR auto-posting, MCP poisoning depth, standalone binaries, VS Code MVP, Cosign-signed releases, PyPI trusted publishing). **CE 2.2 — Manifest Contract & Proof is in progress** (this release: manifest contract, offline integrity, escalation remediation, benchmark evidence, governance clarity, re-baselined roadmap).
+> **Current state:** v2.2.0 is shipped (Contract & Proof). **v2.2.1 is in progress** (release-evidence scoping, offline-boundary clarity).
 
 ---
 
@@ -222,11 +222,11 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ---
 
-## CE 2.2 — Manifest Contract & Proof *(this release)*
+## CE 2.2 — Manifest Contract & Proof *(shipped: v2.2.0)*
 
 *Goal: make KYA evidence exchangeable, verifiable, actionable, and honest — the governance, trust, evidence, and developer-confidence release.*
 
-**Status: 🔄 in progress.**
+**Status: ✅ shipped (v2.2.0).**
 
 - ✅ **Manifest Contract v1** — published JSON Schema (`schemas/safeai-manifest/v1.0.0.json`), `contract{}` metadata distinct from package version, `safeai manifest validate` (stdlib-only), compatibility policy and docs (`docs/manifest/`).
 - ✅ **Offline manifest integrity** — canonical SHA-256 digest on every manifest and registry export, `safeai manifest verify`, `registry import --require-integrity` (default off), GPG-envelope docs (hash integrity only, no custom crypto).
@@ -249,6 +249,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - Fixture requirements and compatibility policy for community packs.
 - Curated community packages, signed where practical, distributed as versioned artifacts — no hosted marketplace.
 - Lockfile-style component integrity (deferred from CE 1.6).
+- CLI integration-namespace review: network paths (today `--pr-comment-post`, kept for compatibility) evaluated for an explicit `integrations` command namespace.
 
 ## CE 2.4 — Static IaC Authority Correlation *(planned)*
 
@@ -428,7 +429,8 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 ## Registry of latest shipped work (this branch, see CHANGELOG/releases)
 
 - **v2.1.x** — ✅ **Shipped.** v2.1.0: quality gates (`--fail-on-rule`, `--fail-on-category`), PR auto-posting (`--pr-comment-post`), MCP poisoning depth (schema/resource injection), standalone binaries, VS Code MVP, golden fixtures for all 17 adapters. v2.1.1: PyPI trusted publishing. v2.1.2: Cosign keyless signing (OpenSSF Signed-Releases).
-- **CE 2.2 (in progress)** — Manifest Contract v1, offline integrity, escalation remediation catalog, 20-fixture benchmark corpus, DCO + edition boundary + ADRs, this re-baselined roadmap.
+- **CE 2.2** — ✅ **Shipped (v2.2.0).** Manifest Contract v1, offline integrity, escalation remediation catalog, 20-fixture benchmark corpus, DCO + edition boundary + ADRs, re-baselined roadmap.
+- **v2.2.1 (in progress)** — Release-evidence scoping (tag-only uploads, asset invariant gate), offline-boundary clarity (integration announcement, token/data docs).
 
 - **v1.7.0** — IDE-scoped MCP discovery (Cursor, Windsurf, VS Code), named policy profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`), registry freshness indicators, `--strict-suppressions` CI failure, component registry persistence (schema v3 `component_snapshots`), component-change diffs (self-comparison bug fixed).
 - **v1.8.0 (curated: "True Authority & Complete Lifecycle")** — ✅ **Shipped.** CE 1.4 + CE 1.5 + CE 1.8 closure: Finding Lifecycle Event Engine (`finding_lifecycle` / schema v4, `ESC_RECURRING_RISK`), Stale Suppression Guard (fingerprint-bound waivers), Agent Enrichment Schema (`safeai registry metadata set` / `agent_metadata` table), Tool ↔ Implementation Mapping, Command-Aware MCP Resolution (`assurance: resolved` vs `unresolved-command`), Target Taxonomy Engine (Database / Object Storage / SaaS API buckets). **Plus depth:** prompt risk depth (multi-line, cross-file, indirect injection, XML/HTML injection), data leakage depth (private keys, JWT, AWS keys, connection strings, base64/hex, per-pattern severity), cross-component analysis (`component_graph.py` — skill→tool→workflow→MCP→model relationships). **Community:** expanded from 5 to 25 community scan targets; `safeai welcome` guided first-run experience. **Gate for CE 2.0.**

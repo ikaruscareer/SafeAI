@@ -1,8 +1,11 @@
 """Generate SBOM (SPDX JSON), SHA-256 checksums, and provenance attestation
-for the SafeAI v2.0.0 release source tarball.
+for a SafeAI release tag.
 
-Run from the repository root after tagging v2.0.0:
-    python scripts/generate_release_artifacts.py v2.0.0
+Run from the repository root during the release workflow:
+    python scripts/generate_release_artifacts.py 2.2.1
+
+Output files are version-scoped (safeai-<tag>-sbom.spdx.json,
+safeai-<tag>-provenance.json) so releases never mix evidence across tags.
 """
 
 import hashlib

@@ -304,18 +304,11 @@ jobs:
       - name: Generate SBOM
         run: python scripts/generate_release_artifacts.py ${{ needs.checklist.outputs.version }}
 
-      - name: Generate SHA-256 checksums
-        run: |
-          cd dist
-          sha256sum * > SHA256SUMS
-          echo "Checksums generated:"
-          cat SHA256SUMS
-
       - name: Generate SLSA provenance
         run: |
           TAG="${{ needs.checklist.outputs.version }}"
           SHA="${{ needs.checklist.outputs.sha }}"
-          cat > dist/provenance.json << PROV
+          cat > "dist/safeai-${TAG}-slsa-provenance.json" << PROV
           {
             "_type": "https://in-toto.io/Statement/v1",
             "subject": [{"name": "safeai-${TAG}.tar.gz", "digest": {"sha1": "${SHA}"}}],
@@ -333,14 +326,25 @@ jobs:
           }
           PROV
 
+      - name: Generate SHA-256 checksums
+        run: |
+          VER="${{ needs.checklist.outputs.version }}"
+          cd dist
+          sha256sum -- * > SHA256SUMS
+          # Link the SBOM into the same checksum file (basename only, so the
+          # release invariant gate can match every staged file by name).
+          sha256sum -- "../release-artifacts/safeai-${VER}-sbom.spdx.json" | sed "s|../release-artifacts/||" >> SHA256SUMS
+          echo "Checksums generated:"
+          cat SHA256SUMS
+
       - name: Upload attestations
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: attestations
           path: |
-            release-artifacts/
+            release-artifacts/safeai-${{ needs.checklist.outputs.version }}-sbom.spdx.json
             dist/SHA256SUMS
-            dist/provenance.json
+            dist/safeai-${{ needs.checklist.outputs.version }}-slsa-provenance.json
           retention-days: 5
 
   # ── Gate 4: Sign + Attest ────────────────────────────────────────────
@@ -369,6 +373,11 @@ jobs:
           name: attestations
           path: attestations/
 
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
       - name: Attest build provenance (Sigstore)
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -389,17 +398,20 @@ jobs:
 
       - name: Prepare release assets
         run: |
+          VER="${{ needs.checklist.outputs.version }}"
           mkdir -p signed
           cp dist/*.whl dist/*.tar.gz signed/
           cp dist/*.sig dist/*.pem signed/
           cp attestations/dist/SHA256SUMS signed/
-          cp attestations/dist/provenance.json signed/
-          for f in attestations/release-artifacts/*.spdx.json; do
-            [ -f "$f" ] || continue
-            cp "$f" signed/
-          done
+          cp "attestations/dist/safeai-${VER}-slsa-provenance.json" signed/
+          cp "attestations/release-artifacts/safeai-${VER}-sbom.spdx.json" signed/
           echo "Release assets:"
           ls -la signed/
+
+      - name: Verify release asset invariants
+        run: |
+          python scripts/verify_release_assets.py signed/ \
+            "${{ needs.checklist.outputs.version }}"
 
       - name: Upload signed artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -456,12 +468,6 @@ jobs:
           name: signed
           path: signed/
 
-      - name: Download attestations
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: attestations
-          path: attestations/
-
       - name: Upload to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -471,16 +477,10 @@ jobs:
           TAG="v${TAG}"
           # Create release if it doesn't exist
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes
-          # Upload signed artifacts
+          # Upload signed artifacts only: signed/ passed the asset
+          # invariant gate, so every file belongs to this tag.
           for f in signed/*; do
             [ -f "$f" ] || continue
             gh release upload "$TAG" "$f" --clobber
           done
-          # Upload SBOM
-          for f in attestations/release-artifacts/*; do
-            [ -f "$f" ] || continue
-            gh release upload "$TAG" "$f" --clobber
-          done
-          # Upload provenance
-          gh release upload "$TAG" attestations/dist/provenance.json --clobber
           echo "All artifacts uploaded to release $TAG"

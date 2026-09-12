@@ -299,3 +299,54 @@ def test_post_pr_comment_returns_none_without_token(monkeypatch):
         "repository": "ikaruscareer/SafeAI",
     })
     assert result is None
+
+
+def test_post_pr_comment_announces_integration_mode(monkeypatch, capsys):
+    """The one network path announces itself on stderr before requesting."""
+    import json as _json
+    import urllib.request
+
+    from safeai.report.pr_comment import post_pr_comment
+
+    calls = []
+
+    class _FakeResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return _json.dumps(self.payload).encode()
+
+    def _fake_urlopen(request, *args, **kwargs):
+        calls.append(request.full_url)
+        if request.full_url.endswith("/comments?per_page=100"):
+            return _FakeResponse([])
+        return _FakeResponse({"html_url": "https://github.com/x/y/pull/42#issuecomment-1"})
+
+    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+    result = post_pr_comment(typical_report(), ci_context={
+        "pr_number": 42,
+        "repository": "ikaruscareer/SafeAI",
+    }, token="fake-token")
+    assert result == "https://github.com/x/y/pull/42#issuecomment-1"
+    assert len(calls) == 2  # find existing, then create
+    err = capsys.readouterr().err
+    assert "Integration mode enabled" in err
+    assert "explicit GitHub API request" in err
+
+
+def test_post_pr_comment_silent_without_token(monkeypatch, capsys):
+    """No announcement when nothing will be sent (offline stays silent)."""
+    from safeai.report.pr_comment import post_pr_comment
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    assert post_pr_comment(typical_report(), ci_context={
+        "pr_number": 42,
+        "repository": "ikaruscareer/SafeAI",
+    }) is None
+    assert "Integration mode" not in capsys.readouterr().err

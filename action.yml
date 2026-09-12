@@ -82,7 +82,9 @@ inputs:
   pr-comment-post:
     description: >-
       Post or update the PR comment on GitHub (maps to --pr-comment-post).
-      Requires a token with pull_requests: write permission.
+      NETWORK: the one explicitly enabled integration that makes a GitHub
+      API request (announced on stderr). Requires a token with
+      pull_requests: write permission.
     required: false
     default: 'false'
 

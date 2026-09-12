@@ -26,7 +26,9 @@ KYA (Know Your Agent) behavior:
   * ``--pr-comment`` writes a reviewer-facing Markdown summary of
     capability escalations to a file. SafeAI never posts it anywhere;
     publishing is the CI workflow's job.
-  * All outputs remain local: no network calls, no uploads.
+  * All outputs remain local: no network calls, no uploads — except the
+    explicitly enabled ``--pr-comment-post`` integration, which makes one
+    GitHub API request and announces itself on stderr.
 """
 
 import argparse
@@ -70,7 +72,9 @@ def _build_parser():
                       help="Print the PR comment Markdown to stdout")
     scan.add_argument("--pr-comment-post", action="store_true",
                       help="Post or update the PR comment on GitHub (requires GITHUB_TOKEN "
-                           "and CI context with PR number and repository)")
+                           "and CI context with PR number and repository). "
+                           "NETWORK: the one explicitly enabled integration that "
+                           "makes a GitHub API request; announces itself on stderr.")
     scan.add_argument("--fail-on-escalation", choices=["critical", "high", "medium"],
                       help="Fail the scan when a capability escalation at or above "
                            "this severity is detected (requires --baseline)")

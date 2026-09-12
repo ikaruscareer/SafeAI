@@ -636,7 +636,7 @@ and `mcp` posture (`remote`, `authentication_evidence: present|absent`).
 A: No. SafeAI is a static analyzer. It never imports, executes, or evaluates any code in the scanned project.
 
 **Q: Does SafeAI call LLMs or external APIs?**  
-A: No. SafeAI runs entirely offline with no external dependencies.
+A: The scanner is offline and source-private by default and never calls LLMs. Network activity occurs only through explicitly enabled integration commands — currently only `--pr-comment-post`, which makes one GitHub API request to post or update a PR comment and announces itself on stderr when it runs. See "PR auto-posting" below.
 
 **Q: Can SafeAI detect prompt injection at runtime?**  
 A: No. SafeAI detects static patterns that may lead to prompt injection. Runtime testing requires separate dynamic analysis tools.

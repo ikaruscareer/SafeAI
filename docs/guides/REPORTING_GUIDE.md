@@ -199,6 +199,22 @@ safeai scan . --baseline base.json --pr-comment comment.md
 - The `<!-- safeai:pr-comment:v1 -->` marker lets CI scripts find and replace
   SafeAI's previous comment on repeat pushes.
 
+### Auto-posting (`--pr-comment-post`): integration boundary
+
+Rendering the comment above is offline. `--pr-comment-post` is the one
+explicitly enabled integration that makes a network request: it calls the
+GitHub API to create or update a single PR comment, and announces itself
+on stderr when it runs ("Integration mode enabled: …"). The scanner
+runtime otherwise has no network behavior.
+
+- **Token scope:** `GITHUB_TOKEN` with `pull-requests: write`.
+  CI context (PR number, repository) is auto-detected; without both, SafeAI
+  renders locally and posts nothing.
+- **Data transmitted:** only the rendered Markdown comment — escalation
+  summaries, rule IDs, `path:line` references, and static remediation
+  prose. No raw source, no secret values (redacted upstream), no full
+  reports, no registry contents.
+
 ---
 
 ## KYA Manifest

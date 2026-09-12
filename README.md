@@ -486,8 +486,10 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get involved.
 | [Roadmap](./ROADMAP.md) | Future plans and feature requests |
 | [Contributing](./CONTRIBUTING.md) | How to get involved |
 | [Security](./SECURITY.md) | Vulnerability reporting and response |
-| [Privacy](./PRIVACY.md) | Telemetry and data handling |
-| [Release Notes](./docs/release/RELEASE_NOTES.md) | Changelog for all versions |
+ | [Privacy](./PRIVACY.md) | Telemetry and data handling |
+ | [Release Notes](./docs/release/RELEASE_NOTES.md) | Changelog for all versions |
+ | [Governance & Editions](./docs/GOVERNANCE_AND_EDITIONS.md) | Community vs Corporate boundary and non-negotiables |
+ | [DCO](./DCO.md) | Contribution sign-off (Developer Certificate of Origin) |
 | [Upgrade Guide](./docs/release/UPGRADE.md) | v1.x → v2.0.0 migration |
 | [CI/CD Integration](./docs/ci-integration.md) | GitHub Actions, GitLab CI, Azure DevOps examples |
 

@@ -91,11 +91,16 @@ artifacts, so failures block the release at the pre-release checklist gate.
 
 ## Pull Request Process
 
-1. Ensure all tests pass
-2. Add tests for new functionality
-3. Update documentation if needed
-4. Fill out the PR template completely
-5. Reference any related issues
+1. Sign off every commit (`git commit -s`; see [DCO.md](./DCO.md))
+2. Ensure all tests pass
+3. Add tests for new functionality
+4. Update documentation if needed
+5. Fill out the PR template completely
+6. Reference any related issues
+
+All commits are checked for `Signed-off-by` trailers in CI. Note the
+[Community/Corporate boundary](./docs/GOVERNANCE_AND_EDITIONS.md):
+detection improvements always belong to the free Community core.
 
 ### What reviewers look for:
 

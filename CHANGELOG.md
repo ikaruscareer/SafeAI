@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `safeai scan --digest-file PATH` (with `--manifest`) writes a detached sidecar
+  `<canonical-sha256>  <manifest-basename>` for independent-channel checks in CI.
+  The digest equals the one `safeai manifest verify` reports; the sidecar is
+  intentionally not `sha256sum -c` compatible.
+
 ## [2.2.1] - 2026-09-12
 
 **Release-evidence integrity + offline-boundary clarity.**

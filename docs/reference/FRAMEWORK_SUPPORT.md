@@ -522,9 +522,12 @@ the community and cover the most common patterns for each framework.
 | CrewAI | `tests/test_crewai_framework.py` | `tests/fixtures/crewai/representative/crew.py` | `Agent`, `Task`, tool, and model detection |
 | Claude Code | `tests/test_claude_code_deep.py` | `tests/fixtures/claude_code/` (`minimal`, `permissive`, `slash_injection`, `subagent_escalation`, `malformed`, `compatibility`) | Deep settings permissions, wildcards, bypass flags, shadowed denies, slash command shell/arg injection, subagent escalation, lifecycle hooks, and lenient JSON parsing |
 | Cursor (.cursorrules) | `tests/test_cursorrules_framework.py` | `tests/fixtures/cursorrules/representative/.cursorrules` | JSON/YAML/free-text config parsing, tool/model extraction, capability scanning, unrestricted grants, MCP references |
+| OpenClaw config | `tests/test_config_adapters.py` | `tests/fixtures/openclaw/representative/.openclaw/config.json` | Path detection, JSON/YAML/free-text parsing, tools, models, capabilities, and MCP servers |
+| GitHub Copilot instructions | `tests/test_config_adapters.py` | `tests/fixtures/copilot/representative/.github/copilot-instructions.md` | Markdown/frontmatter/YAML parsing, tool grants, capability scanning, and MCP references |
 
-Thanks to @adnqcr7-code for framework detection tests (PRs #59, #61, #62, #63)
-and to @i-safonoff for the .cursorrules adapter (PR #113).
+Thanks to @adnqcr7-code for framework detection tests (PRs #59, #61, #62, #63),
+to @i-safonoff for the .cursorrules adapter (PR #113),
+and to @YaoSong808 for the OpenClaw and GitHub Copilot config-file adapters (PR #159).
 
 ---
 

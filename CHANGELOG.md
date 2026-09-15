@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `<canonical-sha256>  <manifest-basename>` for independent-channel checks in CI.
   The digest equals the one `safeai manifest verify` reports; the sidecar is
   intentionally not `sha256sum -c` compatible.
+  Thanks to [@burakeyler](https://github.com/burakeyler) (PR #148).
+- OpenClaw (`.openclaw/` JSON/YAML, root `.openclaw.yaml`) and GitHub Copilot
+  (`.github/copilot-instructions.md`, `.copilot/instructions.md`, `.copilot/*.yml`)
+  config-file adapters with structured-first parsing, free-text fallback,
+  capability scanning, and MCP server references.
+  Thanks to [@YaoSong808](https://github.com/YaoSong808) (PR #159).
 
 ## [2.2.1] - 2026-09-12
 

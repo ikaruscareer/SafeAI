@@ -161,6 +161,8 @@ We are grateful to the following community members for their contributions:
 | [@mah](https://github.com/mahirhir) | Claude Code deep analysis documentation |
 | [@asarakhatun17-lgtm](https://github.com/asarakhatun17-lgtm) | Supported frameworks consistency fix |
 | [@yugaaank](https://github.com/yugaaank) | Capability detectors (Docker, Kubernetes, Redis, S3, GCP, Slack, Jira, browser automation) |
+| [@burakeyler](https://github.com/burakeyler) | `--digest-file` manifest digest sidecar (PR #148) |
+| [@YaoSong808](https://github.com/YaoSong808) | OpenClaw and GitHub Copilot config-file adapters (PR #159) |
 
 Your contributions help make AI safer for everyone. Thank you!
 

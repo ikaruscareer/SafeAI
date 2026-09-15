@@ -352,7 +352,7 @@ class ScanPostProcessor:
 
         if self.args.html_path:
             from safeai.report.html import write_html
-            write_html(self.report, self.args.html_path)
+            write_html(self.report, self.args.html_path, include_architecture=self.args.architecture)
 
         # --- Reviewer-facing PR comment (written locally; never posted) ---
         if self.args.pr_comment_path or self.args.pr_comment_stdout or self.args.pr_comment_post:

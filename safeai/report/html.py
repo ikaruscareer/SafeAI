@@ -270,7 +270,76 @@ def _assurance_section(report):
     <p class='muted'>Inferred values in this scan: {escape(str(inferred))}</p>"""
 
 
-def write_html(report, path):
+
+def render_architecture_section(raw_graph_data):
+    from safeai.analysis.component_graph import export_component_graph
+    graph_data = export_component_graph(raw_graph_data)
+    if not graph_data or not graph_data.get("nodes"):
+        return ""
+    
+    nodes = graph_data.get("nodes", [])
+    edges = graph_data.get("edges", [])
+    
+    mermaid_lines = ["graph TD"]
+    
+    type_styles = {
+        "agent": "fill:#bfdbfe,stroke:#2563eb,stroke-width:2px",
+        "tool": "fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,rx:10,ry:10",
+        "mcp": "fill:#fed7aa,stroke:#ea580c,stroke-width:2px",
+        "workflow": "fill:#e9d5ff,stroke:#9333ea,stroke-width:2px",
+        "prompt": "fill:#e5e7eb,stroke:#4b5563,stroke-width:2px",
+        "model": "fill:#fecaca,stroke:#dc2626,stroke-width:2px"
+    }
+    
+    for n in nodes:
+        node_id = n["id"].replace(":", "_").replace("-", "_")
+        label = n["label"]
+        ntype = n.get("type", "unknown").lower()
+        
+        shape_start, shape_end = "[", "]"
+        if "agent" in ntype:
+            pass # default rect
+        elif "tool" in ntype:
+            shape_start, shape_end = "(", ")"
+        elif "mcp" in ntype:
+            shape_start, shape_end = "{{", "}}"
+        elif "workflow" in ntype:
+            shape_start, shape_end = "{", "}"
+        elif "prompt" in ntype:
+            shape_start, shape_end = "[/", "/]"
+        elif "model" in ntype:
+            shape_start, shape_end = "((", "))"
+            
+        mermaid_lines.append(f'    {node_id}{shape_start}"{label}"{shape_end}')
+        
+        style = type_styles.get(ntype, "fill:#f3f4f6,stroke:#9ca3af,stroke-width:2px")
+        if n.get("is_orphan"):
+            style += ",stroke-dasharray: 5 5"
+            
+        mermaid_lines.append(f"    style {node_id} {style}")
+        
+    for e in edges:
+        src = e["source"].replace(":", "_").replace("-", "_")
+        dst = e["target"].replace(":", "_").replace("-", "_")
+        label = e["label"]
+        mermaid_lines.append(f'    {src} -->|"{label}"| {dst}')
+        
+    mermaid_code = "\n".join(mermaid_lines)
+    
+    return f"""
+    <h2>Architecture</h2>
+    <div class='card' style='overflow-x:auto; text-align:center;'>
+        <div class="mermaid">
+        {mermaid_code}
+        </div>
+        <p class='muted' style='margin-top:10px;'>If the diagram is not rendering, ensure you have internet access for the Mermaid.js CDN.</p>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({{startOnLoad:true}})</script>
+    """
+
+
+def write_html(report, path, include_architecture=True):
     trust = report.get("trust_score", {})
     categories = trust.get("categories", {})
     counts = report.get("counts", {})
@@ -341,6 +410,9 @@ def write_html(report, path):
 
     <h2>Capability Matrix</h2>
     {html_kit.data_table(["Capability", "Category", "Frameworks", "Confidence", "Evidence"], capability_rows, empty="No capabilities detected.")}
+
+    {render_architecture_section(report.get('component_graph', {})) if include_architecture else ''}
+
 
     {_escalation_section(report)}
 

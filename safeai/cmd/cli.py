@@ -49,6 +49,8 @@ def _build_parser():
     scan.add_argument("--sarif", default="report.sarif")
     scan.add_argument("--json", dest="json_path")
     scan.add_argument("--html", dest="html_path")
+    scan.add_argument("--architecture", action="store_true", default=True, help="Include architecture diagram in HTML report")
+    scan.add_argument("--no-architecture", action="store_false", dest="architecture", help="Omit architecture diagram from HTML report")
     scan.add_argument("--rules")
     scan.add_argument("--fail-on", default="critical", choices=["critical", "high", "medium"])
     scan.add_argument("--verbose", action="store_true")

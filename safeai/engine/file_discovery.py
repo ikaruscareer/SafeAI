@@ -41,7 +41,7 @@ _SCANNABLE_EXTENSIONS = {".py", ".json", ".yaml", ".yml", ".prompt"}
 # Files that are scannable by name (not extension).
 _SCANNABLE_NAMES = {
     "claude.md", "prompt.md", "system_prompt.md",
-    ".cursorrules", ".windsurfrules",
+    ".cursorrules", ".windsurfrules", "copilot-instructions.md",
 }
 
 # Additional extensions read inside a ``.claude/`` directory.
@@ -64,6 +64,12 @@ def _is_claude_config_file(full_path):
     if "/.claude/" not in normalized:
         return False
     return normalized.lower().endswith(_CLAUDE_CONFIG_EXTS)
+
+
+def _is_copilot_config_file(full_path):
+    """True for Markdown instructions below a repository's ``.copilot/``."""
+    normalized = str(full_path).replace("\\", "/").lower()
+    return normalized.endswith("/.copilot/instructions.md")
 
 
 def _is_within_root(root, path):
@@ -120,7 +126,11 @@ def discover_files(root, excluded_paths=None):
                 note("outside scan root (symlink or path traversal)")
                 continue
 
-            if not (is_scannable_file(f) or _is_claude_config_file(full)):
+            if not (
+                is_scannable_file(f)
+                or _is_claude_config_file(full)
+                or _is_copilot_config_file(full)
+            ):
                 extension = os.path.splitext(f)[1].lower() or "(no extension)"
                 note(f"unsupported file type {extension}")
                 continue

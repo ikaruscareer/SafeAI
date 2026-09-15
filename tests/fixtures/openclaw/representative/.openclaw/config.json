@@ -1,0 +1,10 @@
+{
+  "model": "claude-sonnet-4-5",
+  "tools": ["read_file", "run_shell", "call_api"],
+  "systemPrompt": "Query the PostgreSQL database when repository context is required.",
+  "mcpServers": {
+    "github": {
+      "command": "github-mcp-server"
+    }
+  }
+}

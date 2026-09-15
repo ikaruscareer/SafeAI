@@ -137,6 +137,8 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 | n8n | ✔ | Partial | Minimal | Minimal | Experimental |
 | Cursor (.cursorrules) | ✔ | Minimal | Minimal | Minimal | Experimental |
 | Windsurf (.windsurfrules) | ✔ | Minimal | Minimal | Minimal | Experimental |
+| OpenClaw config | ✔ | Minimal | Minimal | Minimal | Experimental |
+| GitHub Copilot instructions | ✔ | Minimal | Minimal | Minimal | Experimental |
 
 
 ### Framework Support Details
@@ -161,6 +163,12 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 - **Cursor (.cursorrules)** — detects declared tools/permissions and
   capability-relevant keywords (shell, filesystem, HTTP, database) in the
   IDE's rules config, JSON, YAML, or free text
+- **Windsurf (.windsurfrules)** — detects declared tools, models, and
+  capability-relevant keywords in JSON, YAML, or free-text rules
+- **OpenClaw config** — detects JSON/YAML files under `.openclaw/` and
+  `.openclaw.yaml`, including declared tools, models, and MCP servers
+- **GitHub Copilot instructions** — detects repository instruction Markdown,
+  YAML frontmatter, and `.copilot/*.yml` tool or permission grants
 
 Maturity is on the scale defined in [`docs/reference/FRAMEWORK_SUPPORT.md`](docs/reference/FRAMEWORK_SUPPORT.md):
 **Partial** = reliable detection and discovery with capability/risk analysis over

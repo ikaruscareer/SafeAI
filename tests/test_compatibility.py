@@ -143,6 +143,68 @@ class TestWindsurfGolden:
         assert model["capabilities"]
 
 
+class TestOpenClawGolden:
+    """OpenClaw JSON/YAML config-file adapter."""
+
+    def test_detection(self):
+        report = _scan("openclaw")
+        assert "openclaw" in report["detected_frameworks"]
+
+    def test_tools_model_capabilities_and_mcp(self):
+        report = _scan("openclaw")
+        model = next(
+            item
+            for item in report["unified_models"]
+            if "openclaw" in item.get("frameworks", [])
+        )
+        artifacts = model["artifacts"]
+        assert {tool["name"] for tool in artifacts["tools"]} >= {
+            "read_file", "run_shell", "call_api",
+        }
+        assert {entry["name"] for entry in artifacts["models"]} == {
+            "claude-sonnet-4-5",
+        }
+        assert {capability["name"] for capability in model["capabilities"]} >= {
+            "shell", "filesystem", "external_apis", "databases", "mcp",
+        }
+        parsed = next(
+            item["data"]
+            for item in report["agent_models"]
+            if item["framework"] == "openclaw"
+        )
+        assert any(asset.get("name") == "github" for asset in parsed["mcp_assets"])
+
+
+class TestCopilotGolden:
+    """GitHub Copilot Markdown and YAML instruction-file adapter."""
+
+    def test_detection(self):
+        report = _scan("copilot")
+        assert "copilot" in report["detected_frameworks"]
+
+    def test_frontmatter_and_markdown_capabilities(self):
+        report = _scan("copilot")
+        model = next(
+            item
+            for item in report["unified_models"]
+            if "copilot" in item.get("frameworks", [])
+        )
+        artifacts = model["artifacts"]
+        assert {tool["name"] for tool in artifacts["tools"]} >= {
+            "read_file", "run_shell",
+        }
+        assert {entry["name"] for entry in artifacts["models"]} == {"gpt-5"}
+        assert {capability["name"] for capability in model["capabilities"]} >= {
+            "shell", "filesystem", "external_apis", "mcp",
+        }
+        parsed = next(
+            item["data"]
+            for item in report["agent_models"]
+            if item["framework"] == "copilot"
+        )
+        assert any(asset.get("name") == "github" for asset in parsed["mcp_assets"])
+
+
 class TestN8NGolden:
     """n8n workflow adapter."""
 

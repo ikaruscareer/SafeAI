@@ -42,6 +42,8 @@ we deliberately do not overclaim coverage.
 | n8n | Workflow JSON + references | Workflows, nodes, connections | Shell, databases, email, external APIs | Minimal | Experimental |
 | Cursor (.cursorrules) | Filename + JSON/YAML/free text | Declared tools, model | Shell, filesystem, external APIs, databases | Minimal | Experimental |
 | Windsurf (.windsurfrules) | Filename + JSON/YAML/free text | Declared tools, model | Shell, filesystem, external APIs, databases | Minimal | Experimental |
+| OpenClaw config | Filename + JSON/YAML/free text | Declared tools, model, MCP servers | Shell, filesystem, external APIs, databases, MCP | Minimal | Experimental |
+| GitHub Copilot instructions | Filename + Markdown/frontmatter/YAML | Declared tools, model, MCP servers | Shell, filesystem, external APIs, databases, MCP | Minimal | Experimental |
 
 ---
 

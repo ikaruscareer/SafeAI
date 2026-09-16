@@ -51,11 +51,14 @@ jobs:
         run: |
           TAG_VERSION="${{ steps.meta.outputs.version }}"
           CODE_VERSION=$(python -c "from safeai.version import SAFEAI_VERSION; print(SAFEAI_VERSION)")
-          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+          if [ "$TAG_VERSION" = "2" ]; then
+            echo "Floating tag v2 — skipping version-match check"
+          elif [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
             echo "::error::Tag version ($TAG_VERSION) != code version ($CODE_VERSION)"
             exit 1
+          else
+            echo "Version match: $TAG_VERSION"
           fi
-          echo "Version match: $TAG_VERSION"
 
       - name: "Check: all rules have required fields"
         run: |

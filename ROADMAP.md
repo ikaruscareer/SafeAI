@@ -4,7 +4,79 @@ SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI 
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.2.0 is shipped (Contract & Proof). **v2.2.1 is in progress** (release-evidence scoping, offline-boundary clarity).
+> **Current state:** v2.2.1 is shipped. Unreleased: `--digest-file` sidecar (PR #148),
+> OpenClaw and GitHub Copilot config-file adapters (PR #159, closes #155).
+> Next milestones: CE 2.3 (Plugin SDK) and CE 2.4 (Static IaC).
+
+---
+
+## Five outcomes (re-baseline, accepted)
+
+The milestone list below is retained for planning detail, but the public
+story is these five outcomes, in this order. Items marked ✅ are shipped;
+items marked ⏳ are the actual remaining work — the re-baseline adds no
+new subsystem, it sequences what exists.
+
+### 1. KYA ChangeGuard — the flagship (mostly shipped, lanes remaining)
+
+*Outcome: every PR tells the reviewer what authority changed and whether
+policy allows it. "SafeAI tells you what your agent can now do that it
+could not do before."*
+
+- ✅ Tool/MCP/skill-centric authority diffs, access-mode transitions
+  (`none < read < write < mutate < execute`), new external destinations,
+  `ESC_*` + `ESC_COMBO_*` rules with remediation, baseline-aware gate
+  outcomes (`pass | warn | review-required | block | accepted-exception`,
+  `safeai/kya/contract.py: POLICY_OUTCOMES`). Shipped across CE 1.4 → v2.1.
+- ⏳ Review decision lanes (accepted direction, none shipped yet): Lane A
+  deterministic gates vs Lane B mandatory-review events; prompt/config
+  changes resolve to `require_review`, never `pass`; source→destination
+  paths in PR output within existing caps. See "Review decision lanes".
+
+### 2. KYA Evidence Contract — the foundation (shipped core, hardening planned)
+
+*Outcome: every scanner result is durable, portable, and honest about
+uncertainty. Trend dashboards must not precede stable artefacts.*
+
+- ✅ Manifest Contract v1, canonical digests, `manifest verify`,
+  per-finding `evidence_type` (`static-pattern` / `static-config`),
+  assurance boundary block, 20-fixture benchmark corpus. Shipped in CE 2.2.
+- ⏳ Hardening deltas: explicit change classes on diffs
+  (`authority | destination | data-reach | governance-control |
+  prompt-or-free-text | dependency | unknown`); a per-finding
+  `gateability` field (Lane-A deterministic vs Lane-B review-only);
+  signable per-scan attestations binding commit SHA, SafeAI version,
+  ruleset version, policy profile + hash, baseline reference, decision,
+  and suppression state (today: hash integrity only, no per-scan signature).
+
+### 3. True Capability Surface — depth over breadth (next depth wave)
+
+*Outcome: show the real practical authority behind the declared design.*
+
+- Prioritise: deeper Claude Code / Cursor / Windsurf / MCP support,
+  command-aware MCP analysis, tool→implementation mapping, secret/config
+  inventory (names and provenance only), destination taxonomy, conservative
+  data-flow expansion. Much of the scaffolding shipped (CE 1.5 → v2.1);
+  depth tuning continues.
+- Guidance: do not race to add shallow adapters for every emerging
+  framework. Framework churn is high; core-team depth on the most-used
+  agent surfaces beats a broad but fragile compatibility table. Breadth
+  arrives via the community plugin SDK (CE 2.3), not the core team.
+
+### 4. Static declared-versus-granted authority — the moat (CE 2.4, planned)
+
+*Outcome: flag where repository IaC grants more — or less — authority than
+the agent declares. Local, source-based, inspectable, auditable; live
+IAM/RBAC reconciliation stays a separate, explicitly installed Corporate
+component (EE3). Sequencing unchanged.*
+
+### 5. Enterprise evidence plane — only after adoption (all EE planned)
+
+*Outcome: aggregate evidence without weakening Community Edition. Build
+the trusted evidence chain first (self-hosted registry from CI-submitted
+manifests, ownership and review routing, central exceptions, signed
+attestations, retention), dashboards and integrations after — not charts
+first.*
 
 ---
 
@@ -242,7 +314,10 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ## CE 2.3 — Plugin SDK and Rule Ecosystem *(planned)*
 
-*Goal: grow coverage through contribution without a hosted marketplace.*
+*Goal: grow coverage through contribution without a hosted marketplace.
+Per the re-baseline (§Five outcomes, item 3): the core team works depth,
+the ecosystem works breadth — new framework adapters arrive via community
+packs on this SDK, not as core-team shallow adapters.*
 
 - Stable plugin API (adapters, analyzers, rules, policy packs, report enrichers).
 - Adapter/rule/policy-pack lifecycle: versioning, pinning, per-scan recording.
@@ -410,7 +485,10 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 - Price on **agents or repositories under governance**, not seats; keep the free tier genuinely useful at small scale.
 
 ## EE1 — Organisational Evidence Registry
-*The first thing to sell. Aggregation and ownership, not analytics.*
+*The first thing to sell. Aggregation and ownership, not analytics. Per the
+re-baseline (§Five outcomes, item 5): ship the evidence chain — registry,
+ownership, exceptions, attestations, retention — before dashboards and
+integrations, not charts first.*
 - Self-hosted central registry of an org-wide KYA inventory from CI-submitted manifests and local exports.
 - **Auto-discovery** — "scan all my agents" workflows. Automatically discover agent repositories across GitHub orgs, GitLab groups, and Azure DevOps projects. Schedule periodic scans and populate the registry without manual `safeai scan` invocations. Uses GitHub/GitLab/Azure APIs to enumerate repos, then triggers CI scans via webhook or scheduled workflow.
 - **Background monitoring MVP** — continuous agent inventory with change detection. Registry polls repos on a schedule, detects new/changed/removed agents, flags drift from approved baseline. Alert on new governance findings, policy violations, or capability escalations. Dashboard shows fleet-wide health at a glance.
@@ -465,7 +543,7 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 
 - **v2.1.x** — ✅ **Shipped.** v2.1.0: quality gates (`--fail-on-rule`, `--fail-on-category`), PR auto-posting (`--pr-comment-post`), MCP poisoning depth (schema/resource injection), standalone binaries, VS Code MVP, golden fixtures for all 17 adapters. v2.1.1: PyPI trusted publishing. v2.1.2: Cosign keyless signing (OpenSSF Signed-Releases).
 - **CE 2.2** — ✅ **Shipped (v2.2.0).** Manifest Contract v1, offline integrity, escalation remediation catalog, 20-fixture benchmark corpus, DCO + edition boundary + ADRs, re-baselined roadmap.
-- **v2.2.1 (in progress)** — Release-evidence scoping (tag-only uploads, asset invariant gate), offline-boundary clarity (integration announcement, token/data docs).
+- **v2.2.1 (shipped)** — Release-evidence scoping (tag-only uploads, asset invariant gate), offline-boundary clarity (integration announcement, token/data docs).
 
 - **v1.7.0** — IDE-scoped MCP discovery (Cursor, Windsurf, VS Code), named policy profiles (`developer`, `strict-ci`, `mcp`, `rag`, `production-agent`), registry freshness indicators, `--strict-suppressions` CI failure, component registry persistence (schema v3 `component_snapshots`), component-change diffs (self-comparison bug fixed).
 - **v1.8.0 (curated: "True Authority & Complete Lifecycle")** — ✅ **Shipped.** CE 1.4 + CE 1.5 + CE 1.8 closure: Finding Lifecycle Event Engine (`finding_lifecycle` / schema v4, `ESC_RECURRING_RISK`), Stale Suppression Guard (fingerprint-bound waivers), Agent Enrichment Schema (`safeai registry metadata set` / `agent_metadata` table), Tool ↔ Implementation Mapping, Command-Aware MCP Resolution (`assurance: resolved` vs `unresolved-command`), Target Taxonomy Engine (Database / Object Storage / SaaS API buckets). **Plus depth:** prompt risk depth (multi-line, cross-file, indirect injection, XML/HTML injection), data leakage depth (private keys, JWT, AWS keys, connection strings, base64/hex, per-pattern severity), cross-component analysis (`component_graph.py` — skill→tool→workflow→MCP→model relationships). **Community:** expanded from 5 to 25 community scan targets; `safeai welcome` guided first-run experience. **Gate for CE 2.0.**

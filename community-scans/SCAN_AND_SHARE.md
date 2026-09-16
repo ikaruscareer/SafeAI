@@ -63,6 +63,101 @@ python -m safeai scan /tmp/<framework> \
 | `--fail-on <level>` | Exit with code 1 if findings at or above this severity |
 | `--verbose` | Show detailed scan progress |
 
+## Shortcut: scan several frameworks at once
+
+`scripts/scan_framework.py` replaces Steps 2 and 3 when you want to cover more
+than one framework. It clones each target, scans it, and writes a side-by-side
+comparison. A target that fails to clone or scan is recorded and skipped, so one
+bad repository never ends the run.
+
+```bash
+# By id from community-scans/targets.yml
+python scripts/scan_framework.py --frameworks langgraph crewai instructor
+
+# By URL, for anything not in the target list
+python scripts/scan_framework.py --urls https://github.com/langchain-ai/langgraph
+
+# Mixed, with an HTML comparison
+python scripts/scan_framework.py \
+  --frameworks langgraph instructor \
+  --urls https://github.com/some-org/their-agent \
+  --html
+
+# See what you can scan, or check a plan before committing to it
+python scripts/scan_framework.py --list
+python scripts/scan_framework.py --frameworks langgraph dspy --dry-run
+```
+
+Names are matched loosely, so `LlamaIndex`, `llama-index`, and `llama_index` all
+resolve to the same catalog entry. A bare `owner/repo` works too, and picks up
+the catalog's pinned `default_ref` when the repository is a known target.
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--frameworks ID [ID ...]` | Target ids from `targets.yml`, or `owner/repo` |
+| `--urls URL [URL ...]` | `https://github.com/<owner>/<repo>` URLs |
+| `--output-dir DIR` | Where results land (default: `community-scans/reports/automated/`) |
+| `--html` | Also render `comparison.html` |
+| `--list` | Print the known target ids and exit |
+| `--dry-run` | Resolve targets and print the plan without cloning |
+| `--depth N` | Clone depth (default: 1, a shallow clone) |
+| `--clone-timeout SEC` | Per-target clone timeout (default: 600) |
+| `--scan-timeout SEC` | Per-target scan timeout (default: 1800) |
+| `--top-rules N` | Rows in the most-frequent-rules table (default: 15) |
+| `--keep-clones` | Keep the cloned repositories for follow-up investigation |
+| `--workspace DIR` | Clone into `DIR` instead of a temporary directory |
+| `--verbose` | Pass `--verbose` to each scan |
+
+### Output layout
+
+```
+community-scans/reports/automated/
+├── COMPARISON.md          # the side-by-side report
+├── comparison.json        # the same data, machine-readable
+├── comparison.html        # with --html
+├── langgraph/
+│   ├── langgraph.json     langgraph.sarif     langgraph.html
+│   ├── langgraph-scorecard.json               langgraph-scorecard.md
+│   └── langgraph-scan.log # kept even when a scan fails
+└── crewai/ ...
+```
+
+`COMPARISON.md` covers severity counts, both scores, detected frameworks, a
+capability matrix, per-category trust scores, the most frequent rules across all
+targets, and auto-generated observations (rules that fired everywhere, which are
+the likeliest systematic false positives).
+
+Exit codes: `0` every target scanned · `1` partial, some targets failed ·
+`2` usage error, or nothing scanned at all.
+
+### Before you share the results
+
+`community-scans/reports/` is git-ignored, so nothing here is committed or
+published by accident. That is deliberate — see
+[`disclosure-policy.md`](disclosure-policy.md).
+
+- The per-target JSON, SARIF, and HTML are **raw and unreviewed**. They can quote
+  code from the scanned repository. Run
+  `community-scans/scripts/sanitise_report.py --report <file> --out <file>`
+  before anything goes public.
+- `COMPARISON.md` and `comparison.json` are aggregate-only by design: rule ids,
+  counts, and capability names, with no finding messages or file paths.
+- Everything is static-analysis evidence and needs human validation before you
+  open an issue against a framework.
+
+### Notes from real runs
+
+- Scan time does not track repository size. In one run CrewAI (2,172 files) took
+  145s while agno (4,877 files) ran past 200s and dspy was slower still. Set
+  `--scan-timeout` deliberately when you queue up unfamiliar targets.
+- A scanner crash can still exit `1`, so the script treats a missing JSON report
+  as the failure signal and pulls the real cause into the failures table
+  (for example `scanner crashed: RecursionError: maximum recursion depth
+  exceeded`). If you see that, the scan log in the target's directory has the
+  full traceback and is worth an issue.
+
 ## Step 4: Review the Results
 
 Open the HTML report for an interactive view:

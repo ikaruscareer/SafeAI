@@ -10,6 +10,8 @@ Examines workflow YAML/JSON templates for security risks:
 import json
 import re
 
+from safeai.analyzers import register_analyzer
+
 _APPROVAL_RE = re.compile(r"approv|gate|review|manual|human|sign[-_]?off|confirm", re.IGNORECASE)
 _INSECURE_DEFAULT_RE = re.compile(
     r"auto_approve|allow_all|skip_validation|no_auth|no_gate|bypass|disabled.*auth|skip.*check",
@@ -39,6 +41,7 @@ def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None
     }
 
 
+@register_analyzer(phase="component")
 class WorkflowAnalyzer:
     name = "workflow"
 

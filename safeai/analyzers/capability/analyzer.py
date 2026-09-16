@@ -10,6 +10,8 @@ Operates in two passes:
 
 import re
 
+from safeai.analyzers import register_analyzer
+
 CAP_PATTERNS = {
     "shell": re.compile(r"subprocess|os\.system|popen", re.IGNORECASE),
     "filesystem": re.compile(r"open\(|os\.remove|os\.write|pathlib", re.IGNORECASE),
@@ -99,6 +101,7 @@ def _iter_evidence(value):
         yield str(value)
 
 
+@register_analyzer
 class CapabilityAnalyzer:
     name = "capability"
 

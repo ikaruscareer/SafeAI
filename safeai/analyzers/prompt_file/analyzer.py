@@ -10,6 +10,8 @@ and raw prompt text for security risks:
 
 import re
 
+from safeai.analyzers import register_analyzer
+
 _UNTRUSTED_PLACEHOLDER_RE = re.compile(
     r"\{\{\s*(user_input|input|query|request|prompt|text|message|data|context)\s*\}\}"
     r"|\{\s*(user_input|input|query|request|prompt|text|message|data|context)\s*\}"
@@ -62,6 +64,7 @@ def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None
     }
 
 
+@register_analyzer(phase="component")
 class PromptFileAnalyzer:
     name = "prompt_file"
 

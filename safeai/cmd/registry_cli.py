@@ -359,15 +359,50 @@ def cmd_import(args):
         conn.close()
     prefix = "Would import" if args.dry_run else "Imported"
     print(f"{prefix} inventory from {args.file}")
+    drift = stats.pop("pin_drift", None) or []
     for key, value in stats.items():
         print(f"  {key}: {value}")
+    for warning in drift:
+        print(f"  warning: pack pin drift — {warning}")
     return 0
 
 
 def cmd_components(args):
     """List tracked components and optionally their consuming agents."""
+    import json as _json
+
+    from safeai.kya.lockfile import build_lockfile, check_lockfile
+
     conn = _open_registry(args.registry_path)
     try:
+        lockfile_path = getattr(args, "lockfile", None)
+        if lockfile_path:
+            document = build_lockfile(
+                conn, component_type=getattr(args, "component_type", None)
+            )
+            with open(lockfile_path, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(_json.dumps(document, indent=2, sort_keys=True))
+                handle.write("\n")
+            print(f"Wrote component lockfile ({len(document['components'])} pins) to {lockfile_path}")
+            return 0
+
+        check_path = getattr(args, "check_lockfile", None)
+        if check_path:
+            with open(check_path, encoding="utf-8") as handle:
+                lockfile = _json.load(handle)
+            drift = check_lockfile(
+                conn, lockfile, component_type=getattr(args, "component_type", None)
+            )
+            total = sum(len(drift[k]) for k in ("added", "removed", "changed"))
+            if total == 0:
+                print("Component lockfile holds: no drift.")
+                return 0
+            print(f"Component lockfile drift: {total} difference(s)")
+            for kind in ("added", "removed", "changed"):
+                for entry in drift[kind]:
+                    print(f"  {kind}: {entry}")
+            return 1
+
         components = list_components_deduped(
             conn, component_type=getattr(args, "component_type", None)
         )

@@ -6,6 +6,8 @@ Examines model constructor calls and config blocks for unsafe settings:
   - Explicitly disabled safety features
 """
 
+from safeai.analyzers import register_analyzer
+
 _UNSAFE_TEMP_THRESHOLD = 1.0
 
 # Keys that indicate content filtering / safety mechanisms
@@ -47,6 +49,7 @@ def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None
     }
 
 
+@register_analyzer(phase="component")
 class ModelConfigAnalyzer:
     name = "model_config"
 

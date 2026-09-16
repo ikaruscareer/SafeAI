@@ -38,7 +38,10 @@
         "custom_rules_dir": {"type": ["string", "null"]},
         "custom_rules_count": {"type": "integer"},
         "builtin_rules_count": {"type": "integer"},
-        "rule_pack_ids": {"type": "array", "items": {"type": "string"}}
+        "rule_pack_ids": {"type": "array", "items": {"type": "string"}},
+        "analyzer_versions": {"type": "object", "additionalProperties": {"type": ["string", "null"]}},
+        "parser_versions": {"type": "object", "additionalProperties": {"type": ["string", "null"]}},
+        "policy_profile": {"type": ["string", "null"]}
       }
     },
     "project": {

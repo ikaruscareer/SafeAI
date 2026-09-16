@@ -312,19 +312,29 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ---
 
-## CE 2.3 — Plugin SDK and Rule Ecosystem *(planned)*
+## CE 2.3 — Plugin SDK and Rule Ecosystem *(in progress: WS1–WS7 implementation open as PR)*
 
 *Goal: grow coverage through contribution without a hosted marketplace.
 Per the re-baseline (§Five outcomes, item 3): the core team works depth,
 the ecosystem works breadth — new framework adapters arrive via community
 packs on this SDK, not as core-team shallow adapters.*
 
-- Stable plugin API (adapters, analyzers, rules, policy packs, report enrichers).
-- Adapter/rule/policy-pack lifecycle: versioning, pinning, per-scan recording.
-- Fixture requirements and compatibility policy for community packs.
-- Curated community packages, signed where practical, distributed as versioned artifacts — no hosted marketplace.
-- Lockfile-style component integrity (deferred from CE 1.6).
-- CLI integration-namespace review: network paths (today `--pr-comment-post`, kept for compatibility) evaluated for an explicit `integrations` command namespace.
+- ✅ **Stable plugin API** — adapters (`@register_parser` +
+  `safeai.parsers` entry points, shipped earlier) and analyzers
+  (`@register_analyzer` with core/component phases +
+  `safeai.analyzers` entry points, isolated third-party runs).
+  Report enrichers and policy packs planned.
+- ✅ **Adapter/rule/policy-pack lifecycle** — per-scan recording
+  (manifest `analyzer_versions`/`parser_versions`/`policy_profile`,
+  registry `plugin_versions_json`, schema v6); export carries pins,
+  import warns on drift.
+- ✅ **Fixture requirements and compatibility policy** for community packs
+  (`docs/guides/COMMUNITY_PACKS.md`, `safeai rules check`, init scaffold).
+- ⏳ **Curated community packages**, signed where practical — process, not code.
+- ✅ **Lockfile-style component integrity** — `registry components
+  --lockfile` / `--check-lockfile` over latest-scan content hashes.
+- ✅ **CLI integration-namespace review** — decided: no namespace yet
+  (ADR 0005); `--pr-comment-post` stays the single explicit network path.
 
 ## CE 2.4 — Static IaC Authority Correlation *(planned)*
 

@@ -106,7 +106,8 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
     scan_meta : dict
         Keys: ``scan_id``, ``started_at``, ``completed_at``.
     safeai_meta : dict
-        Keys: ``version``, ``ruleset_version``, ``config_hash``.
+        Keys: ``version``, ``ruleset_version``, ``config_hash``,
+        ``analyzer_versions`` (name -> version), ``parser_versions``.
     agents : list
         KYA agent records (from ``enrich.build_agent_records``).
     policy_decision : dict, optional
@@ -135,6 +136,9 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
             "custom_rules_count": safeai_meta.get("custom_rules_count", 0),
             "builtin_rules_count": safeai_meta.get("builtin_rules_count", 0),
             "rule_pack_ids": safeai_meta.get("rule_pack_ids", []),
+            "analyzer_versions": safeai_meta.get("analyzer_versions", {}),
+            "parser_versions": safeai_meta.get("parser_versions", {}),
+            "policy_profile": safeai_meta.get("policy_profile"),
         },
         "project": {
             "project_id": project.get("project_id"),

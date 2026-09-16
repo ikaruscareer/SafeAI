@@ -205,6 +205,16 @@ _SCHEMA_V5 = """
 ALTER TABLE component_snapshots ADD COLUMN content_hash TEXT;
 """
 
+# --- Migration 6 (v2.3): per-scan plugin/pack versions -------------------
+#
+# Adds a ``plugin_versions_json`` column to ``scans`` carrying the CE 2.3
+# pack lifecycle record: analyzer versions, parser versions, and rule
+# pack ids as seen by that scan. NULL for scans persisted before v2.3
+# (the manifest itself always carries the versions going forward).
+_SCHEMA_V6 = """
+ALTER TABLE scans ADD COLUMN plugin_versions_json TEXT;
+"""
+
 #: Forward-only migrations, applied in ascending order. Migrations are
 #: additive: no migration drops, rewrites, or reorders an existing row.
 _MIGRATIONS = {
@@ -213,4 +223,5 @@ _MIGRATIONS = {
     3: _SCHEMA_V3,
     4: _SCHEMA_V4,
     5: _SCHEMA_V5,
+    6: _SCHEMA_V6,
 }

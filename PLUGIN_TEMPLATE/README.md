@@ -31,8 +31,13 @@ PLUGIN_TEMPLATE/
    ```
 2. Rename classes and identifiers from `ExampleFramework` to your framework name
 3. Implement the detection and parsing logic
-4. Register the parser in `engine/scan.py`
-5. Write tests
+4. Register the parser with `@register_parser` (parsers) or
+   `@register_analyzer(phase="component")` (analyzers) — no engine
+   file needs editing; `discover_parsers()` / `discover_analyzers()`
+   pick them up. For out-of-tree distribution, expose the class through
+   the `safeai.parsers` / `safeai.analyzers` entry-point group instead.
+5. Write tests (see `docs/guides/COMMUNITY_PACKS.md` for the fixture
+   contract: `fixtures/risky_*` must fire, `fixtures/safe_*` must not)
 
 ---
 
@@ -46,8 +51,10 @@ PLUGIN_TEMPLATE/
 import re
 from safeai.analysis.capabilities import dedupe_capabilities, make_capability
 from safeai.analysis.semantic import build_semantic_document, resolve_symbol, resolve_symbol_origin
+from safeai.frameworks import register_parser
 
 
+@register_parser
 class ExampleFrameworkParser:
     name = "example_framework"
 
@@ -109,11 +116,14 @@ class ExampleFrameworkParser:
 ```python
 """Example analyzer for framework-specific security checks."""
 
+from safeai.analyzers import register_analyzer
 
+
+@register_analyzer(phase="component")
 class ExampleAnalyzer:
     name = "example_analyzer"
 
-    def run(self, file_cache, rules, agent_models=None):
+    def run(self, file_cache, rules, agent_models=None, components=None):
         findings = []
         rule_map = {r.get("id"): r for r in (rules or [])}
 
@@ -227,18 +237,24 @@ def test_example_analyzer_detects_missing_timeout():
 
 ## Registration
 
-Add your parser and analyzer to `safeai/engine/scan.py`:
+Decorate your classes — no engine edits needed:
 
 ```python
-from safeai.frameworks.example_framework.parser import ExampleFrameworkParser
-from safeai.analyzers.example_analyzer.analyzer import ExampleAnalyzer
+from safeai.frameworks import register_parser
+from safeai.analyzers import register_analyzer
 
-# In the parsers list:
-parsers = [..., ExampleFrameworkParser()]
+@register_parser
+class ExampleFrameworkParser:
+    ...
 
-# In the analyzers list:
-analyzers = [..., ExampleAnalyzer()]
+@register_analyzer(phase="component")
+class ExampleAnalyzer:
+    ...
 ```
+
+Component-phase analyzers must accept `components=None`; a raising
+third-party analyzer is skipped with a warning and never fails a scan.
+Validate a finished pack offline with `safeai rules check <pack-dir>`.
 
 ---
 

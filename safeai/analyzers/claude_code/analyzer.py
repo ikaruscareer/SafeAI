@@ -12,6 +12,7 @@ scope — reading it would leak a developer's personal environment into a
 CI artifact. Multi-scope discovery is deferred to a later release.
 """
 
+from safeai.analyzers import register_analyzer
 from safeai.analyzers.prompt.analyzer import analyze_prompt_text
 from safeai.frameworks.claude_code import commands as cc_commands
 from safeai.frameworks.claude_code import permissions as cc_permissions
@@ -116,6 +117,7 @@ def _finding(rule_id, rule_map, message, path, line, evidence, reason, severity=
     }
 
 
+@register_analyzer
 class ClaudeCodeAnalyzer:
     """Emit authority findings for Claude Code project configuration."""
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-16
+
+**Plugin SDK and Rule Ecosystem (CE 2.3).**
+
 ### Added — CE 2.3 Plugin SDK and Rule Ecosystem
 
 - Analyzer plugin registry (`safeai.analyzers`: `@register_analyzer`,

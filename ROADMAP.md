@@ -4,9 +4,10 @@ SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI 
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.2.1 is shipped. Unreleased: `--digest-file` sidecar (PR #148),
-> OpenClaw and GitHub Copilot config-file adapters (PR #159, closes #155).
-> Next milestones: CE 2.3 (Plugin SDK) and CE 2.4 (Static IaC).
+> **Current state:** v2.3.0 release in progress (CE 2.3 Plugin SDK,
+> `--digest-file`, OpenClaw/Copilot adapters — all merged to main).
+> Next milestones: v2.4.0 (ChangeGuard lanes + evidence hardening) and
+> v2.5.0 (Static IaC).
 
 ---
 
@@ -260,7 +261,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - ✅ **MCP tool-description/schema poisoning detection** — detect hidden instructions embedded in MCP tool description or schema fields that get silently injected into the agent's context ("tool poisoning"). Extends the existing MCP analyzer (currently structural: resolved vs unresolved-command) with content-level inspection of tool metadata. Aligns with the existing `PROMPT_*` depth work (multi-line, cross-file, indirect injection). **Shipped in v2.1** — includes schema field injection, resource description injection, and obfuscated pattern detection.
 
 ### Config-file coverage
-- ✅ **Config-file-level agent scanning** — native support for `.cursorrules`, Windsurf/OpenClaw configs, Copilot configs as first-class scan targets alongside Claude Code permission analysis (`safeai/frameworks/claude_code/permissions.py`). Each config format gets its own adapter;   capability and governance analysis over agent configuration files that declare permissions, tools, and behavioral constraints. **Shipped in v2.0.0** (`.cursorrules` in v1.9.1, `.windsurfrules` in v2.0.0; OpenClaw/Copilot shipped post-2.2.1, PR #159).
+- ✅ **Config-file-level agent scanning** — native support for `.cursorrules`, Windsurf/OpenClaw configs, Copilot configs as first-class scan targets alongside Claude Code permission analysis (`safeai/frameworks/claude_code/permissions.py`). Each config format gets its own adapter;   capability and governance analysis over agent configuration files that declare permissions, tools, and behavioral constraints. **Shipped in v2.0.0** (`.cursorrules` in v1.9.1, `.windsurfrules` in v2.0.0; OpenClaw/Copilot in v2.3.0, PR #159).
 
 ### Exit criterion
 > SafeAI detects token-bombing risks in governance signals, catches tool-poisoning in MCP metadata, scans agent config files across all major IDE frameworks, and presents governance gaps as a failure-class coverage matrix — all offline, all static, all in the Community Edition.
@@ -312,7 +313,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 
 ---
 
-## CE 2.3 — Plugin SDK and Rule Ecosystem *(in progress: WS1–WS7 implementation open as PR)*
+## CE 2.3 — Plugin SDK and Rule Ecosystem *(shipped on main, releasing as v2.3.0)*
 
 *Goal: grow coverage through contribution without a hosted marketplace.
 Per the re-baseline (§Five outcomes, item 3): the core team works depth,

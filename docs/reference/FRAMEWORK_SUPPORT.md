@@ -1,7 +1,8 @@
 # SafeAI — Framework Support Reference
 
-> **Current release: v2.2.1** (2026-09-12) — release-evidence scoping,
-> offline-boundary clarity; plus unreleased OpenClaw and GitHub Copilot
+> **Current release: v2.3.0** (2026-09-16) — plugin SDK and rule
+> ecosystem (analyzer registry, per-scan pack versions, component
+> lockfile, `safeai rules check`), OpenClaw and GitHub Copilot
 > config-file adapters.
 
 This document details the detection approach, discovered artifacts, capabilities, and limitations for each supported AI agent framework.

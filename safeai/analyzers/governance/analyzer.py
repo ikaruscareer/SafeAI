@@ -12,6 +12,8 @@ scoring category and HTML report governance summary section.
 
 import re
 
+from safeai.analyzers import register_analyzer
+
 # Patterns for detecting governance controls in code
 _TIMEOUT_RE = re.compile(
     r"\b(?:timeout|time_out|request_timeout|connect_timeout|read_timeout)"
@@ -157,6 +159,7 @@ def _finding(rule_id, rule, message, path, line, tool_name=None, evidence=None, 
     }
 
 
+@register_analyzer(phase="component")
 class GovernanceAnalyzer:
     """Detects missing operational governance controls on agent tools.
 

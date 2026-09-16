@@ -16,6 +16,8 @@ scope, and are reported as such in each finding's ``limitation`` field.
 import ast
 import re
 
+from safeai.analyzers import register_analyzer
+
 # Untrusted input sources
 SOURCE_PATTERNS = [
     re.compile(r"\b(?:user_input|user_message|user_query|user_prompt)\b", re.IGNORECASE),
@@ -300,6 +302,7 @@ def _finding(rule_id, rule, message, path, line, evidence=None):
     }
 
 
+@register_analyzer(phase="component")
 class DataFlowAnalyzer:
     """Detects untrusted input propagation into sensitive sinks.
 

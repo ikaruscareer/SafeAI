@@ -55,6 +55,10 @@ safeai = "safeai.cmd.cli:main"
 # Built-in parsers are loaded directly by safeai.frameworks.
 [project.entry-points."safeai.parsers"]
 
+# Third-party analyzer classes can expose themselves through this group.
+# Built-in analyzers are loaded directly by safeai.analyzers.
+[project.entry-points."safeai.analyzers"]
+
 [tool.ruff.lint]
 ignore = ["BLE001", "S110", "S112", "RUF012"]
 extend-per-file-ignores = { "tests/fixtures/action/**" = ["I001", "F841", "PLW1510", "T201"] }

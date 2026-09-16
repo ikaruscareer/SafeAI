@@ -18,6 +18,8 @@ user-facing value.
 
 import re
 
+from safeai.analyzers import register_analyzer
+
 INVENTORY_RULE_ID = "ENV_DEP_INVENTORY"
 
 #: Python ``os.getenv(...)`` / ``os.environ[...]`` / ``os.environ.get(...)``.
@@ -141,6 +143,7 @@ def analyze_file_inventory(path, content):
     return refs
 
 
+@register_analyzer
 class EnvDependencyAnalyzer:
     """Detects references to external configuration and credentials."""
 

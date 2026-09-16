@@ -32,12 +32,6 @@ from safeai.analysis.import_graph import build_import_graph, module_name_from_pa
 from safeai.analysis.project_graph import build_project_graph
 from safeai.analysis.semantic import build_semantic_document
 from safeai.analysis.tool_surface import build_tool_surface
-from safeai.analyzers.capability.analyzer import CapabilityAnalyzer
-from safeai.analyzers.claude_code.analyzer import ClaudeCodeAnalyzer
-from safeai.analyzers.data_leakage.analyzer import DataLeakageAnalyzer
-from safeai.analyzers.env_dependency.analyzer import EnvDependencyAnalyzer
-from safeai.analyzers.mcp.analyzer import MCPAnalyzer
-from safeai.analyzers.prompt.analyzer import PromptAnalyzer
 from safeai.frameworks import discover_parsers
 from safeai.kya.assurance import build_assurance_boundary
 from safeai.rules.loader import load_rules
@@ -422,42 +416,56 @@ class ScanOrchestrator:
         self.normalized_capabilities = aggregate_capabilities(capabilities)
 
     def analyze(self):
-        """Stage 5: run the core + component analyzers over sources and components."""
-        analyzers = [
-            CapabilityAnalyzer(),
-            PromptAnalyzer(),
-            DataLeakageAnalyzer(),
-            EnvDependencyAnalyzer(),
-            MCPAnalyzer(),
-            ClaudeCodeAnalyzer(),
+        """Stage 5: run the core + component analyzers over sources and components.
+
+        Analyzers come from the ``safeai.analyzers`` registry
+        (built-ins in legacy run order, then ``safeai.analyzers``
+        entry-point plugins).  Third-party analyzers run isolated: a
+        raising plugin is skipped with a warning and never fails a scan.
+        """
+        from safeai.analyzers import discover_analyzers
+
+        builtin_core = [
+            a
+            for a in discover_analyzers(phase="core", include_external=False)
+            if not getattr(a, "_safeai_external", False)
         ]
-        for analyzer in analyzers:
+        for analyzer in builtin_core:
             self.findings.extend(analyzer.run(self.file_cache, self.rules, self.agent_models))
 
-        # --- Phase 1.5: component-level analyzers ---
-        from safeai.analyzers.dataflow.analyzer import DataFlowAnalyzer
-        from safeai.analyzers.governance.analyzer import GovernanceAnalyzer
-        from safeai.analyzers.model_config.analyzer import ModelConfigAnalyzer
-        from safeai.analyzers.prompt_file.analyzer import PromptFileAnalyzer
-        from safeai.analyzers.skill.analyzer import SkillAnalyzer
-        from safeai.analyzers.tool_def.analyzer import ToolDefAnalyzer
-        from safeai.analyzers.workflow.analyzer import WorkflowAnalyzer
-
-        component_analyzers = [
-            SkillAnalyzer(),
-            PromptFileAnalyzer(),
-            ToolDefAnalyzer(),
-            ModelConfigAnalyzer(),
-            WorkflowAnalyzer(),
-            GovernanceAnalyzer(),
-            DataFlowAnalyzer(),
+        # --- Phase 1.5: component-level analyzers (built-ins + isolated plugins) ---
+        builtin_component = [
+            a
+            for a in discover_analyzers(phase="component", include_external=False)
+            if not getattr(a, "_safeai_external", False)
         ]
-        for analyzer in component_analyzers:
+        for analyzer in builtin_component:
             self.findings.extend(
                 analyzer.run(
                     self.file_cache, self.rules, self.agent_models, components=self.components
                 )
             )
+        external = [
+            a
+            for a in discover_analyzers(phase="component", include_external=True)
+            if getattr(a, "_safeai_external", False)
+        ]
+        for analyzer in external:
+            try:
+                self.findings.extend(
+                    analyzer.run(
+                        self.file_cache,
+                        self.rules,
+                        self.agent_models,
+                        components=self.components,
+                    )
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Skipping analyzer plugin %s after error: %s",
+                    getattr(analyzer, "name", type(analyzer).__name__),
+                    exc,
+                )
         self.findings.sort(key=lambda f: (
             str(f.get("file") or ""),
             int(f.get("line") or 0),

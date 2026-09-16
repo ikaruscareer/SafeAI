@@ -17,6 +17,7 @@ import re
 import yaml
 
 from safeai.analysis.capabilities import make_capability
+from safeai.analyzers import register_analyzer
 from safeai.analyzers.mcp.compatibility import (
     normalize_mcp_data,
     resolve_mcp_schema_version,
@@ -156,6 +157,7 @@ def _base_finding(
     }
 
 
+@register_analyzer
 class MCPAnalyzer:
     name = "mcp"
 

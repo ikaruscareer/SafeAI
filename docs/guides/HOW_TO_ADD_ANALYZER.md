@@ -153,21 +153,25 @@ Add associated rules to `rules/base_rules.yaml`:
 
 ## Step 3: Register the Analyzer
 
-In `safeai/engine/scan.py`:
+Decorate the class — no engine file needs editing. Core analyzers run
+over file sources; component analyzers run over extracted components
+and must accept `components=None`:
 
 ```python
-from safeai.analyzers.my_analyzer.analyzer import GovernanceAnalyzer
+from safeai.analyzers import register_analyzer
 
-analyzers = [
-    CapabilityAnalyzer(),
-    PromptAnalyzer(),
-    DataLeakageAnalyzer(),
-    MCPAnalyzer(),
-    GovernanceAnalyzer(),  # <-- add yours here
-]
-for analyzer in analyzers:
-    findings.extend(analyzer.run(file_cache, rules, agent_models))
+
+@register_analyzer(phase="component")
+class GovernanceAnalyzer:
+    ...
 ```
+
+`discover_analyzers()` picks it up in registration order (built-ins
+first). For out-of-tree distribution, expose the class through the
+`safeai.analyzers` entry-point group instead of modifying SafeAI.
+Third-party analyzers run isolated: a raising plugin is skipped with a
+warning and never fails a scan — but exception-safety is not
+sandboxing (see `docs/guides/COMMUNITY_PACKS.md` trust boundary).
 
 ---
 

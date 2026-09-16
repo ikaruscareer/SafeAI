@@ -14,6 +14,8 @@ Scans Python source and other text files for:
 
 import re
 
+from safeai.analyzers import register_analyzer
+
 UNTRUSTED = re.compile(r"(user_input|request|input|response)")
 INTERP = re.compile(r"f\"|\.format\(")
 
@@ -239,6 +241,7 @@ def analyze_prompt_text(path, content, rule_map=None, framework="generic"):
     return findings
 
 
+@register_analyzer
 class PromptAnalyzer:
     name = "prompt"
 

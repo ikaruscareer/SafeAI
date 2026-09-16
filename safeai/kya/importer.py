@@ -103,6 +103,52 @@ def _exists(conn, sql, params):
     return conn.execute(sql, params).fetchone() is not None
 
 
+def _current_pack_pins():
+    """Return current analyzer/parser versions for pin-drift comparison."""
+    from safeai.analyzers import analyzer_records
+    from safeai.frameworks import parser_records
+    from safeai.version import SAFEAI_VERSION
+
+    return {
+        "analyzers": {r["name"]: r["version"] or SAFEAI_VERSION for r in analyzer_records()},
+        "parsers": {r["name"]: r["version"] or SAFEAI_VERSION for r in parser_records()},
+    }
+
+
+def _pin_drift_warnings(document):
+    """Compare exported pack pins against current versions.
+
+    Returns human-readable warning strings (empty when the export
+    carries no pins or everything matches). Drift never blocks an
+    import: pack versions are advisory provenance, not a gate.
+    """
+    warnings = []
+    try:
+        current = _current_pack_pins()
+    except Exception:
+        return warnings
+    for project in document.get("projects", []):
+        pins = project.get("plugin_versions") or {}
+        if not isinstance(pins, dict) or not pins:
+            continue
+        pid = project.get("project_id", "?")
+        for kind in ("analyzers", "parsers"):
+            exported = pins.get(kind) or {}
+            live = current.get(kind) or {}
+            for name, version in sorted(exported.items()):
+                if name in live and live[name] != version:
+                    warnings.append(
+                        f"project '{pid}': {kind[:-1]} '{name}' was {version} "
+                        f"at export, current is {live[name]}"
+                    )
+            for name in sorted(set(live) - set(exported)):
+                warnings.append(
+                    f"project '{pid}': {kind[:-1]} '{name}' present locally "
+                    "but absent from export pins"
+                )
+    return warnings
+
+
 def plan_import(conn, document, *, force=False):
     """Return the rows an import would add or update without mutating the registry."""
     validate_inventory(document)
@@ -177,6 +223,7 @@ def plan_import(conn, document, *, force=False):
                 for event in _unique_lifecycle(project)
             )
             counts["tool_snapshots"] += len(_unique_tools(project))
+    counts["pin_drift"] = _pin_drift_warnings(document)
     return counts
 
 
@@ -271,7 +318,8 @@ def _import_project(conn, document, project, *, now, force):
         "INSERT OR IGNORE INTO scans(scan_id, project_id, started_at, completed_at, "
         "files_scanned, safeai_version, ruleset_version, config_hash, commit_sha, branch, tag, "
         "manifest_json, manifest_hash, policy_outcome, risk_score, agent_count, finding_count, "
-        "severity_counts_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "severity_counts_json, plugin_versions_json) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             scan_id,
             project_id,
@@ -291,6 +339,7 @@ def _import_project(conn, document, project, *, now, force):
             len(agents),
             len(findings),
             "{}",
+            None,
         ),
     )
 

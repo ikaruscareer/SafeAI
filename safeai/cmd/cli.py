@@ -13,6 +13,7 @@ Usage::
     safeai init [--profile <name>] [--force]
     safeai registry list|show|history|diff|export|import|components ...
     safeai manifest validate|verify <file>
+    safeai rules check [dir]
 
 KYA (Know Your Agent) behavior:
   * Every scan produces normalized findings (stable fingerprints,
@@ -158,6 +159,11 @@ def _build_parser():
                           help="Filter by component type")
     reg_comp.add_argument("--agents", action="store_true",
                           help="Show which agents reference each component")
+    reg_comp.add_argument("--lockfile", metavar="PATH",
+                          help="Write a pinned component lockfile and exit")
+    reg_comp.add_argument("--check-lockfile", metavar="PATH", dest="check_lockfile",
+                          help="Exit 1 when components drifted from the lockfile")
+    reg_comp.add_argument("--project", help="Scope to a single project ID (lockfile only)")
 
     reg_diff = reg_sub.add_parser("diff", help="Compare two snapshots of an agent")
     _common(reg_diff)
@@ -215,6 +221,12 @@ def _build_parser():
         choices=["status", "on", "off"],
         help="Telemetry subcommand: status, on, or off",
     )
+
+    rules = sub.add_parser("rules", help="Validate a community rule pack (offline)")
+    rules_sub = rules.add_subparsers(dest="rules_command")
+    rules_check = rules_sub.add_parser("check", help="Validate rules and run pack fixtures")
+    rules_check.add_argument("directory", nargs="?", default=".safeai/rules",
+                             help="Rule pack directory (default: .safeai/rules)")
 
     return parser
 
@@ -325,7 +337,9 @@ def _run_init(args):
       * ``.safeai/config.yml`` — project identity and defaults
       * ``.safeai/policy.yml`` — selected policy profile
       * ``.safeai/suppressions.yml`` — empty suppressions file with format hint
-      * ``.safeai/rules/`` — custom rules directory with example rule
+      * ``.safeai/rules/`` — custom rules directory with example rule,
+        plus a rule-pack authoring scaffold (``pack_example.yaml``,
+        ``fixtures/`` safe/risky examples, ``tests/test_pack.py``)
 
     Idempotent by default: existing files are skipped. ``--force`` overwrites.
     """
@@ -427,6 +441,90 @@ def _run_init(args):
         else:
             created.append("rules/example_rules.yaml")
 
+    # --- Rule-pack authoring scaffold (CE 2.3): example override rule,
+    # fixtures proving it takes effect, and a pack test template ---
+    pack_yaml = os.path.join(rules_dir, "pack_example.yaml")
+    if os.path.exists(pack_yaml) and not force:
+        skipped.append("rules/pack_example.yaml")
+    else:
+        os.makedirs(rules_dir, exist_ok=True)
+        pack_rule = (
+            "# Example rule pack: override a built-in rule's severity.\n"
+            "# Custom rules take effect as overrides of built-in rule IDs\n"
+            "# (see docs/guides/COMMUNITY_PACKS.md). Verify with:\n"
+            "#   safeai rules check .safeai/rules\n"
+            "- id: CAP_subprocess_shell\n"
+            "  description: subprocess invoked with shell=True (pack example override)\n"
+            "  severity: high\n"
+            "  owasp_llm: LLM01\n"
+        )
+        with open(pack_yaml, "w", encoding="utf-8") as fh:
+            fh.write(pack_rule)
+        if os.path.exists(pack_yaml) and force:
+            overwritten.append("rules/pack_example.yaml")
+        else:
+            created.append("rules/pack_example.yaml")
+
+    fixtures_dir = os.path.join(rules_dir, "fixtures")
+    pack_fixtures = {
+        "safe_example.py": (
+            '"""Safe fixture: no shell=True, so the pack rule must stay silent."""\n'
+            "\n"
+            "import subprocess\n"
+            "\n"
+            "\n"
+            "def list_dir(path):\n"
+            '    return subprocess.run(["ls", path], capture_output=True)\n'
+        ),
+        "risky_example.py": (
+            '"""Risky fixture: shell=True must fire CAP_subprocess_shell at pack severity."""\n'
+            "\n"
+            "import subprocess\n"
+            "\n"
+            "\n"
+            "def run_query(user_input):\n"
+            "    return subprocess.run(user_input, shell=True)\n"
+        ),
+    }
+    for filename, content in pack_fixtures.items():
+        fixture_path = os.path.join(fixtures_dir, filename)
+        if os.path.exists(fixture_path) and not force:
+            skipped.append(f"rules/fixtures/{filename}")
+            continue
+        os.makedirs(fixtures_dir, exist_ok=True)
+        with open(fixture_path, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        if os.path.exists(fixture_path) and force:
+            overwritten.append(f"rules/fixtures/{filename}")
+        else:
+            created.append(f"rules/fixtures/{filename}")
+
+    pack_test_path = os.path.join(rules_dir, "tests", "test_pack.py")
+    if os.path.exists(pack_test_path) and not force:
+        skipped.append("rules/tests/test_pack.py")
+    else:
+        os.makedirs(os.path.join(rules_dir, "tests"), exist_ok=True)
+        pack_test = (
+            '"""Pack expected-findings test: run with pytest from the repo root."""\n'
+            "\n"
+            "import os\n"
+            "\n"
+            "from safeai.rules.pack_test import check_pack\n"
+            "\n"
+            "PACK_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\n"
+            "\n"
+            "\n"
+            "def test_pack_fixtures_match_rules():\n"
+            "    errors, _warnings = check_pack(PACK_DIR)\n"
+            "    assert errors == []\n"
+        )
+        with open(pack_test_path, "w", encoding="utf-8") as fh:
+            fh.write(pack_test)
+        if os.path.exists(pack_test_path) and force:
+            overwritten.append("rules/tests/test_pack.py")
+        else:
+            created.append("rules/tests/test_pack.py")
+
     # --- Summary ---
     print("SafeAI project initialized.")
     print()
@@ -448,6 +546,7 @@ def _run_init(args):
     print(f"  2. Review .safeai/policy.yml (profile: {profile_name})")
     print("  3. Add custom rules to .safeai/rules/")
     print("  4. Run: safeai scan .")
+    print("  5. Check your rule pack: safeai rules check .safeai/rules")
     return 0
 
 
@@ -481,6 +580,25 @@ def _run_telemetry(args):
     return 1
 
 
+def _run_rules_check(args):
+    """Handle ``safeai rules check [dir]``: validate pack + fixtures."""
+    import os
+
+    from safeai.rules.pack_test import check_pack
+
+    pack_dir = os.path.abspath(args.directory)
+    errors, warnings = check_pack(pack_dir)
+    for warning in warnings:
+        print(f"warning: {warning}")
+    if errors:
+        print(f"Rule pack check failed ({len(errors)} error(s)) in {pack_dir}:")
+        for error in errors:
+            print(f"  - {error}")
+        return 1
+    print(f"Rule pack OK: {pack_dir}")
+    return 0
+
+
 def main(argv=None):
     _configure_stdout()
     parser = _build_parser()
@@ -509,6 +627,10 @@ def main(argv=None):
         exit_code = run_manifest_command(args)
     elif args.command == "telemetry":
         exit_code = _run_telemetry(args)
+    elif args.command == "rules":
+        if getattr(args, "rules_command", None) != "check":
+            parser.error("rules requires a subcommand: check")
+        exit_code = _run_rules_check(args)
     else:
         parser.print_help()
 

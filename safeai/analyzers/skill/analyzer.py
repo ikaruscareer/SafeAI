@@ -12,6 +12,8 @@ skill configs, custom skill definitions) for security risks:
 import json
 import re
 
+from safeai.analyzers import register_analyzer
+
 _SECRET_RE = re.compile(
     r"api[_-]?key\s*[:=]\s*['\"][^'\"]{8,}['\"]"
     r"|token\s*[:=]\s*['\"][^'\"]{8,}['\"]"
@@ -49,6 +51,7 @@ def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None
     }
 
 
+@register_analyzer(phase="component")
 class SkillAnalyzer:
     name = "skill"
 

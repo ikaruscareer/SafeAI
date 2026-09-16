@@ -137,8 +137,9 @@ class MyFrameworkParser:
 - Build an identity analyzer (detect hardcoded credentials with context)
 
 ### Recommended files
-- Create: `analyzers/<name>/analyzer.py`
-- `engine/scan.py` (register the analyzer)
+- Create: `analyzers/<name>/analyzer.py` (decorate with
+  `@register_analyzer(phase="component")` — no engine edits needed;
+  see `docs/guides/HOW_TO_ADD_ANALYZER.md`)
 - `rules/base_rules.yaml` (add associated rules)
 - `tests/` (comprehensive test suite)
 

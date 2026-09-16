@@ -11,6 +11,8 @@ full secret values.
 
 import re
 
+from safeai.analyzers import register_analyzer
+
 PATTERNS = {
     "API_KEY": re.compile(r"(api[_-]?key)\s*=\s*[\"']?[A-Za-z0-9_-]{16,}" , re.IGNORECASE),
     "TOKEN": re.compile(r"(token)\s*=\s*[\"']?[A-Za-z0-9._-]{16,}", re.IGNORECASE),
@@ -77,6 +79,7 @@ def mask_secret_evidence(line):
     return _SECRET_VALUE_RE.sub(_repl, line.strip())
 
 
+@register_analyzer
 class DataLeakageAnalyzer:
     name = "data_leakage"
 

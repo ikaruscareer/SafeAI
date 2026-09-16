@@ -209,6 +209,7 @@ class ScanPostProcessor:
             policy_doc = kya_policy.merge_profile(profile, policy_doc)
         self.policy_decision = kya_policy.evaluate_policy(policy_doc, self.report)
         self.report["policy_decision"] = self.policy_decision
+        self.policy_profile_name = profile_name
 
     def _resolve_identity(self):
         from safeai.kya.enrich import build_agent_records
@@ -228,6 +229,21 @@ class ScanPostProcessor:
             self.args.rules, scan_root=self.directory
         )
         self.scan_id = new_scan_id()
+        safeai_version = _safeai_version()
+
+        # CE 2.3: per-scan plugin/pack versions. Built-ins resolve to the
+        # SafeAI version; entry-point plugins carry their dist version.
+        from safeai.analyzers import analyzer_records
+        from safeai.frameworks import parser_records
+
+        analyzer_versions = {
+            rec["name"]: rec["version"] or safeai_version
+            for rec in analyzer_records()
+        }
+        parser_versions = {
+            rec["name"]: rec["version"] or safeai_version
+            for rec in parser_records()
+        }
 
         effective_config = {
             "rules_dir": os.path.abspath(self.args.rules) if self.args.rules else None,
@@ -242,6 +258,9 @@ class ScanPostProcessor:
             "custom_rules_count": self.rule_pack_metadata.get("custom_rules_count", 0),
             "builtin_rules_count": self.rule_pack_metadata.get("builtin_rules_count", 0),
             "rule_pack_ids": self.rule_pack_metadata.get("rule_pack_ids", []),
+            "analyzer_versions": analyzer_versions,
+            "parser_versions": parser_versions,
+            "policy_profile": getattr(self, "policy_profile_name", None),
         }
         try:
             source_root = os.path.relpath(self.directory, os.getcwd())

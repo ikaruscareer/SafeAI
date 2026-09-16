@@ -308,12 +308,15 @@ plugin-like pattern:
 4. **Confidence-aware** — reports parser-level confidence and discovery method.
 
 Third-party parsers can also register via the `safeai.parsers` entry-point
-group and the `@register_parser` decorator.
+group and the `@register_parser` decorator; analyzers work the same way
+via `@register_analyzer` (core/component phases) and the
+`safeai.analyzers` entry-point group, running isolated so a raising
+plugin never fails a scan.
 
 **To add a new framework adapter:**
 1. Create `frameworks/new_framework/parser.py`.
 2. Implement `detect()` and `parse()`.
-3. Register it in the orchestrator's parser discovery.
+3. Decorate with `@register_parser` (no orchestrator edits needed).
 
 ---
 

@@ -11,6 +11,7 @@ import ast
 import re
 
 from safeai.analysis.semantic import _name_of
+from safeai.analyzers import register_analyzer
 
 _SHELL_RE = re.compile(r"subprocess|os\.system|popen|os\.popen|shell\s*=\s*True", re.IGNORECASE)
 _EXEC_RE = re.compile(r"\bexec\(|\beval\(|os\.system", re.IGNORECASE)
@@ -42,6 +43,7 @@ def _base_finding(rule_id, rule, message, path, line, evidence=None, reason=None
     }
 
 
+@register_analyzer(phase="component")
 class ToolDefAnalyzer:
     name = "tool_def"
 

@@ -25,6 +25,23 @@ from safeai.kya.util import utc_now_iso
 EXPORT_SCHEMA_VERSION = "1.1"
 
 
+def _scan_plugin_versions(conn, scan_id):
+    """Return the recorded pack pins for a scan ({} when unknown)."""
+    try:
+        row = conn.execute(
+            "SELECT plugin_versions_json FROM scans WHERE scan_id = ?", (scan_id,)
+        ).fetchone()
+    except Exception:
+        return {}
+    if not row or not row[0]:
+        return {}
+    try:
+        data = json.loads(row[0])
+    except (TypeError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def _portable_components(conn, scan_id):
     components = []
     for row in list_components(conn, scan_id=scan_id):
@@ -110,6 +127,7 @@ def export_inventory(conn, *, project_id=None, include_history=False, include_su
             "source_root": project.get("source_root"),
             "agents": agents,
             "latest_scan_id": latest,
+            "plugin_versions": _scan_plugin_versions(conn, latest) if latest else {},
             "latest_findings": latest_findings,
             "component_snapshots": _portable_components(conn, latest) if latest else [],
             "tool_snapshots": get_tool_snapshots(conn, latest) if latest else [],

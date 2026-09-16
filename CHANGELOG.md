@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — CE 2.3 Plugin SDK and Rule Ecosystem
+
+- Analyzer plugin registry (`safeai.analyzers`: `@register_analyzer`,
+  `discover_analyzers`, `safeai.analyzers` entry-point group) mirroring
+  the parser pattern; built-in run order preserved; third-party
+  analyzers run isolated and never fail a scan.
+- Per-scan plugin/pack versions: manifest `safeai` block stamps
+  `analyzer_versions`, `parser_versions`, and `policy_profile`;
+  registry `scans` row carries `plugin_versions_json` (schema v6,
+  additive migration); portable imports record NULL for pre-v2.3 exports.
+- Pack lifecycle: `registry export` carries pack pins per project,
+  `registry import --dry-run` warns on pin drift (advisory, never a gate).
+- Lockfile-style component integrity: `registry components --lockfile`
+  writes pinned `{type, name, path, content_hash}` pins,
+  `--check-lockfile` exits 1 on added/removed/changed components.
+- Rule-authoring scaffold: `safeai init` writes `pack_example.yaml`,
+  `fixtures/` safe/risky examples, and `tests/test_pack.py`; new
+  `safeai rules check [dir]` validates rules and runs expected-findings
+  fixtures offline (pack rules act as overrides of built-in rule IDs).
+- Community pack contract (`docs/guides/COMMUNITY_PACKS.md`): layout,
+  fixture requirements, compatibility policy, pinning, sharing.
+- ADR 0005: no `integrations` command namespace yet —
+  `--pr-comment-post` stays the single explicit network path.
+
 ### Added
 
 - `safeai scan --digest-file PATH` (with `--manifest`) writes a detached sidecar

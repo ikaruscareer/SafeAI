@@ -199,13 +199,18 @@ def persist_scan(conn, manifest):
             manifest_hash = sha256_text(manifest_json)
 
             policy = summary.get("policy_decision") or {}
+            plugin_versions = {
+                "analyzers": safeai.get("analyzer_versions") or {},
+                "parsers": safeai.get("parser_versions") or {},
+                "rule_packs": safeai.get("rule_pack_ids") or [],
+            }
             conn.execute(
                 "INSERT OR REPLACE INTO scans("
                 "scan_id, project_id, started_at, completed_at, files_scanned, "
                 "safeai_version, ruleset_version, config_hash, commit_sha, branch, tag, "
                 "manifest_json, manifest_hash, policy_outcome, risk_score, "
-                "agent_count, finding_count, severity_counts_json"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "agent_count, finding_count, severity_counts_json, plugin_versions_json"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     scan_id,
                     project_id,
@@ -225,6 +230,7 @@ def persist_scan(conn, manifest):
                     summary.get("agent_count"),
                     len(manifest.get("findings") or []),
                     json.dumps(summary.get("severity_counts") or {}, sort_keys=True),
+                    json.dumps(plugin_versions, sort_keys=True),
                 ),
             )
 

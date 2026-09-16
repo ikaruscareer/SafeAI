@@ -4,8 +4,8 @@ SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI 
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.3.0 release in progress (CE 2.3 Plugin SDK,
-> `--digest-file`, OpenClaw/Copilot adapters — all merged to main).
+> **Current state:** v2.3.0 shipped (CE 2.3 Plugin SDK,
+> `--digest-file`, OpenClaw/Copilot adapters).
 > Next milestones: v2.4.0 (ChangeGuard lanes + evidence hardening) and
 > v2.5.0 (Static IaC).
 

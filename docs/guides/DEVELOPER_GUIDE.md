@@ -16,7 +16,7 @@ Create an isolated environment outside the repository being scanned:
 python3 -m venv .safeai-venv
 source .safeai-venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install "git+https://github.com/ikaruscareer/SafeAI.git@v1.6"
+python -m pip install SafeAI-Static-Analyzer
 safeai --version
 ```
 
@@ -76,7 +76,7 @@ jobs:
           persist-credentials: false
 
       - name: Run SafeAI
-        uses: ikaruscareer/SafeAI@v1.6
+        uses: ikaruscareer/SafeAI@v2
         with:
           path: .
           fail-on: critical

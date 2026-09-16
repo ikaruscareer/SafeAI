@@ -1,8 +1,8 @@
 # SafeAI — Framework Support Reference
 
-> **Current release: v2.0.1** (2026-09-03) — governance depth (runaway-loop
-> and recursion-guard detection), Windsurf adapter, failure-class coverage
-> matrix, evidence-type schema v1.3, release hardening.
+> **Current release: v2.2.1** (2026-09-12) — release-evidence scoping,
+> offline-boundary clarity; plus unreleased OpenClaw and GitHub Copilot
+> config-file adapters.
 
 This document details the detection approach, discovered artifacts, capabilities, and limitations for each supported AI agent framework.
 

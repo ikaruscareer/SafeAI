@@ -1,118 +1,96 @@
 # SafeAI — Release Verification
 
 Verify the integrity and authenticity of your SafeAI installation.
+Current release: **v2.2.1**. Since v2.1.2, artifacts are signed
+keyless with Sigstore/Cosign (`.sig` + `.pem` sidecars) — there are no
+GPG `.asc` files. Check the asset names below against
+https://github.com/ikaruscareer/SafeAI/releases/tag/v2.2.1 before trusting
+any download.
 
 ## Quick Verify (any platform)
 
 ```bash
 safeai --version
-# Expected: 2.0.1
+# Expected: 2.2.1
 ```
 
 ## Linux
 
-### Verify GPG signature
+### Verify checksum (SHA-256)
 
 ```bash
-# Import the maintainer's public key (one-time)
-gpg --keyserver keyserver.ubuntu.com --recv-keys 0xYOUR_KEY_ID
-
 # Download the release assets
-wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/safeai_static_analyzer-2.0.1-py3-none-any.whl
-wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/safeai_static_analyzer-2.0.1-py3-none-any.whl.asc
+wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/safeai_static_analyzer-2.2.1-py3-none-any.whl
+wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/SHA256SUMS
 
-# Verify the signature
-gpg --verify safeai_static_analyzer-2.0.1-py3-none-any.whl.asc \
-            safeai_static_analyzer-2.0.1-py3-none-any.whl
-# Expected: Good signature from "IkarusCareer"
+sha256sum -c SHA256SUMS --ignore-missing
+# Expected: safeai_static_analyzer-2.2.1-py3-none-any.whl: OK
 ```
 
-### Verify SHA-256 checksum
+### Verify Cosign keyless signature
 
 ```bash
-wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/SHA256SUMS
-sha256sum -c SHA256SUMS --ignore-missing
-# Expected: safeai_static_analyzer-2.0.1-py3-none-any.whl: OK
+# Install cosign if not present: https://docs.sigstore.dev/cosign/installation/
+wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/safeai_static_analyzer-2.2.1-py3-none-any.whl.pem
+wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/safeai_static_analyzer-2.2.1-py3-none-any.whl.sig
+
+cosign verify-blob \
+  --certificate safeai_static_analyzer-2.2.1-py3-none-any.whl.pem \
+  --signature safeai_static_analyzer-2.2.1-py3-none-any.whl.sig \
+  --certificate-identity "https://github.com/ikaruscareer/SafeAI/.github/workflows/release.yml@refs/tags/v2.2.1" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  safeai_static_analyzer-2.2.1-py3-none-any.whl
+# Expected: Verified OK
 ```
 
 ### Verify provenance (SLSA)
 
 ```bash
 # Requires slsa-verifier (https://github.com/slsa-framework/slsa-verifier)
-slsa-verifier verify-artifact safeai_static_analyzer-2.0.1-py3-none-any.whl \
-  --provenance-path provenance.json \
+wget https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/safeai-2.2.1-slsa-provenance.json
+
+slsa-verifier verify-artifact safeai_static_analyzer-2.2.1-py3-none-any.whl \
+  --provenance-path safeai-2.2.1-slsa-provenance.json \
   --source-uri github.com/ikaruscareer/SafeAI
+# Expected: Verified SLSA provenance
 ```
 
 ## macOS
 
-### Verify GPG signature
+### Verify checksum (SHA-256)
 
 ```bash
-# Install gpg if not present
-brew install gnupg
+curl -LO https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/SHA256SUMS
+curl -LO https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/safeai_static_analyzer-2.2.1-py3-none-any.whl
 
-# Import the maintainer's public key (one-time)
-gpg --keyserver keyserver.ubuntu.com --recv-keys 0xYOUR_KEY_ID
-
-# Download and verify
-curl -LO https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/safeai_static_analyzer-2.0.1-py3-none-any.whl
-curl -LO https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/safeai_static_analyzer-2.0.1-py3-none-any.whl.asc
-
-gpg --verify safeai_static_analyzer-2.0.1-py3-none-any.whl.asc \
-            safeai_static_analyzer-2.0.1-py3-none-any.whl
-# Expected: Good signature from "IkarusCareer"
-```
-
-### Verify SHA-256 checksum
-
-```bash
-curl -LO https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/SHA256SUMS
 shasum -a 256 -c SHA256SUMS --ignore-missing
-# Expected: safeai_static_analyzer-2.0.1-py3-none-any.whl: OK
+# Expected: safeai_static_analyzer-2.2.1-py3-none-any.whl: OK
 ```
 
-### Verify with Homebrew (if applicable)
+### Verify Cosign keyless signature
 
-```bash
-# If SafeAI is distributed via Homebrew
-brew update && brew upgrade safeai
-```
+Same `cosign verify-blob` invocation as Linux (install via
+`brew install cosign`).
 
 ## Windows (PowerShell)
 
-### Verify GPG signature
+### Verify checksum (SHA-256)
 
 ```powershell
-# Install Gpg4win if not present
-winget install GnuPG.Gpg4win
-
-# Import the maintainer's public key (one-time)
-gpg --keyserver keyserver.ubuntu.com --recv-keys 0xYOUR_KEY_ID
-
-# Download and verify
-Invoke-WebRequest -Uri "https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/safeai_static_analyzer-2.0.1-py3-none-any.whl" -OutFile "safeai.whl"
-Invoke-WebRequest -Uri "https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/safeai_static_analyzer-2.0.1-py3-none-any.whl.asc" -OutFile "safeai.whl.asc"
-
-gpg --verify safeai.whl.asc safeai.whl
-# Expected: Good signature from "IkarusCareer"
-```
-
-### Verify SHA-256 checksum
-
-```powershell
-Invoke-WebRequest -Uri "https://github.com/ikaruscareer/SafeAI/releases/download/v2.0.1/SHA256SUMS" -OutFile "SHA256SUMS"
+Invoke-WebRequest -Uri "https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/safeai_static_analyzer-2.2.1-py3-none-any.whl" -OutFile "safeai.whl"
+Invoke-WebRequest -Uri "https://github.com/ikaruscareer/SafeAI/releases/download/v2.2.1/SHA256SUMS" -OutFile "SHA256SUMS"
 
 # Compute hash
 $hash = (Get-FileHash -Algorithm SHA256 safeai.whl).Hash.ToLower()
-$expected = (Get-Content SHA256SUMS | Select-String "safeai.whl").Line.Split()[0]
+$expected = (Get-Content SHA256SUMS | Select-String "safeai_static_analyzer-2.2.1-py3-none-any.whl").Line.Split()[0]
 if ($hash -eq $expected) { Write-Host "Checksum OK" } else { Write-Host "MISMATCH" }
 ```
 
 ### Verify with pip hash checking
 
 ```powershell
-pip install --require-hashes --hash=sha256:<HASH> SafeAI-Static-Analyzer==2.0.1
+# Get the expected digest from the SHA256SUMS file above, then:
+pip install --require-hashes --hash=sha256:<HASH> SafeAI-Static-Analyzer==2.2.1
 ```
 
 ## Verify Git Tag
@@ -121,53 +99,51 @@ pip install --require-hashes --hash=sha256:<HASH> SafeAI-Static-Analyzer==2.0.1
 # Fetch tags
 git fetch --tags
 
-# Verify tag is signed
-git verify-tag v2.0.1
-# Expected: Good signature from "IkarusCareer"
+# Inspect the tag object (a "Good signature" line appears only if the tag was signed)
+git verify-tag v2.2.1
 
 # Or clone and verify
 git clone https://github.com/ikaruscareer/SafeAI.git
 cd SafeAI
-git checkout v2.0.1
-git verify-tag v2.0.1
+git checkout v2.2.1
 ```
 
 ## Verify PyPI Package
 
 ```bash
 # Download from PyPI
-pip download SafeAI-Static-Analyzer==2.0.1
+pip download SafeAI-Static-Analyzer==2.2.1
 
 # Verify hash matches release
-sha256sum safeai_static_analyzer-2.0.1-py3-none-any.whl
+sha256sum safeai_static_analyzer-2.2.1-py3-none-any.whl
 # Compare with SHA256SUMS from GitHub release
 ```
 
-## What to Expect
+## What to Expect (v2.2.1 assets)
 
 | Artifact | Description |
 |----------|-------------|
 | `.whl` | Python wheel package |
 | `.tar.gz` | Source distribution |
-| `.asc` | GPG detached signature (for each artifact) |
+| `.whl.sig` / `.tar.gz.sig` | Cosign keyless signature |
+| `.whl.pem` / `.tar.gz.pem` | Cosign signing certificate |
 | `SHA256SUMS` | SHA-256 checksums for all artifacts |
-| `SHA256SUMS.asc` | GPG signature for the checksum file |
-| `provenance.json` | SLSA provenance attestation |
-| `provenance.json.asc` | GPG signature for provenance |
-| `*.spdx.json` | SPDX SBOM |
-| `*.spdx.json.asc` | GPG signature for SBOM |
+| `safeai-2.2.1-slsa-provenance.json` | SLSA build provenance attestation |
+| `safeai-2.2.1-sbom.spdx.json` | SPDX SBOM |
 
 ## Troubleshooting
 
-### "No signature found"
+### "No signature found" / 404 on an asset
 
-The `.asc` file may not have been uploaded yet. Check the release assets
-at https://github.com/ikaruscareer/SafeAI/releases/tag/v2.0.1
+Check the release assets listing — asset names change between
+releases:
+https://github.com/ikaruscareer/SafeAI/releases/tag/v2.2.1
 
-### "Good signature" but wrong key
+### Cosign identity mismatch
 
-Verify the key ID matches the maintainer's published key:
-https://github.com/ikaruscareer/SafeAI/blob/main/SECURITY.md
+The `--certificate-identity` must match the tag you verify
+(`.../release.yml@refs/tags/vX.Y.Z`). Copy the exact tag, including
+the leading `v`.
 
 ### Checksum mismatch
 

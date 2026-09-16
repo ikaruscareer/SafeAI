@@ -3,7 +3,7 @@
 [![CI](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml/badge.svg)](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ikaruscareer/SafeAI/badge)](https://scorecard.dev/viewer/?uri=github.com/ikaruscareer/SafeAI)
 [![Website](https://img.shields.io/badge/web-safeai--analyzer.ikaruscareer.com-0f766e)](https://safeai-analyzer.ikaruscareer.com)
-[![Latest Release](https://img.shields.io/badge/latest-v2.0.1-0f766e)](https://github.com/ikaruscareer/SafeAI/releases/tag/v2.0.1)
+[![Latest Release](https://img.shields.io/badge/latest-v2.2.1-0f766e)](https://github.com/ikaruscareer/SafeAI/releases/tag/v2.2.1)
 [![Best Practices](https://bestpractices.dev/projects/14126/badge)](https://www.bestpractices.dev/en/projects/14126)
 
 Enjoying SafeAI? A ⭐ on [GitHub](https://github.com/ikaruscareer/SafeAI) helps more security teams find it.
@@ -51,7 +51,7 @@ SafeAI sits before runtime guardrails and red-teaming tools in the security life
 
 | Feature | Description |
 |---------|-------------|
-| **Framework Detection** | Detects and parses 17 AI agent frameworks (AST + config + regex, no mutual exclusion) |
+| **Framework Detection** | Detects and parses 19 AI agent frameworks (AST + config + regex, no mutual exclusion) |
 | **Tool Identity & Access Modes** | Capabilities attributed to named tools (agent / MCP server / skill / tool / workflow node) on an access scale `none < read < write < mutate < execute`; inferred modes are flagged, never overstated |
 | **Capability Discovery** | Maps 19 capability categories (shell, filesystem, network, database, memory, MCP, ...) with evidence, confidence, and provenance |
 | **Capability Escalation Detection** | Per-tool authority diffs between scans (new shell, read→write widening, new MCP server, removed approval gate, ...) — 14 rules, including gating-aware subsumption |
@@ -279,6 +279,16 @@ to a shared path, or use `--no-registry` for ephemeral scans.
 - Python 3.11, 3.12, or 3.13
 - PyYAML (for YAML configuration parsing)
 
+### Install from PyPI (recommended)
+
+```bash
+pip install SafeAI-Static-Analyzer
+```
+
+Unpinned on purpose — this always resolves to the latest stable
+release (see [releases](https://github.com/ikaruscareer/SafeAI/releases)).
+Verify the download with [`docs/reference/VERIFICATION.md`](docs/reference/VERIFICATION.md).
+
 ### Install from source
 
 ```bash
@@ -428,7 +438,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - uses: ikaruscareer/SafeAI@v1
+      - uses: ikaruscareer/SafeAI@v2
         with: { path: '.', fail-on: critical }
       - uses: github/codeql-action/upload-sarif@v3
         if: always()

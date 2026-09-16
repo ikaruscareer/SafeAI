@@ -123,16 +123,20 @@ def parse(self, path, content, scan_ctx=None):
 
 ## Step 3: Register the Parser
 
-Add your parser to `safeai/engine/scan.py`:
+Decorate the class — no engine file needs editing:
 
 ```python
-from safeai.frameworks.my_framework.parser import MyFrameworkParser
+from safeai.frameworks import register_parser
 
-parsers = [
-    # ... existing parsers ...
-    MyFrameworkParser(),
-]
+
+@register_parser
+class MyFrameworkParser:
+    ...
 ```
+
+`discover_parsers()` picks it up automatically. For out-of-tree
+distribution, expose the class through the `safeai.parsers`
+entry-point group instead of modifying SafeAI.
 
 ---
 
@@ -182,7 +186,8 @@ def test_parse_returns_expected_structure(tmp_path):
 - [ ] `detect()` works with imports, dependencies, and regex fallback
 - [ ] `parse()` returns a complete Normalized Agent Model
 - [ ] Tests cover positive detection, negative detection, and parse output
-- [ ] Parser is registered in `engine/scan.py`
+- [ ] Parser is decorated with `@register_parser` (or exposed via the
+  `safeai.parsers` entry-point group for out-of-tree packs)
 - [ ] Framework is added to `README.md` and `FRAMEWORK_SUPPORT.md`
 - [ ] All existing tests still pass (`python -m pytest`)
 

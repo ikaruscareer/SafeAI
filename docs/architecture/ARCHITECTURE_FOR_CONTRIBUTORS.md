@@ -8,7 +8,7 @@ This document explains SafeAI's architecture from a contributor's perspective. B
 
 ```mermaid
 flowchart TD
-    A[CLI - cmd/cli.py] --> B[Scanner Engine - engine/scan.py]
+    A[CLI - cmd/cli.py] --> B[Scanner Engine - engine/orchestrator.py]
     B --> C[File Collection]
     C --> D[Framework Parsers]
     D --> E[Normalized Agent Model]
@@ -57,7 +57,7 @@ The entry point. Parses command-line arguments, invokes the scan, and routes out
 
 ---
 
-### 2. Scanner Engine (`engine/scan.py`)
+### 2. Scanner Engine (`engine/orchestrator.py`)
 
 The orchestrator. Runs the entire pipeline in order.
 
@@ -73,7 +73,9 @@ The orchestrator. Runs the entire pipeline in order.
 9. Compute trust score
 10. Assemble report dict
 
-**Where to contribute:** Register new parsers and analyzers here.
+**Where to contribute:** New parsers and analyzers self-register via
+`@register_parser` / `@register_analyzer` (or the `safeai.parsers` /
+`safeai.analyzers` entry-point groups) — no engine edits needed.
 
 ---
 

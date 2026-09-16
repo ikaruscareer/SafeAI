@@ -12,6 +12,6 @@
 - Alternatives: introduce the namespace now with one member (rejected:
   premature structure); remove the flag (rejected: breaks CI workflows
   and the offline-boundary promise that names this exact flag).
-- Consequences: `safeai/rules check`, registry import/export, and all
+- Consequences: `safeai rules check`, registry import/export, and all
   other commands stay offline; any future network command must announce
   itself on stderr like `--pr-comment-post` does.

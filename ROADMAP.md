@@ -84,12 +84,12 @@ first.*
 
 | Theme | Shipped | Remaining | Explicitly not in Community core |
 |---|---|---|---|
-| KYA scanner core & capability discovery | 17 adapters, 79 rules, 13 analyzers, AST+regex evidence | Adapter depth, precision tuning | Live IAM reads, runtime monitoring |
+| KYA scanner core & capability discovery | 19 adapters, 79 rules, 13 analyzers, AST+regex evidence | Adapter depth, precision tuning | Live IAM reads, runtime monitoring |
 | Reviewable Change / ChangeGuard | 14 `ESC_*` rules, diffs, PR comments, remediation catalog (CE 2.2) | Review decision lanes (accepted direction) | Auto-fix, auto-created PRs |
 | Governance, lifecycle, suppressions | `GOV_*` family, failure matrix, lifecycle, policy profiles, waivers | — | Compliance certification |
 | True Capability Surface | Env inventory, dep correlation, tool↔impl map, target taxonomy, dataflow | — | Proven deployment authority |
-| AI component records | Registry schema v5, impact queries, component diffs/graph | Lockfile-style integrity (CE 2.3) | Central component registry SaaS |
-| Ecosystem / plugin SDK | `@register_parser`, `--rules` loader, `safeai init` | Stable plugin API + pack lifecycle (**CE 2.3**) | Hosted marketplace |
+| AI component records | Registry schema v6, impact queries, component diffs/graph, lockfile integrity | — | Central component registry SaaS |
+| Ecosystem / plugin SDK | `@register_parser`/`@register_analyzer`, entry-point groups, `safeai rules check`, `safeai init` pack scaffold | Curated signed packs (process) | Hosted marketplace |
 | Static IaC authority correlation | — | Terraform/CFN/K8s/Helm parsing (**CE 2.4**) | Live cloud/K8s API reads |
 | Pre-deployment validation packs | — | Capability-informed offline test plans (**CE-V**) | Runtime red-team engine, sandboxing |
 | Corporate evidence plane | — | Aggregation, SSO/RBAC, retention, reconciliation (**EE0–EE4**) | Second scanner, observability product |
@@ -227,12 +227,12 @@ These are the items that go deeper on your existing capabilities, but are not ye
 **Status: 🔄 plugin architecture; the rest ⏳ planned.**
 
 ### Ecosystem
-- 🔄 **Stable plugin SDK** — framework adapters are pluggable via the `@register_parser` decorator and the `safeai.parsers` entry-point group. **Analyzers and rules are not yet entry-point discoverable**: analyzers are hard-coded in the orchestrator and rules are directory-loaded YAML (the `safeai.parsers` group is declared but currently empty). Report enrichers and policy packs planned.
+- ✅ **Stable plugin SDK** — adapters (`@register_parser` + `safeai.parsers` entry points) and analyzers (`@register_analyzer` with core/component phases + `safeai.analyzers` entry points, isolated third-party runs); rules are directory-loaded YAML with override semantics. Report enrichers and policy packs planned. **Shipped in v2.3.0 (PR #164).**
 - ⏳ **Curated (and signed where practical) community registry** for versioned rule and policy packages.
 - ✅ **`safeai init`** — scaffold config, local registry, recommended policy profile. **Shipped in v1.9.0**.
-- 🔄 **Custom rule authoring** — the `--rules <dir>` directory loader (custom YAML overriding built-in rules by ID) shipped; authoring *scaffold* with fixtures, tests, and expected-findings tooling is planned.
+- ✅ **Custom rule authoring** — the `--rules <dir>` directory loader (custom YAML overriding built-in rules by ID) shipped; authoring *scaffold* with fixtures, tests, and expected-findings tooling shipped in v2.3.0 (`safeai init` pack scaffold, `safeai rules check`, `docs/guides/COMMUNITY_PACKS.md`).
 - ✅ **Control mappings** — OWASP Top 10 for Agentic Applications, OWASP Top 10 for LLM Applications, NIST AI RMF 1.0 (NIST AI 100-1) — presented as taxonomy, policy selection and prioritisation aid, explicitly **not** as coverage or compliance claims. **Shipped in v1.9.0**.
-- 🔄 Plugin and rule-pack versions recorded in every scan — the **ruleset version** is recorded on every scan (manifest + registry); per-parser/plugin versions are not yet recorded.
+- ✅ Plugin and rule-pack versions recorded in every scan — the **ruleset version** is recorded on every scan (manifest + registry); per-parser/plugin versions recorded since v2.3.0 (manifest `analyzer_versions`/`parser_versions`/`policy_profile`, registry `plugin_versions_json`, schema v6).
 - ✅ **Portable registry export/import** — `registry export` produces source- and secret-safe KYA inventory JSON, while `registry import <file>` performs an atomic, idempotent merge with `--dry-run` and metadata-only `--force` controls.
 - ⏳ **Opt-in usage telemetry** — anonymous, opt-in, local-first usage signal (SafeAI version, Python version, OS family, invocation context). Disabled by default; CI auto-disable; `DO_NOT_TRACK` respected; never transmits scan content. Two-phase: Phase 1 (documentation + PRIVACY.md) → Phase 2 (client implementation). **Phase 1 planned for v2.0.0.**
 
@@ -573,12 +573,13 @@ The v1.8.0 architectural review found substantial shipped surface that the
 roadmap never enumerated. Captured here so future curation does not re-discover
 it:
 
-- **18 framework parser packages** (`safeai/frameworks/`): autogen,
-  azure_foundry, bedrock_agent, claude_code, crewai, cursorrules, dify,
-  google_adk, haystack, langchain, langgraph, llamaindex, mastra,
-  microsoft_agent, n8n, openai_agents, semantic_kernel, windsurf. All
-  load via `@register_parser`; the `safeai.parsers` entry-point group is declared
-  but currently empty (third-party plugins not yet wired).
+- **20 framework parser packages** (`safeai/frameworks/`): autogen,
+  azure_foundry, bedrock_agent, claude_code, copilot, crewai, cursorrules,
+  dify, google_adk, haystack, langchain, langgraph, llamaindex, mastra,
+  microsoft_agent, n8n, openai_agents, openclaw, semantic_kernel, windsurf.
+  All load via `@register_parser`; third-party parsers and analyzers load
+  via the `safeai.parsers` / `safeai.analyzers` entry-point groups
+  (isolated, never fail a scan).
 - **13 analyzers** (`safeai/analyzers/`): capability, claude_code, data_leakage,
   dataflow, env_dependency, governance, mcp, model_config, prompt, prompt_file,
   skill, tool_def, workflow — emitting the `CAP_*`, `CC_*`, `DATA_*`,

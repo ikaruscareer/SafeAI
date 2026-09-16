@@ -134,11 +134,21 @@ Custom rules merge with built-in rules. If a custom rule has the same ID as a bu
 
 ## Testing Rules
 
-To verify a rule fires correctly:
+Prove the pack with fixtures, offline — fixture code is never executed:
 
-1. Create a test file with the pattern you want to detect
-2. Run SafeAI against it
-3. Check that the finding includes the expected rule ID
+1. Put `fixtures/risky_*.py` (must fire a pack rule ID at pack severity)
+   and `fixtures/safe_*.py` (must stay silent for pack IDs) next to the rules
+2. Run the expected-findings checker:
+
+```bash
+safeai rules check ./my-rules/
+```
+
+`safeai init` scaffolds this layout (rule + fixtures + test template).
+Brand-new rule IDs validate cleanly but only document intent — no
+analyzer emits them. To change what a scan reports, override a
+built-in ID and prove it with fixtures. Full contract:
+`docs/guides/COMMUNITY_PACKS.md`.
 
 ```python
 def test_safeai_001_fires_on_hardcoded_key(tmp_path):

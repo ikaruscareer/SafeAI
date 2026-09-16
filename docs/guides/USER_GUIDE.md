@@ -84,6 +84,14 @@ python -m safeai scan . --rules ./my-rules/
 
 Custom rules merge with built-in rules. Duplicate rule IDs overwrite severity and description.
 
+Validate a pack (rules + expected-findings fixtures) offline:
+
+```bash
+safeai rules check ./my-rules/
+```
+
+See `docs/guides/COMMUNITY_PACKS.md` for the pack contract.
+
 ### Rule File Format
 
 ```yaml

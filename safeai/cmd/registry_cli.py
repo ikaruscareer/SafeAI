@@ -376,9 +376,11 @@ def cmd_components(args):
     conn = _open_registry(args.registry_path)
     try:
         lockfile_path = getattr(args, "lockfile", None)
+        project_scope = getattr(args, "project", None)
         if lockfile_path:
             document = build_lockfile(
-                conn, component_type=getattr(args, "component_type", None)
+                conn, component_type=getattr(args, "component_type", None),
+                project_id=project_scope,
             )
             with open(lockfile_path, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write(_json.dumps(document, indent=2, sort_keys=True))
@@ -391,7 +393,8 @@ def cmd_components(args):
             with open(check_path, encoding="utf-8") as handle:
                 lockfile = _json.load(handle)
             drift = check_lockfile(
-                conn, lockfile, component_type=getattr(args, "component_type", None)
+                conn, lockfile, component_type=getattr(args, "component_type", None),
+                project_id=project_scope,
             )
             total = sum(len(drift[k]) for k in ("added", "removed", "changed"))
             if total == 0:

@@ -67,3 +67,20 @@ Distribute packs as versioned archives or git checkouts with a
 `README` (tested SafeAI versions, rule list, fixture notes). Curated
 packs are signed where practical. Never execute scanned code, never
 transmit scan content — packs are static YAML plus fixtures.
+
+## Trust boundary: plugins run in-process
+
+Entry-point plugins (`safeai.parsers`, `safeai.analyzers`) load into
+SafeAI's own Python process via `entry.load()`. A raising plugin is
+skipped with a warning and never fails a scan — but exception-safety
+is not sandboxing. A malicious or buggy plugin shares process memory:
+it can read cached file content, mutate global state, or open network
+connections, bypassing SafeAI's offline guarantee for the scanned
+content it touches.
+
+- Install third-party packs only from sources you trust, pin versions,
+  and review pack code like any other dependency.
+- YAML rule packs are data, not code: they cannot execute. Prefer rule
+  packs over code plugins when an override suffices.
+- Out-of-process execution (worker subprocesses, restricted IPC) is
+  future hardening work, not part of CE 2.3.

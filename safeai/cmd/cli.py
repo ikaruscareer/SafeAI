@@ -163,6 +163,7 @@ def _build_parser():
                           help="Write a pinned component lockfile and exit")
     reg_comp.add_argument("--check-lockfile", metavar="PATH", dest="check_lockfile",
                           help="Exit 1 when components drifted from the lockfile")
+    reg_comp.add_argument("--project", help="Scope to a single project ID (lockfile only)")
 
     reg_diff = reg_sub.add_parser("diff", help="Compare two snapshots of an agent")
     _common(reg_diff)

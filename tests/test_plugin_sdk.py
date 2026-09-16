@@ -364,6 +364,55 @@ def test_check_lockfile_rejects_malformed_input():
         check_lockfile(None, {"nope": True})
 
 
+def _project_ids(db_path):
+    import sqlite3
+
+    conn = sqlite3.connect(db_path)
+    try:
+        return {
+            r[1]: r[0]
+            for r in conn.execute("SELECT project_id, name FROM projects")
+        }
+    finally:
+        conn.close()
+
+
+def test_lockfile_scopes_to_project(tmp_path, monkeypatch):
+    import json
+
+    from safeai.cmd.cli import main
+
+    db_path = str(tmp_path / "registry.db")
+    monkeypatch.setenv("SAFEAI_REGISTRY", db_path)
+    for name, tool in (("projA", "read_file"), ("projB", "run_shell")):
+        proj = tmp_path / name
+        proj.mkdir()
+        (proj / "agent.py").write_text("x = 1\n", encoding="utf-8")
+        (proj / "helper.skill.yaml").write_text(
+            f"skill_type: helper\ntools: [{tool}]\n", encoding="utf-8"
+        )
+        _scan_to_shared_registry(str(proj), tmp_path)
+
+    by_name = _project_ids(db_path)
+    pid_a = by_name["projA"]
+    lock_a = str(tmp_path / "a.lock.json")
+    assert main(["registry", "components", "--lockfile", lock_a, "--project", pid_a]) == 0
+    with open(lock_a, encoding="utf-8") as fh:
+        assert json.load(fh)["project_id"] == pid_a
+    # Same relative path in the other project must not pollute A's pin.
+    assert main(["registry", "components", "--check-lockfile", lock_a]) == 0
+
+    (tmp_path / "projB" / "helper.skill.yaml").write_text(
+        "skill_type: helper\ntools: [database_query]\n", encoding="utf-8"
+    )
+    _scan_to_shared_registry(str(tmp_path / "projB"), tmp_path)
+    assert main(["registry", "components", "--check-lockfile", lock_a]) == 0
+    assert main(["registry", "components", "--lockfile",
+                 str(tmp_path / "b.lock.json")]) == 0
+    assert main(["registry", "components", "--check-lockfile",
+                 str(tmp_path / "b.lock.json")]) == 0
+
+
 # --------------------------------------------------------------------------
 # WS7: rule-authoring scaffold (init + rules check)
 # --------------------------------------------------------------------------

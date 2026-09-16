@@ -15,9 +15,7 @@ built-in severity/OWASP — see ``safeai/rules/loader.py``).
 Fully offline. Never executes fixture code.
 """
 
-import json
 import os
-import tempfile
 
 import yaml
 
@@ -136,20 +134,19 @@ def check_pack(pack_dir):
 
 
 def _scan_fixtures(fixtures_dir, pack_dir):
-    """Run one offline scan over fixtures; return findings or None."""
-    from safeai.cmd.cli import main
+    """Run one offline scan over fixtures via the engine API; return findings or None.
 
-    tmpdir = tempfile.mkdtemp(prefix="safeai-pack-")
-    json_path = os.path.join(tmpdir, "pack.json")
-    sarif_path = os.path.join(tmpdir, "pack.sarif")
-    main([
-        "scan", fixtures_dir, "--rules", pack_dir,
-        "--json", json_path, "--sarif", sarif_path, "--no-registry",
-    ])
+    Uses ``run_scan`` directly (not CLI ``main()``): no report files,
+    no telemetry, no registry writes, and no global-state coupling for
+    programmatic callers.
+    """
+    from safeai.engine.scan import run_scan
+
     try:
-        with open(json_path, encoding="utf-8") as handle:
-            report = json.load(handle)
-    except (OSError, ValueError):
+        report = run_scan(fixtures_dir, rules_dir=pack_dir)
+    except Exception:
+        return None
+    if not isinstance(report, dict):
         return None
     findings = report.get("findings")
     return findings if isinstance(findings, list) else None

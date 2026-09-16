@@ -231,3 +231,36 @@ def analyze_component_health(components):
         })
 
     return findings, graph
+
+def export_component_graph(graph_data):
+    """Export component graph as a list of nodes and edges for rendering.
+    
+    Returns:
+        dict with 'nodes' (list of {id, label, type}) and 
+        'edges' (list of {source, target, label})
+    """
+    nodes = {}
+    edges = []
+    
+    for edge in graph_data.get("edges", []):
+        src, dst, kind = edge["from"], edge["to"], edge["kind"]
+        src_type = src.split(":")[0] if ":" in src else "unknown"
+        dst_type = dst.split(":")[0] if ":" in dst else "unknown"
+        
+        if src not in nodes:
+            nodes[src] = {"id": src, "label": src, "type": src_type, "is_orphan": False}
+        if dst not in nodes:
+            nodes[dst] = {"id": dst, "label": dst, "type": dst_type, "is_orphan": False}
+            
+        edges.append({"source": src, "target": dst, "label": kind})
+        
+    for orphan in graph_data.get("orphaned_refs", []):
+        if orphan in nodes:
+            nodes[orphan]["is_orphan"] = True
+        else:
+            nodes[orphan] = {"id": orphan, "label": orphan, "type": "unknown", "is_orphan": True}
+            
+    return {
+        "nodes": list(nodes.values()),
+        "edges": edges
+    }

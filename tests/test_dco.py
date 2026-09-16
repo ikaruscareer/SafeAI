@@ -37,6 +37,14 @@ def test_email_match_is_case_insensitive():
     assert mod.check_commit(message, "Ada Dev", "ada@example.com") == []
 
 
+def test_bot_authors_are_exempt():
+    mod = _load()
+    assert mod.is_bot("dependabot[bot]")
+    assert mod.is_bot("github-actions[bot]")
+    assert not mod.is_bot("Ada Dev")
+    assert not mod.is_bot("[bot] fan club")
+
+
 def test_dco_doc_exists():
     assert os.path.exists(os.path.join(REPO_ROOT, "DCO.md"))
 

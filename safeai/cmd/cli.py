@@ -58,6 +58,9 @@ def _build_parser():
                       help="With --baseline: fail only on NEW or REGRESSED findings at/above --fail-on severity")
     scan.add_argument("--manifest", dest="manifest_path",
                       help="Write the canonical KYA manifest (safeai-manifest.json) to this path")
+    scan.add_argument("--digest-file", dest="digest_file",
+                      help="With --manifest: also write '<canonical-sha256>  <manifest-basename>' "
+                           "to PATH (the digest `safeai manifest verify` reports; not a raw file hash)")
     scan.add_argument("--registry",
                       help="Registry database path (default: shared registry — "
                            "SAFEAI_REGISTRY env var or ~/.safeai/registry.db)")

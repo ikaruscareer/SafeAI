@@ -13,7 +13,7 @@ This document describes the roadmap across **two editions**: the open-source **C
 | Theme | Shipped | Remaining | Explicitly not in Community core |
 |---|---|---|---|
 | KYA scanner core & capability discovery | 17 adapters, 79 rules, 13 analyzers, AST+regex evidence | Adapter depth, precision tuning | Live IAM reads, runtime monitoring |
-| Reviewable Change / ChangeGuard | 14 `ESC_*` rules, diffs, PR comments, remediation catalog (CE 2.2) | — | Auto-fix, auto-created PRs |
+| Reviewable Change / ChangeGuard | 14 `ESC_*` rules, diffs, PR comments, remediation catalog (CE 2.2) | Review decision lanes (accepted direction) | Auto-fix, auto-created PRs |
 | Governance, lifecycle, suppressions | `GOV_*` family, failure matrix, lifecycle, policy profiles, waivers | — | Compliance certification |
 | True Capability Surface | Env inventory, dep correlation, tool↔impl map, target taxonomy, dataflow | — | Proven deployment authority |
 | AI component records | Registry schema v5, impact queries, component diffs/graph | Lockfile-style integrity (CE 2.3) | Central component registry SaaS |
@@ -258,6 +258,41 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - Parse in-repo IaC incrementally: Terraform, CloudFormation, Kubernetes manifests, Helm, serverless configs.
 - Compare declared capability against granted authority, both directions: capability without grant (probable breakage), grant without capability (excess authority).
 - Report confidence honestly: repository IaC is not proof of deployed state; the assurance boundary must say so.
+
+---
+
+## Review decision lanes (accepted direction)
+
+*Goal: make "who decides" as explicit as "what changed". Accepted as design
+direction; items are scoped, none shipped yet.*
+
+- **Two formal lanes.** Lane A — deterministic gates (`--fail-on*`,
+  `--scorecard-fail-under`, `deny` policy actions) yields machine verdicts.
+  Lane B — mandatory-review events yields human verdicts and never
+  auto-passes. The lanes share evidence (`safeai/kya/policy.py`,
+  assurance boundary) but must never be blended in output: gates print
+  verdicts, review items print questions.
+- **Prompt/config changes are review events, not pass/fail claims.**
+  New or materially changed prompts, agent configs, and MCP server
+  definitions resolve to at least `require_review`/`review-required`,
+  never `pass` — even with zero findings. Extends the policy engine,
+  not the rule list.
+- **Source-to-destination paths become first-class PR output.** The
+  dataflow analyzer already pairs untrusted sources with sensitive sinks
+  (`safeai/analyzers/dataflow/analyzer.py`: `SOURCE_PATTERNS`,
+  `SINK_PATTERNS`); newly reachable paths surface in the PR comment
+  alongside escalations, within the existing 60-line cap.
+- **Extend the graph and escalation architecture; no parallel subsystem.**
+  Multi-hop and cross-component reasoning builds on
+  `safeai/analysis/component_graph.py` (`build_component_graph`,
+  `analyze_component_health`) and the `ESC_*`/`ESC_COMBO_*` table with its
+  remediation catalog — not a new `TOXIC_FLOW_*` engine. The deferred
+  toxic-flow sketch below is rescoped accordingly when CE-V is planned.
+- **Gates and heuristics stay visibly separate.** Deterministic outcomes
+  cite rules and digests; heuristic outcomes (inferred modes, regex
+  fallback, combo suspicion) keep confidence labels and the existing
+  inference severity ceiling. No heuristic may fail a Lane-A gate on its
+  own.
 
 ---
 

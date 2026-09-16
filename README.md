@@ -137,6 +137,8 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 | n8n | ✔ | Partial | Minimal | Minimal | Experimental |
 | Cursor (.cursorrules) | ✔ | Minimal | Minimal | Minimal | Experimental |
 | Windsurf (.windsurfrules) | ✔ | Minimal | Minimal | Minimal | Experimental |
+| OpenClaw config | ✔ | Minimal | Minimal | Minimal | Experimental |
+| GitHub Copilot instructions | ✔ | Minimal | Minimal | Minimal | Experimental |
 
 
 ### Framework Support Details
@@ -161,6 +163,12 @@ Registry & Reports — shared SQLite registry; terminal, JSON, SARIF 2.1.0, HTML
 - **Cursor (.cursorrules)** — detects declared tools/permissions and
   capability-relevant keywords (shell, filesystem, HTTP, database) in the
   IDE's rules config, JSON, YAML, or free text
+- **Windsurf (.windsurfrules)** — detects declared tools, models, and
+  capability-relevant keywords in JSON, YAML, or free-text rules
+- **OpenClaw config** — detects JSON/YAML files under `.openclaw/` and
+  `.openclaw.yaml`, including declared tools, models, and MCP servers
+- **GitHub Copilot instructions** — detects repository instruction Markdown,
+  YAML frontmatter, and `.copilot/*.yml` tool or permission grants
 
 Maturity is on the scale defined in [`docs/reference/FRAMEWORK_SUPPORT.md`](docs/reference/FRAMEWORK_SUPPORT.md):
 **Partial** = reliable detection and discovery with capability/risk analysis over
@@ -178,6 +186,8 @@ Representative test fixtures and validation tests for framework detection:
 | LlamaIndex | `test_llamaindex_framework.py` | `fixtures/llamaindex/representative/agent.py` | @adnqcr7-code [#61] |
 | CrewAI | `test_crewai_framework.py` | `fixtures/crewai/representative/crew.py` | @adnqcr7-code [#62] |
 | Claude Code | `test_claude_code_deep.py` | `fixtures/claude_code/compatibility/` | @adnqcr7-code [#59] |
+| OpenClaw config | `test_config_adapters.py` | `fixtures/openclaw/representative/.openclaw/config.json` | @YaoSong808 [#159] |
+| GitHub Copilot instructions | `test_config_adapters.py` | `fixtures/copilot/representative/.github/copilot-instructions.md` | @YaoSong808 [#159] |
 
 ---
 
@@ -310,6 +320,7 @@ python -m safeai registry <subcommand> [options]
 | `--json` | — | JSON output path |
 | `--html` | — | HTML report output path |
 | `--manifest` | — | Canonical KYA manifest output path (`safeai-manifest.json`) |
+| `--digest-file` | — | With `--manifest`: write `<canonical-sha256>  <manifest-basename>` to this path. The digest is the one `safeai manifest verify` reports, not a raw file hash, so it is not `sha256sum -c` compatible |
 | `--baseline` | — | Prior manifest/report for new/existing comparison |
 | `--fail-on-new` | off | With `--baseline`: fail only on new/regressed findings |
 | `--policy` | `.safeai/policy.yml` | Policy-as-code YAML file |
@@ -471,6 +482,8 @@ contributors who have helped make AI safer:
 | [@hadbiaghiles](https://github.com/hadbiaghiles) | AutoGen framework documentation |
 | [@D05TL3](https://github.com/D05TL3) | GitHub Actions scanning example |
 | [@mikemikimike](https://github.com/mikemikimike) | Adapter negative detection tests |
+| [@burakeyler](https://github.com/burakeyler) | `--digest-file` manifest digest sidecar (PR #148) |
+| [@YaoSong808](https://github.com/YaoSong808) | OpenClaw and GitHub Copilot config-file adapters (PR #159) |
 | [@mah](https://github.com/mahirhir) | Claude Code deep analysis documentation |
 | [@asarakhatun17-lgtm](https://github.com/asarakhatun17-lgtm) | Supported frameworks consistency fix |
 | [@yugaaank](https://github.com/yugaaank) | Capability detectors (Docker, Kubernetes, Redis, S3, GCP, Slack, Jira, browser) |

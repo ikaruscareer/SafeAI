@@ -20,6 +20,11 @@ TRAILER = re.compile(r"^Signed-off-by:\s*(.+?)\s*<([^<>@\s]+@[^<>@\s]+)>\s*$",
                      re.MULTILINE)
 
 
+def is_bot(author_name):
+    """True for automation accounts (dependabot, Actions) that cannot sign."""
+    return (author_name or "").strip().endswith("[bot]")
+
+
 def check_commit(message, author_name, author_email):
     """Return a list of problems (empty = signed off correctly)."""
     matches = TRAILER.findall(message or "")
@@ -61,18 +66,23 @@ def main(argv=None):
         pass
     failures = 0
     checked = 0
+    skipped_bots = 0
     for sha, name, email, message in commits_in_range(args.rev_range):
+        if is_bot(name):
+            skipped_bots += 1
+            continue
         checked += 1
         for problem in check_commit(message, name, email):
             print(f"{sha[:8]} ({name} <{email}>): {problem}")
             failures += 1
-    if not checked:
+    if not checked and not skipped_bots:
         print("no commits in range; nothing to check")
         return 0
     if failures:
         print(f"DCO check failed: {failures} problem(s) in {checked} commit(s)")
         return 1
-    print(f"DCO check passed: {checked} commit(s) signed off")
+    skipped = f", {skipped_bots} bot commit(s) exempt" if skipped_bots else ""
+    print(f"DCO check passed: {checked} commit(s) signed off{skipped}")
     return 0
 
 

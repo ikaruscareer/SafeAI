@@ -36,6 +36,8 @@
 | Microsoft Agent | `microsoft_agent_framework` | Microsoft Agent Framework | Python imports |
 | n8n | `n8n` | n8n workflow | JSON workflow files |
 | OpenAI Agents | `openai_agents` | OpenAI Agents SDK | Python imports |
+| OpenClaw | `openclaw` | OpenClaw config | `.openclaw/*.json`, `.openclaw/*.yaml`, `.openclaw.yaml` |
+| GitHub Copilot | `copilot` | Copilot instructions | `.github/copilot-instructions.md`, `.copilot/instructions.md`, `.copilot/*.yml` |
 | Semantic Kernel | `semantic_kernel` | Semantic Kernel | Python imports |
 | Windsurf | `windsurf` | Windsurf IDE config | `.windsurfrules` |
 

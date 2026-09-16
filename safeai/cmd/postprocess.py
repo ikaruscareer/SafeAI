@@ -78,6 +78,8 @@ class ScanPostProcessor:
         """Execute all stages in order; returns ``None`` normally or an int
         exit code for an early failure (e.g. --strict-registry)."""
         self._configure_logging()
+        if getattr(self.args, "digest_file", None) and not self.args.manifest_path:
+            self.parser.error("--digest-file requires --manifest")
         self._load_baseline()
         self._run_scan()
         self._normalize()
@@ -332,10 +334,13 @@ class ScanPostProcessor:
         return None
 
     def _write_outputs(self):
-        from safeai.kya.manifest import write_manifest
+        from safeai.kya.manifest import write_digest_sidecar, write_manifest
 
         if self.args.manifest_path:
             write_manifest(self.manifest, self.args.manifest_path)
+            if getattr(self.args, "digest_file", None):
+                write_digest_sidecar(self.manifest, self.args.manifest_path,
+                                     self.args.digest_file)
 
         if self.args.sarif:
             from safeai.report.sarif import write_sarif

@@ -13,6 +13,7 @@ Determinism contract:
 """
 
 import json
+import os
 
 from safeai.kya import (
     MANIFEST_SCHEMA_VERSION,
@@ -22,7 +23,7 @@ from safeai.kya import (
 from safeai.kya.assurance import build_assurance_boundary
 from safeai.kya.contract import contract_block
 from safeai.kya.fingerprints import normalize_path
-from safeai.kya.integrity import stamp_integrity
+from safeai.kya.integrity import payload_digest, stamp_integrity
 from safeai.kya.util import confidence_label, redact_secrets, sha256_text
 from safeai.severity import SEVERITIES
 
@@ -213,6 +214,20 @@ def write_manifest(manifest, path):
     """Write the manifest to ``path`` with deterministic serialization."""
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(serialize_manifest(manifest))
+
+
+def write_digest_sidecar(manifest, manifest_path, digest_path):
+    """Write ``<canonical-sha256>  <manifest-basename>`` to ``digest_path``.
+
+    The digest is the canonical payload digest (what ``safeai manifest
+    verify`` reports), which excludes the ``integrity`` block and volatile
+    scan fields, so the sidecar is deliberately not ``sha256sum -c``
+    compatible. Only the basename is recorded so the file is identical
+    wherever the manifest is written.
+    """
+    line = f"{payload_digest(manifest)}  {os.path.basename(manifest_path)}\n"
+    with open(digest_path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(line)
 
 
 def manifest_fingerprints(manifest):

@@ -58,6 +58,7 @@ def discover_parsers(include_external=True):
     from safeai.frameworks.azure_foundry.parser import AzureFoundryParser  # noqa: F401
     from safeai.frameworks.bedrock_agent.parser import BedrockAgentParser  # noqa: F401
     from safeai.frameworks.claude_code.parser import ClaudeCodeParser  # noqa: F401
+    from safeai.frameworks.copilot.parser import CopilotParser  # noqa: F401
     from safeai.frameworks.crewai.parser import CrewAIParser  # noqa: F401
     from safeai.frameworks.cursorrules.parser import CursorRulesParser  # noqa: F401
     from safeai.frameworks.dify.parser import DifyParser  # noqa: F401
@@ -72,6 +73,7 @@ def discover_parsers(include_external=True):
     )
     from safeai.frameworks.n8n.parser import N8nParser  # noqa: F401
     from safeai.frameworks.openai_agents.parser import OpenAIAgentsParser  # noqa: F401
+    from safeai.frameworks.openclaw.parser import OpenClawParser  # noqa: F401
     from safeai.frameworks.semantic_kernel.parser import (
         SemanticKernelParser,  # noqa: F401
     )

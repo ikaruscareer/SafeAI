@@ -161,6 +161,7 @@ def _kya_section(report):
     agents = report.get("kya_agents")
     registry = report.get("registry") or {}
     policy = report.get("policy_decision") or {}
+    policy_profile = report.get("policy_profile")
     if agents is None and not policy and not registry:
         return ""
 
@@ -192,9 +193,15 @@ def _kya_section(report):
 
     policy_html = ""
     if policy:
+        profile_html = (
+            f"<p><strong>Policy profile:</strong> {escape(str(policy_profile))}</p>"
+            if policy_profile
+            else ""
+        )
         reasons = "".join(f"<li>{escape(str(r))}</li>" for r in (policy.get("reasons") or []))
         policy_html = (
             f"<p><strong>Policy outcome:</strong> {escape(str(policy.get('outcome', '')))}</p>"
+            f"{profile_html}"
             f"<ul>{reasons}</ul>"
         )
 

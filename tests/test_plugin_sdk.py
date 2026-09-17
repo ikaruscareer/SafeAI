@@ -206,7 +206,7 @@ def test_manifest_records_policy_profile(kya_project, tmp_path):
     assert "policy_profile" in manifest["safeai"]
 
 
-def test_manifest_records_policy_profile_name(kya_project, tmp_path):
+def test_manifest_records_policy_profile_name(kya_project, tmp_path, capsys):
     import os
 
     from safeai.cmd.cli import main
@@ -215,12 +215,31 @@ def test_manifest_records_policy_profile_name(kya_project, tmp_path):
     rc = main(["scan", kya_project["root"], "--manifest", manifest_path,
                "--sarif", os.path.join(str(tmp_path), "r.sarif"),
                "--no-registry", "--policy-profile", "strict-ci"])
+
+    out = capsys.readouterr().out
+    assert "Policy profile: strict-ci" in out
     assert rc in (0, 1)
     import json
 
     with open(manifest_path, encoding="utf-8") as fh:
         manifest = json.load(fh)
     assert manifest["safeai"]["policy_profile"] == "strict-ci"
+
+
+
+def test_manifest_records_no_policy_profile_name(kya_project, tmp_path, capsys):
+    import os
+
+    from safeai.cmd.cli import main
+
+    manifest_path = os.path.join(str(tmp_path), "safeai-manifest.json")
+    rc = main(["scan", kya_project["root"], "--manifest", manifest_path,
+               "--sarif", os.path.join(str(tmp_path), "r.sarif"),
+               "--no-registry"])
+
+    out = capsys.readouterr().out
+    assert "Policy profile:" not in out
+    assert rc in (0, 1)
 
 
 def _persisted_registry(tmp_path):

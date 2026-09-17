@@ -50,6 +50,7 @@ def test_write_html_report(tmp_path):
                               "access_mode_inferred": False}],
         }],
         "policy_decision": {"outcome": "warn", "reasons": ["review shell usage"]},
+        "policy_profile": "strict-ci",
         "kya_agents": [{
             "name": "agent-1",
             "agent_id": "agent-abc",
@@ -82,6 +83,8 @@ def test_write_html_report(tmp_path):
     assert "Assurance boundary" in content
     assert "Know Your Agent (KYA)" in content
     assert "Policy outcome" in content
+    assert "Policy profile:" in content
+    assert "strict-ci" in content
     assert "Trust Scores" in content
     assert "data-theme=\"light\"" in content
 
@@ -99,6 +102,8 @@ def test_html_escapes_user_data(tmp_path):
         }],
         "normalized_capabilities": [],
         "trust_score": {"overall_ai_risk_score": 50, "categories": {}},
+        "policy_profile": "<script>alert('profile')</script>",
+        "policy_decision": {"outcome": "warn", "reasons": []},
     }
     out = tmp_path / "escaped.html"
     write_html(report, str(out))
@@ -107,3 +112,24 @@ def test_html_escapes_user_data(tmp_path):
     assert "<img src=x" not in content
     assert "&lt;script&gt;alert" in content
     assert "&lt;img" in content
+    assert "<script>alert('profile')</script>" not in content
+    assert "&lt;script&gt;alert(&#x27;profile&#x27;)&lt;/script&gt;" in content
+
+
+
+def test_html_report_absent_policy_profile(tmp_path):
+    report = {
+        "files_scanned": 1,
+        "counts": {},
+        "detected_frameworks": [],
+        "findings": [],
+        "normalized_capabilities": [],
+        "trust_score": {"overall_ai_risk_score": 50, "categories": {}},
+        # No policy_profile key
+        "policy_decision": {"outcome": "warn", "reasons": []},
+    }
+    out = tmp_path / "no_policy_profile.html"
+    write_html(report, str(out))
+    content = out.read_text(encoding="utf-8")
+    assert "Policy outcome" in content
+    assert "Policy profile:" not in content

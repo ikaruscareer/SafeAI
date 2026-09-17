@@ -497,6 +497,8 @@ contributors who have helped make AI safer:
 | [@mah](https://github.com/mahirhir) | Claude Code deep analysis documentation |
 | [@asarakhatun17-lgtm](https://github.com/asarakhatun17-lgtm) | Supported frameworks consistency fix |
 | [@yugaaank](https://github.com/yugaaank) | Capability detectors (Docker, Kubernetes, Redis, S3, GCP, Slack, Jira, browser) |
+| [@Teachmeplaycode](https://github.com/Teachmeplaycode) | Benchmark corpus expansion, static subprocess precision gap documentation (PR #174) |
+| [@nikitajos7](https://github.com/nikitajos7) | Policy profile display in terminal and HTML reports (PR #175) |
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get involved.
 

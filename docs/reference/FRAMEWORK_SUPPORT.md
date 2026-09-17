@@ -530,7 +530,9 @@ the community and cover the most common patterns for each framework.
 
 Thanks to @adnqcr7-code for framework detection tests (PRs #59, #61, #62, #63),
 to @i-safonoff for the .cursorrules adapter (PR #113),
-and to @YaoSong808 for the OpenClaw and GitHub Copilot config-file adapters (PR #159).
+and to @YaoSong808 for the OpenClaw and GitHub Copilot config-file adapters (PR #159),
+to @Teachmeplaycode for benchmark corpus expansion (PR #174),
+and to @nikitajos7 for policy profile display in reports (PR #175).
 
 ---
 

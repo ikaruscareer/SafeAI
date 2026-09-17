@@ -47,6 +47,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   config-file adapters with structured-first parsing, free-text fallback,
   capability scanning, and MCP server references.
   Thanks to [@YaoSong808](https://github.com/YaoSong808) (PR #159).
+- Benchmark corpus expanded to 21 fixtures: new `benign-static-subprocess-limitation`
+  documents the static-argument precision gap (`CAP_shell:high` fires on safe
+  `subprocess.run(["git", "--version"])`).
+  Thanks to [@Teachmeplaycode](https://github.com/Teachmeplaycode) (PR #174).
+- Policy profile name displayed in terminal and HTML reports alongside policy
+  outcome; profile omitted when absent; HTML-escaped to prevent injection.
+  Thanks to [@nikitajos7](https://github.com/nikitajos7) (PR #175).
 
 ## [2.2.1] - 2026-09-12
 

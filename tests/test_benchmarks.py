@@ -21,8 +21,8 @@ def _load_runner():
 def test_catalog_validates_and_has_corpus():
     runner = _load_runner()
     entries = runner.load_catalog()
-    assert len(entries) == 20
-    assert len({e["id"] for e in entries}) == 20
+    assert len(entries) == 21
+    assert len({e["id"] for e in entries}) == 21
 
 
 def test_every_fixture_exists_and_is_referenced():

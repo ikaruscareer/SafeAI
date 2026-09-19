@@ -28,7 +28,7 @@ Runner: `scripts/run_benchmarks.py`. Per-fixture docs: `benchmarks/README.md`.
 - **Known limitation** — an entry with intent `limitation`: recorded, never failing.
 - **Regression** — a previously passing expectation that now fails (release blocker).
 
-## Corpus (v1.0, 20 fixtures)
+## Corpus (v1.0, 21 fixtures)
 
 | ID | Intent | Target |
 |---|---|---|
@@ -52,11 +52,13 @@ Runner: `scripts/run_benchmarks.py`. Per-fixture docs: `benchmarks/README.md`.
 | esc-mcp-read-to-mutate | escalation | Read-only → mutating MCP server |
 | esc-mcp-server-added | escalation | New MCP server binding |
 | mcp-attribution-limitation | limitation | MCP-only configs lack framework attribution |
+| benign-static-subprocess-limitation | limitation | Static subprocess argv still triggers CAP_shell/high |
 
 ## Results
 
 | SafeAI | Corpus | Pass | Fail | Notes |
 |---|---|---|---|---|
+| 2.3.0 | v1.0 (21) | 19 | 0 | 2 limitation notes (mcp-attribution-limitation, benign-static-subprocess-limitation) |
 | 2.2.1 | v1.0 (20) | 19 | 0 | 1 limitation note (mcp-attribution-limitation); full corpus ~1s |
 | 2.2.0 | v1.0 (20) | 19 | 0 | 1 limitation note (mcp-attribution-limitation); full corpus ~1s |
 | 2.1.2 | v1.0 (20) | 19 | 0 | 1 limitation note (mcp-attribution-limitation); full corpus ~1s |

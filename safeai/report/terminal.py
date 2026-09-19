@@ -98,6 +98,9 @@ def print_summary(report):
     policy = report.get("policy_decision")
     if policy:
         print("Policy outcome:", policy.get("outcome"))
+        profile = report.get("policy_profile")
+        if profile:
+            print("Policy profile:", profile)
         for reason in (policy.get("reasons") or [])[:5]:
             print(f"  - {reason}")
 

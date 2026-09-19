@@ -161,6 +161,7 @@ def _kya_section(report):
     agents = report.get("kya_agents")
     registry = report.get("registry") or {}
     policy = report.get("policy_decision") or {}
+    policy_profile = report.get("policy_profile")
     if agents is None and not policy and not registry:
         return ""
 
@@ -192,9 +193,15 @@ def _kya_section(report):
 
     policy_html = ""
     if policy:
+        profile_html = (
+            f"<p><strong>Policy profile:</strong> {escape(str(policy_profile))}</p>"
+            if policy_profile
+            else ""
+        )
         reasons = "".join(f"<li>{escape(str(r))}</li>" for r in (policy.get("reasons") or []))
         policy_html = (
             f"<p><strong>Policy outcome:</strong> {escape(str(policy.get('outcome', '')))}</p>"
+            f"{profile_html}"
             f"<ul>{reasons}</ul>"
         )
 
@@ -270,7 +277,156 @@ def _assurance_section(report):
     <p class='muted'>Inferred values in this scan: {escape(str(inferred))}</p>"""
 
 
-def write_html(report, path):
+# ── Architecture diagram ──────────────────────────────────────────────
+
+import hashlib as _hashlib
+import re as _re
+
+_TYPE_SHAPES = {
+    "agent": ("[", "]"),
+    "tool": ("(", ")"),
+    "mcp": ("{{", "}}"),
+    "workflow": ("{", "}"),
+    "prompt": ("[/", "/]"),
+    "model": ("((", "))"),
+}
+
+_TYPE_STYLES = {
+    "agent": "fill:#bfdbfe,stroke:#2563eb,stroke-width:2px",
+    "tool": "fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,rx:10,ry:10",
+    "mcp": "fill:#fed7aa,stroke:#ea580c,stroke-width:2px",
+    "workflow": "fill:#e9d5ff,stroke:#9333ea,stroke-width:2px",
+    "prompt": "fill:#e5e7eb,stroke:#4b5563,stroke-width:2px",
+    "model": "fill:#fecaca,stroke:#dc2626,stroke-width:2px",
+}
+
+_DEFAULT_STYLE = "fill:#f3f4f6,stroke:#9ca3af,stroke-width:2px"
+
+
+def _mermaid_escape(text):
+    """Escape *text* for safe interpolation inside Mermaid node labels.
+
+    Handles both Mermaid-special characters (``"``, ``]``, ``}``) and
+    HTML characters (``<``, ``>``, ``&``) since labels are rendered
+    inside HTML ``<div class="mermaid">`` blocks.
+    """
+    s = escape(str(text))
+    s = s.replace('"', "#quot;")
+    s = s.replace("]", "#93;")
+    s = s.replace("}", "#125;")
+    return s
+
+
+_ARCHIVE_NODE_ID_RE = _re.compile(r"[^A-Za-z0-9_]")
+
+
+def _arch_node_id(raw_id, seen):
+    """Return a Mermaid-safe node identifier, disambiguated via *seen* dict.
+
+    Mermaid node IDs must match ``[A-Za-z_][A-Za-z0-9_]*``.  We strip
+    non-alphanumeric characters and append a short hash when collisions
+    occur.
+    """
+    clean = _ARCHIVE_NODE_ID_RE.sub("_", raw_id)
+    if not clean or clean[0].isdigit():
+        clean = "n_" + clean
+
+    base = clean
+    if clean not in seen:
+        seen[clean] = 0
+        return clean
+
+    seen[clean] += 1
+    suffix = _hashlib.sha1(raw_id.encode()).hexdigest()[:6]
+    disambiguated = f"{base}_{suffix}"
+    seen[disambiguated] = 0
+    return disambiguated
+
+
+def _architecture_table(graph_data):
+    """Render a static HTML table of the component architecture.
+
+    Always emitted — offline-safe, no external dependencies.
+    """
+    from safeai.analysis.component_graph import export_component_graph
+    exported = export_component_graph(graph_data)
+    if not exported or not exported.get("nodes"):
+        return ""
+
+    node_rows = []
+    for n in exported["nodes"]:
+        badge = "orphan" if n.get("is_orphan") else escape(n.get("type", "unknown"))
+        node_rows.append([
+            escape(n["label"]),
+            f"<span class='badge'>{badge}</span>",
+        ])
+
+    edge_rows = []
+    for e in exported["edges"]:
+        edge_rows.append([
+            escape(e["source"]),
+            escape(e["label"]),
+            escape(e["target"]),
+        ])
+
+    return (
+        "<h2>Architecture</h2>"
+        "<div class='card'>"
+        "<h3>Components</h3>"
+        + html_kit.data_table(["Component", "Type"], node_rows, empty="No components found.")
+        + "<h3>Relationships</h3>"
+        + html_kit.data_table(["Source", "Relationship", "Target"], edge_rows, empty="No relationships found.")
+        + "</div>"
+    )
+
+
+def _architecture_mermaid(graph_data):
+    """Render a Mermaid diagram of the component architecture.
+
+    Only emitted when ``--architecture-mermaid`` is explicitly enabled.
+    Requires internet access for the Mermaid.js CDN.
+    """
+    from safeai.analysis.component_graph import export_component_graph
+    exported = export_component_graph(graph_data)
+    if not exported or not exported.get("nodes"):
+        return ""
+
+    seen = {}
+    lines = ["graph TD"]
+
+    for n in exported["nodes"]:
+        node_id = _arch_node_id(n["id"], seen)
+        label = _mermaid_escape(n["label"])
+        ntype = n.get("type", "unknown").lower()
+        shape_start, shape_end = _TYPE_SHAPES.get(ntype, ("[", "]"))
+        lines.append(f'    {node_id}{shape_start}"{label}"{shape_end}')
+
+        style = _TYPE_STYLES.get(ntype, _DEFAULT_STYLE)
+        if n.get("is_orphan"):
+            style += ",stroke-dasharray: 5 5"
+        lines.append(f"    style {node_id} {style}")
+
+    for e in exported["edges"]:
+        src = _arch_node_id(e["source"], seen)
+        dst = _arch_node_id(e["target"], seen)
+        label = _mermaid_escape(e["label"])
+        lines.append(f'    {src} -->|"{label}"| {dst}')
+
+    mermaid_code = "\n".join(lines)
+
+    return (
+        "<h2>Architecture (Mermaid)</h2>"
+        "<div class='card' style='overflow-x:auto; text-align:center;'>"
+        f"<div class='mermaid'>\n{mermaid_code}\n</div>"
+        "<p class='muted' style='margin-top:10px;'>"
+        "Interactive diagram — requires internet access for Mermaid.js CDN."
+        "</p></div>"
+        '<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>'
+        "<script>mermaid.initialize({startOnLoad:true})</script>"
+    )
+
+
+def write_html(report, path, include_architecture=True, include_mermaid=False):
     trust = report.get("trust_score", {})
     categories = trust.get("categories", {})
     counts = report.get("counts", {})
@@ -341,6 +497,9 @@ def write_html(report, path):
 
     <h2>Capability Matrix</h2>
     {html_kit.data_table(["Capability", "Category", "Frameworks", "Confidence", "Evidence"], capability_rows, empty="No capabilities detected.")}
+
+    {_architecture_table(report.get('component_graph', {})) if include_architecture else ''}
+    {_architecture_mermaid(report.get('component_graph', {})) if include_architecture and include_mermaid else ''}
 
     {_escalation_section(report)}
 

@@ -209,6 +209,7 @@ class ScanPostProcessor:
             policy_doc = kya_policy.merge_profile(profile, policy_doc)
         self.policy_decision = kya_policy.evaluate_policy(policy_doc, self.report)
         self.report["policy_decision"] = self.policy_decision
+        self.report["policy_profile"] = profile_name
         self.policy_profile_name = profile_name
 
     def _resolve_identity(self):
@@ -371,7 +372,12 @@ class ScanPostProcessor:
 
         if self.args.html_path:
             from safeai.report.html import write_html
-            write_html(self.report, self.args.html_path)
+            write_html(
+                self.report,
+                self.args.html_path,
+                include_architecture=getattr(self.args, "architecture", True),
+                include_mermaid=getattr(self.args, "architecture_mermaid", False),
+            )
 
         # --- Reviewer-facing PR comment (written locally; never posted) ---
         if self.args.pr_comment_path or self.args.pr_comment_stdout or self.args.pr_comment_post:

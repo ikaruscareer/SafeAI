@@ -2,11 +2,11 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **53 beginner-friendly issues** designed for first-time contributors (27 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **53 beginner-friendly issues** designed for first-time contributors (22 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
-> **26 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
+> **31 issues have already been completed** by community and internal contributors. See the [Completed Issues](#-completed-issues) section at the bottom.
 
 ---
 
@@ -51,37 +51,35 @@ This document indexes **53 beginner-friendly issues** designed for first-time co
 ## Prompt Rules
 
 ### 7. Detect unsafe prompt instruction patterns
-- **Difficulty:** Easy | **Effort:** 2–3 hours
-- **Suggested files:** `safeai/analyzers/prompt/analyzer.py`, `safeai/rules/base_rules.yaml`
+- **Status:** ✅ Complete — `PROMPT_INJECTION`, `PROMPT_DELIMITER`, `PROMPT_FILE_INJECTION`, `SKILL_EMBEDDED_PROMPT` and 6+ additional rules in `base_rules.yaml:1-112`; analyzer at `safeai/analyzers/prompt/analyzer.py`
 
 ### 8. Detect unrestricted instruction overrides
-- **Difficulty:** Easy | **Effort:** 2 hours
+- **Status:** ✅ Complete — `PROMPT_ROLE_OVERRIDE`, `PROMPT_FILE_ROLE_OVERRIDE` rules in `base_rules.yaml:56,103`
 
 ### 9. Detect hidden system prompt injection
-- **Difficulty:** Medium | **Effort:** 3–4 hours
+- **Status:** ✅ Complete — `PROMPT_SYSTEM_LEAK`, `PROMPT_FILE_SYSTEM_LEAK`, `PROMPT_FILE_INJECTION`, `DATAFLOW_prompt` rules
 
 ### 10. Detect prompt extraction attempts
-- **Difficulty:** Medium | **Effort:** 3–4 hours
+- **Status:** ✅ Complete — `PROMPT_SYSTEM_LEAK`, `PROMPT_FILE_SYSTEM_LEAK`, `DATAFLOW_prompt` (system prompt leakage + dataflow tracking)
 
 ---
 
 ## Governance Signals
 
 ### 11. Detect timeout configuration
-- **Difficulty:** Easy | **Effort:** 2 hours
-- **Description:** Scan agent configs and code for timeout settings that are missing, too long, or set to infinite. Flag as a governance gap.
+- **Status:** ✅ Complete (v1.9.0) — `GOV_TIMEOUT_MISSING` rule
 
 ### 12. Detect retry policy configuration
-- **Difficulty:** Easy | **Effort:** 2 hours
+- **Status:** ✅ Complete (v1.9.0) — `GOV_RETRY_MISSING` rule
 
 ### 13. Detect approval workflow requirement
-- **Difficulty:** Medium | **Effort:** 3–4 hours
+- **Status:** ✅ Complete (v1.9.0) — `GOV_APPROVAL_MISSING` rule
 
 ### 14. Detect audit logging configuration
-- **Difficulty:** Medium | **Effort:** 3–4 hours
+- **Status:** ✅ Complete (v1.9.0) — `GOV_AUDIT_MISSING` rule
 
 ### 15. Detect rate limiting configuration
-- **Difficulty:** Easy | **Effort:** 2 hours
+- **Status:** ✅ Complete (v1.9.0) — `GOV_RATE_LIMIT_MISSING` rule
 
 ---
 
@@ -138,6 +136,7 @@ This document indexes **53 beginner-friendly issues** designed for first-time co
 - **Suggested files:** `ARCHITECTURE_FOR_CONTRIBUTORS.md`
 
 ### 25. Add framework-specific documentation page
+- **Status:** ✅ Complete — `docs/reference/FRAMEWORK_SUPPORT.md` (565 lines) covers all 19 frameworks with detection coverage, test coverage, and limitations
 - **Difficulty:** Easy | **Effort:** 3–4 hours
 
 ### 26. Improve installation guide for Windows users
@@ -222,7 +221,27 @@ These issues have been implemented by community contributors and are now part of
 | 16 | Improve terminal output readability | SafeAI (v1.4) |
 | 17 | Improve HTML report — add filtering and search | SafeAI (v1.4-b) |
 | 23 | Tune trust score weighting for critical/high findings | SafeAI (v1.4) |
+| 25 | Add framework-specific documentation page | SafeAI (v2.3.0) |
 | — | Add `rule_coverage_summary()` for control-mapping gaps | @i-safonoff (PR #112) |
+
+### Prompt Rules
+
+| # | Issue | Contributor |
+|---|-------|-------------|
+| 7 | Detect unsafe prompt instruction patterns | SafeAI (v1.8) |
+| 8 | Detect unrestricted instruction overrides | SafeAI (v1.8) |
+| 9 | Detect hidden system prompt injection | SafeAI (v1.8) |
+| 10 | Detect prompt extraction attempts | SafeAI (v1.8) |
+
+### Governance Signals
+
+| # | Issue | Contributor |
+|---|-------|-------------|
+| 11 | Detect timeout configuration | SafeAI (v1.9.0) |
+| 12 | Detect retry policy configuration | SafeAI (v1.9.0) |
+| 13 | Detect approval workflow requirement | SafeAI (v1.9.0) |
+| 14 | Detect audit logging configuration | SafeAI (v1.9.0) |
+| 15 | Detect rate limiting configuration | SafeAI (v1.9.0) |
 
 ### Data-Flow & Governance
 

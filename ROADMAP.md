@@ -201,7 +201,8 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 - ✅ **Impact queries** — `safeai registry components` lists tracked components with deduplication, type filtering, and consuming-agent resolution (`list_components_deduped`, `get_component_agents`). **Shipped in v1.9.0**.
 - ✅ **Component-change diffs** — a changed/added/removed MCP configuration (or skill/prompt/tool/model) flags consuming agents via the `component_diff` report section (computed against the baseline scan).
 - ✅ **Cross-component analysis** — analyze relationships between components: skill X references tool Y with shell access, workflow step calls dangerous tool, MCP server exposes tool used by workflow, model config sets unsafe temperature AND workflow has no approval gate, subagent has shell access AND parent has no approval. **Shipped in v1.8.0** (new `analysis/component_graph.py`; bridges `skill`→`tool_def`→`workflow`→`mcp`→`model_config` findings).
-- ⏳ Component manifests where feasible; lockfile-style integrity metadata deferred to 2.x. **Targeted for v1.9.0**.
+- ✅ **Lockfile-style component integrity** — `registry components --lockfile` writes pinned `{type, name, path, content_hash}` pins, `--check-lockfile` exits 1 on added/removed/changed components. **Shipped in v2.3.0** (`safeai/kya/lockfile.py`).
+- ⏳ Component manifests where feasible (per-component manifest files remain open).
 
 ### Exit criterion
 > A team can trace a risky reusable component to every consuming agent and repository, and produce static evidence for remediation.
@@ -235,7 +236,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - ✅ **Control mappings** — OWASP Top 10 for Agentic Applications, OWASP Top 10 for LLM Applications, NIST AI RMF 1.0 (NIST AI 100-1) — presented as taxonomy, policy selection and prioritisation aid, explicitly **not** as coverage or compliance claims. **Shipped in v1.9.0**.
 - ✅ Plugin and rule-pack versions recorded in every scan — the **ruleset version** is recorded on every scan (manifest + registry); per-parser/plugin versions recorded since v2.3.0 (manifest `analyzer_versions`/`parser_versions`/`policy_profile`, registry `plugin_versions_json`, schema v6).
 - ✅ **Portable registry export/import** — `registry export` produces source- and secret-safe KYA inventory JSON, while `registry import <file>` performs an atomic, idempotent merge with `--dry-run` and metadata-only `--force` controls.
-- ⏳ **Opt-in usage telemetry** — anonymous, opt-in, local-first usage signal (SafeAI version, Python version, OS family, invocation context). Disabled by default; CI auto-disable; `DO_NOT_TRACK` respected; never transmits scan content. Two-phase: Phase 1 (documentation + PRIVACY.md) → Phase 2 (client implementation). **Phase 1 planned for v2.0.0.**
+- ✅/⏳ **Opt-in usage telemetry** — anonymous, opt-in, local-first usage signal (SafeAI version, Python version, OS family, invocation context). Disabled by default; CI auto-disable; `DO_NOT_TRACK` respected; never transmits scan content. Two-phase: Phase 1 (documentation + PRIVACY.md) ✅ shipped; Phase 2 (client implementation) ⏳ blocked — `safeai/telemetry/client.py` exists but the endpoint URL is an unprovisioned placeholder and the module refuses to send until it is confirmed.
 
 ### Static authority correlation *(the community's Phase 3, offline)*
 - ⏳ Parse in-repo IaC — Terraform, CloudFormation, Helm, Kubernetes manifests, serverless configs.
@@ -286,7 +287,7 @@ These are the items that go deeper on your existing capabilities, but are not ye
 ### Developer experience
 - ✅ **Standalone binaries** — PyInstaller-packaged `safeai` binary for Linux, macOS, Windows. No Python installation required. Single-file download for CI runners and local use. SHA-256 checksums and Sigstore attestation for each binary. **Shipped in v2.1-dev** (build script, spec file).
 - ✅ **VS Code extension MVP** — real-time governance feedback in the IDE. Parse open files with SafeAI's analyzers, surface findings as diagnostics, show capability surface in the status bar. Uses the existing scanner as a library (`safeai.engine.scan.run_scan`), no LSP server required. **Shipped in v2.1-dev** (workspace scan, file scan, diagnostics).
-- ⏳ **Documentation and examples** — showcase all v2.1 features with real agent repositories (LangGraph, CrewAI, Claude Code). Add to `examples/` directory with runnable scan scripts.
+- ✅ **Documentation and examples** — `examples/` ships runnable scans across agent repositories (LangGraph, CrewAI, AutoGen, Google ADK, MCP, multi-agent, n8n, GitHub Actions, workflows) plus `azure_foundry.yaml` / `bedrock_agent.json` fixtures and per-example READMEs. **Shipped in v2.1.**
 
 ### Exit criterion
 > ✅ **Achieved.** A developer sees SafeAI findings as inline PR comments and VS Code diagnostics, CI blocks merges on configurable quality thresholds, and installation is a single binary download with no Python required.

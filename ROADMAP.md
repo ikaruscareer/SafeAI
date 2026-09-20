@@ -15,8 +15,15 @@ This document describes the roadmap across **two editions**: the open-source **C
 
 The milestone list below is retained for planning detail, but the public
 story is these five outcomes, in this order. Items marked ✅ are shipped;
-items marked ⏳ are the actual remaining work — the re-baseline adds no
-new subsystem, it sequences what exists.
+items marked ⏳ are the actual remaining work — the re-baseline sequences
+what exists, and the governance assessment (§Governance readiness)
+shapes evidence-shaped deliverables (System Card, Evidence Pack,
+exception schema, transparent profile packs) on top of those outcomes.
+SafeAI remains a source-first static analyser and pre-deployment gate:
+it produces machine-readable, versioned evidence of an agent's reachable
+authority, risky configuration, governance controls, and material
+changes — before release. It never certifies a system as lawful, secure,
+or safe, and runtime enforcement stays out of scope.
 
 ### 1. KYA ChangeGuard — the flagship (mostly shipped, lanes remaining)
 
@@ -33,6 +40,22 @@ could not do before."*
   deterministic gates vs Lane B mandatory-review events; prompt/config
   changes resolve to `require_review`, never `pass`; source→destination
   paths in PR output within existing caps. See "Review decision lanes".
+- ⏳ Authority/material-change diff as the primary release-control concept:
+  classify new tools, increased permission (read→write), new data
+  reachability, new external egress, increased autonomy, new delegation
+  paths, and infrastructure mismatch — so a PR can be blocked or routed
+  for human review because it adds meaningful new agent authority, not
+  merely because a trust score moved. Direction: evolve `--fail-on-new`
+  toward `--fail-on-authority-change`; decisions stay deterministic
+  (`pass | review | block`, with reasons in `POLICY_OUTCOMES` vocabulary)
+  — never a new opaque "compliance score".
+- ⏳ File-backed exception schema (portable, small): exception id,
+  finding-or-policy reference, scope (repo + commit range), named risk
+  owner, rationale, compensating controls, expiry, and re-review triggers
+  (new external tool, data-access expansion, autonomy-level change).
+  Expired, absent, or scope-mismatched exceptions warn and — where
+  configured — fail the pipeline. Enterprise workflow (identity-backed
+  approvals, notifications) stays EE1.
 
 ### 2. KYA Evidence Contract — the foundation (shipped core, hardening planned)
 
@@ -46,9 +69,12 @@ uncertainty. Trend dashboards must not precede stable artefacts.*
   (`authority | destination | data-reach | governance-control |
   prompt-or-free-text | dependency | unknown`); a per-finding
   `gateability` field (Lane-A deterministic vs Lane-B review-only);
-  signable per-scan attestations binding commit SHA, SafeAI version,
-  ruleset version, policy profile + hash, baseline reference, decision,
-  and suppression state (today: hash integrity only, no per-scan signature).
+  field-level provenance on evidence (`declared | detected | inferred |
+  unknown`); deterministic report generation (identical repo, commit,
+  configuration, and rule-pack yield stable output); signable per-scan
+  attestations binding commit SHA, SafeAI version, ruleset version,
+  policy profile + hash, baseline reference, decision, and suppression
+  state (today: hash integrity only, no per-scan signature).
 
 ### 3. True Capability Surface — depth over breadth (next depth wave)
 
@@ -69,7 +95,18 @@ uncertainty. Trend dashboards must not precede stable artefacts.*
 *Outcome: flag where repository IaC grants more — or less — authority than
 the agent declares. Local, source-based, inspectable, auditable; live
 IAM/RBAC reconciliation stays a separate, explicitly installed Corporate
-component (EE3). Sequencing unchanged.*
+component (EE3). Sequencing unchanged. This is the main least-privilege
+milestone and an explicit regulatory-readiness milestone (secure-by-design
+evidence without claiming deployed state).*
+
+- ⏳ Normalised authority vocabulary emitted by both code scanning and
+  IaC parsers, with confidence labels (`declared | repo-IaC-observed |
+  partially-resolved | unverified-runtime`); Terraform first, then
+  CloudFormation, Kubernetes, Helm, and serverless. Rules cover semantic
+  authority classes (excessive wildcards, privileged production paths,
+  mismatched authority) — never pretending in-repo IaC proves deployed
+  permission. IaC-derived grants enrich the Agent System Card (§Governance
+  readiness).
 
 ### 5. Enterprise evidence plane — only after adoption (all EE planned)
 
@@ -77,7 +114,88 @@ component (EE3). Sequencing unchanged.*
 the trusted evidence chain first (self-hosted registry from CI-submitted
 manifests, ownership and review routing, central exceptions, signed
 attestations, retention), dashboards and integrations after — not charts
-first.*
+first. The enterprise evidence product is the Agent System Card plus the
+Release Evidence Pack (§Governance readiness): JSON + Markdown first,
+bundled with capability/authority graph, findings, policy decision,
+authority delta, pack versions, source commit/CI identity, approved
+exceptions, and explicit static-only limitations — with export connectors
+(GRC, ticketing, SIEM, procurement) rather than native workflow
+duplication.*
+
+---
+
+## Governance readiness (assessment-aligned, no compliance claims)
+
+*Direction, not a rewrite: the EU AI Act, CRA, GDPR/UK GDPR, and DORA
+create commercial pull for inventory, secure development, risk
+assessment, traceability, human oversight, technical documentation, and
+change control — without requiring a particular product category. The
+items below merge into the CE → validation → enterprise-evidence
+sequencing above. Wording rule for all of them: "supports collection of
+evidence relevant to …", "flags missing evidence or configured
+controls …", "does not determine legal compliance or prove runtime
+enforcement."*
+
+### Agent System Card (enriched KYA record, not a second inventory)
+
+Scan-derived facts (framework, models, topology, tools, plugins,
+capabilities, data stores, cloud services, APIs, credentials, likely
+egress paths, governance-signal findings, scan evidence incl. SafeAI /
+rule-pack / policy versions, repo URL, commit, timestamp, config digest)
+merged with human-supplied declarations (business + technical owner,
+intended purpose and prohibited uses, environment and tier, autonomy
+classification, data classification and intended external recipients,
+required approvals and escalation owner, known limitations and residual
+risk). Every field carries provenance: `declared | detected | inferred |
+unknown`. Oversight assertions are declarative plus static evidence;
+runtime verification is explicitly out of scope.
+
+### Release Evidence Pack (signed, portable release artefact)
+
+Deterministic JSON evidence object + readable Markdown report (PDF, GRC
+integrations, ticket workflows, and central retention stay downstream /
+Enterprise): System Card, capability/authority graph, findings + policy
+decision with reasons, authority delta from last approved baseline,
+pack versions, source commit / repo URI / CI run id / SafeAI version,
+approved exceptions, and explicit limitations ("static analysis only",
+"runtime permission state not verified", "not a certification or legal
+determination").
+
+### Regulatory profile packs (transparent rule collections, CE-V hardened)
+
+Four narrowly scoped profiles built on the plugin SDK — collections of
+rules and evidence mappings, never black-box compliance scoring:
+**Secure Agent Development / CRA readiness** (secrets, unsafe tool use,
+unbounded egress, plugin/dependency risk, missing governance controls);
+**AI Act readiness** (owner, purpose, deployment context, autonomy,
+oversight declaration, logging, limitations); **Privacy and Data Access**
+(datastore reachability, prod/non-prod boundary, external model egress,
+credential patterns, PII-related connectors — evidence inputs, not a
+DPIA generator); **Operational Resilience** (timeout, retry, rate limit,
+circuit breaker, backpressure, health-check, privileged-tool and
+dependency findings — static evidence only, no DORA compliance claim).
+
+### Deliberately excluded (governance assessment)
+
+Runtime monitoring / permission enforcement / kill switches / behavioural
+anomaly detection; legal determinations, "compliant" badges, automated
+certification; full DPIA / AI impact-assessment / GRC / audit-workflow
+systems; CRA incident-reporting workflow / disclosure operations / SIEM
+replacement; full DORA resilience testing and third-party-risk
+management; broad risk scores detached from traceable rules and code
+locations; a generic compliance dashboard before the evidence model is
+stable. Vulnerability/incident handling stays export-only (inventory and
+evidence out to existing GRC / SIEM / ticketing / incident platforms).
+
+### Priority sequence (integrated)
+
+1. Evidence contract + provenance hardening (Outcome 2);
+2. Authority diff, explainable release decisions, expiring exceptions
+   (Outcome 1, v2.4.0);
+3. IaC authority correlation as regulatory-readiness milestone
+   (Outcome 4, v2.5.0);
+4. Validation + profile hardening incl. unknown-negative tests (CE-V);
+5. System Card, Evidence Pack, cross-repo aggregation (EE0/EE1).
 
 ---
 
@@ -87,12 +205,12 @@ first.*
 |---|---|---|---|
 | KYA scanner core & capability discovery | 19 adapters, 79 rules, 13 analyzers, AST+regex evidence | Adapter depth, precision tuning | Live IAM reads, runtime monitoring |
 | Reviewable Change / ChangeGuard | 14 `ESC_*` rules, diffs, PR comments, remediation catalog (CE 2.2) | Review decision lanes (accepted direction) | Auto-fix, auto-created PRs |
-| Governance, lifecycle, suppressions | `GOV_*` family, failure matrix, lifecycle, policy profiles, waivers | — | Compliance certification |
+| Governance, lifecycle, suppressions | `GOV_*` family, failure matrix, lifecycle, policy profiles, waivers | Portable exception schema (owner, expiry, scope) | Compliance certification |
 | True Capability Surface | Env inventory, dep correlation, tool↔impl map, target taxonomy, dataflow | — | Proven deployment authority |
 | AI component records | Registry schema v6, impact queries, component diffs/graph, lockfile integrity | — | Central component registry SaaS |
 | Ecosystem / plugin SDK | `@register_parser`/`@register_analyzer`, entry-point groups, `safeai rules check`, `safeai init` pack scaffold | Curated signed packs (process) | Hosted marketplace |
-| Static IaC authority correlation | — | Terraform/CFN/K8s/Helm parsing (**CE 2.4**) | Live cloud/K8s API reads |
-| Pre-deployment validation packs | — | Capability-informed offline test plans (**CE-V**) | Runtime red-team engine, sandboxing |
+| Static IaC authority correlation | — | Terraform-first, then CFN/K8s/Helm/serverless; confidence labels (**CE 2.4, regulatory-readiness**) | Live cloud/K8s API reads |
+| Pre-deployment validation packs | — | Capability-informed offline test plans + regulatory-profile corpus (**CE-V**) | Runtime red-team engine, sandboxing |
 | Corporate evidence plane | — | Aggregation, SSO/RBAC, retention, reconciliation (**EE0–EE4**) | Second scanner, observability product |
 
 ---
@@ -339,11 +457,13 @@ packs on this SDK, not as core-team shallow adapters.*
 
 ## CE 2.4 — Static IaC Authority Correlation *(planned)*
 
-*Goal: answer the authority question without leaving the repository (community Phase 3, offline half).*
+*Goal: answer the authority question without leaving the repository (community Phase 3, offline half). Explicit regulatory-readiness milestone for least-privilege evidence.*
 
-- Parse in-repo IaC incrementally: Terraform, CloudFormation, Kubernetes manifests, Helm, serverless configs.
-- Compare declared capability against granted authority, both directions: capability without grant (probable breakage), grant without capability (excess authority).
-- Report confidence honestly: repository IaC is not proof of deployed state; the assurance boundary must say so.
+- Parse in-repo IaC incrementally: Terraform first, then CloudFormation, Kubernetes manifests, Helm, serverless configs.
+- Normalised authority vocabulary emitted by both code scanning and IaC parsers, with confidence labels (`declared | repo-IaC-observed | partially-resolved | unverified-runtime`).
+- Compare declared capability against granted authority, both directions: capability without grant (probable breakage), grant without capability (excess authority); rules cover semantic authority classes (excessive wildcards, privileged production paths, mismatched authority).
+- Report confidence honestly: repository IaC is not proof of deployed state; the assurance boundary must say so. IaC-derived grants enrich the Agent System Card.
+- Exit criterion: SafeAI shows which permissions an agent appears able to use, which permissions repository IaC grants, where they disagree, and what remains unknowable statically.
 
 ---
 
@@ -434,6 +554,7 @@ The earlier "Visibility & Intelligence" sketch (trend tracking, architecture map
 - Deterministic pass/fail assertions: "must refuse," "must not call tool X," "must request approval"
 - `safeai validate` command with exit-code gating and SARIF output
 - Validation results labelled as "adversarial test evidence" — never conflated with static-scan evidence
+- Regulatory-profile test corpus for CRA readiness, AI Act readiness, privacy/data-access, and operational-resilience rules; precision/recall tracking for high-consequence rules; negative tests showing where SafeAI must report `unknown` rather than invent a conclusion; reproducible public-agent and IaC benchmark corpus
 - Assurance boundary block distinguishes what was tested from what was not
 
 ### CE-V 2 — Regression & Pack Versioning
@@ -457,7 +578,9 @@ Preserved strategic exclusions — requested features the Community scanner will
 - No general hallucination score, jailbreak platform, or red-team engine.
 - No hosted reputation feed, hosted service, dashboard, or SaaS registry.
 - No live IAM reads (AWS/Azure/GCP), Kubernetes API access, or telemetry ingestion.
-- No compliance certification claims; mappings are taxonomy, not coverage.
+- No compliance certification claims; mappings are taxonomy, not coverage. No "compliant" badges or automated certification.
+- No full DPIA, AI impact-assessment, GRC, or audit-workflow systems in core; no CRA incident-reporting workflow or SIEM replacement; no full DORA resilience testing or third-party-risk management.
+- No broad risk scores detached from traceable rules, code locations, and evidence; no generic compliance dashboard before the evidence model is stable.
 - No user/global machine configuration scanning by default.
 - No automatic code modification, auto-remediation, or automatic PR creation.
 - No plugin marketplace; no model hallucination scoring; no exploit generation.

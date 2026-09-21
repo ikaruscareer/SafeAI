@@ -1,16 +1,26 @@
 """File-backed policy exception records (``.safeai/exceptions.yml``).
 
-An exception names a risk owner who accepts a specific finding, policy,
-or escalation for a bounded scope and time, with compensating controls
-and re-review triggers. Exceptions warn by default; ``--strict-exceptions``
-turns expired or stale exceptions into a scan failure.
+An exception names a risk owner who accepts a specific target for a
+bounded scope and time, with compensating controls and re-review
+triggers. Exceptions warn by default; ``--strict-exceptions`` turns
+expired, stale, scope-mismatched, or invalid exceptions into a scan
+failure.
 
-An exception is ``active`` when its ``finding_or_policy`` id matches a
-live finding (rule_id), policy match (policy_id), or escalation id, it is
-not expired, and its repository scope (when given) matches the scanned
-project. It is ``expired`` past ``expires_at``, and ``stale`` when
-nothing live matches anymore (the authority shifted out from under it).
-Unknown scope identity never blocks: it is recorded, not enforced.
+Target model (explicit since v2.4): ``target_type`` is one of
+``finding`` (rule_id), ``policy`` (policy match id), ``escalation``
+(escalation id), or ``authority_change`` (changed tool key). The legacy
+``finding_or_policy`` key is still accepted and auto-classified, but new
+files should prefer the explicit form.
+
+States (never silently converted into one another): ``active`` (target
+live, unexpired, scope satisfied), ``expired`` (past ``expires_at``),
+``stale`` (no live target), ``scope-mismatch`` (target live but
+repository scope differs), ``invalid`` (defensive only — the loader
+rejects malformed entries before evaluation).
+
+Metadata-only fields (recorded, never enforced): ``commit_range``,
+``compensating_controls``, ``review_trigger``. They document intent;
+SafeAI does not watch the repository for trigger events.
 """
 
 import os
@@ -20,6 +30,13 @@ import yaml
 
 DEFAULT_EXCEPTIONS_PATH = os.path.join(".safeai", "exceptions.yml")
 
+#: Explicit exception target namespaces.
+TARGET_TYPES = ("finding", "policy", "escalation", "authority_change")
+
+#: Evaluation states. Distinct states are never merged: each prints its
+#: own warning and gates independently under --strict-exceptions.
+EXCEPTION_STATES = ("active", "expired", "stale", "scope-mismatch", "invalid")
+
 
 class ExceptionError(Exception):
     """Raised for invalid exception files."""
@@ -27,6 +44,36 @@ class ExceptionError(Exception):
 
 def default_exceptions_path(root):
     return os.path.join(root, DEFAULT_EXCEPTIONS_PATH)
+
+
+def _resolve_target(raw, exception_id):
+    """Resolve (target_type, target_id) from explicit or legacy keys.
+
+    Explicit ``target_type`` + ``target_id`` is preferred. The legacy
+    ``finding_or_policy`` key maps to target_type ``"unspecified"`` and
+    keeps the historical union matching (rule, policy, or escalation id).
+    """
+    target_type = raw.get("target_type")
+    target_id = raw.get("target_id")
+    legacy = raw.get("finding_or_policy")
+    if target_type is not None or target_id is not None:
+        if not target_type or not target_id:
+            raise ExceptionError(
+                f"Exception {exception_id!r}: 'target_type' and 'target_id' "
+                f"must be given together."
+            )
+        if target_type not in TARGET_TYPES:
+            raise ExceptionError(
+                f"Exception {exception_id!r}: 'target_type' must be one of "
+                f"{', '.join(TARGET_TYPES)}, got {target_type!r}."
+            )
+        return str(target_type), str(target_id)
+    if not legacy:
+        raise ExceptionError(
+            f"Exception {exception_id!r}: missing required target "
+            f"('target_type' + 'target_id', or legacy 'finding_or_policy')."
+        )
+    return "unspecified", str(legacy)
 
 
 def _parse_date(value, field, exception_id):
@@ -69,11 +116,12 @@ def load_exceptions(path):
         if not isinstance(raw, dict):
             raise ExceptionError(f"Exception #{index}: entry must be a mapping.")
         exception_id = raw.get("exception_id") or f"exception-#{index}"
-        for field in ("finding_or_policy", "risk_owner", "rationale"):
+        for field in ("risk_owner", "rationale"):
             if not raw.get(field):
                 raise ExceptionError(
                     f"Exception {exception_id!r}: missing required field '{field}'."
                 )
+        target_type, target_id = _resolve_target(raw, exception_id)
         scope = raw.get("scope") or {}
         if not isinstance(scope, dict):
             raise ExceptionError(f"Exception {exception_id!r}: 'scope' must be a mapping.")
@@ -90,7 +138,8 @@ def load_exceptions(path):
             expires_at = _parse_date(raw["expires_at"], "expires_at", exception_id)
         entries.append({
             "exception_id": str(exception_id),
-            "finding_or_policy": str(raw["finding_or_policy"]),
+            "target_type": target_type,
+            "target_id": target_id,
             "scope": {
                 "repository": scope.get("repository"),
                 "commit_range": scope.get("commit_range"),
@@ -106,59 +155,105 @@ def load_exceptions(path):
     return entries, []
 
 
-def _live_ids(findings, escalations):
-    """Collect the ids an exception can match: rule ids, policy ids, escalation ids."""
-    ids = set()
+def _live_targets(findings, escalations, policy_ids=(), changed_tool_keys=()):
+    """Collect matchable ids per namespace: findings (rule ids), policy
+    match ids, escalation ids, and changed tool keys."""
+    targets = {
+        "finding": set(),
+        "policy": set(policy_ids or ()),
+        "escalation": set(),
+        "authority_change": set(changed_tool_keys or ()),
+        "unspecified": set(),
+    }
     for finding in findings or []:
         if finding.get("rule_id"):
-            ids.add(str(finding["rule_id"]))
+            targets["finding"].add(str(finding["rule_id"]))
     for escalation in escalations or []:
         if escalation.get("id"):
-            ids.add(str(escalation["id"]))
-    return ids
+            targets["escalation"].add(str(escalation["id"]))
+    targets["unspecified"] = (
+        targets["finding"] | targets["policy"] | targets["escalation"]
+    )
+    return targets
 
 
-def evaluate_exceptions(entries, findings, escalations, project_repository=None):
+def evaluate_exceptions(entries, findings, escalations, policy_ids=(),
+                         changed_tool_keys=(), project_identities=()):
     """Evaluate exception records against live scan evidence.
 
-    Returns a list of evaluation records: ``exception_id``,
-    ``finding_or_policy``, ``state`` (``active`` | ``expired`` |
-    ``stale``), ``risk_owner``, ``expires_at``, and ``warnings``.
-    Scope mismatches and unknown scope identity are recorded as
-    warnings, never as silent passes.
+    Returns evaluation records: ``exception_id``, ``target_type``,
+    ``target_id``, ``state`` (``active`` | ``expired`` | ``stale`` |
+    ``scope-mismatch`` | ``invalid``), ``risk_owner``, ``expires_at``,
+    and ``warnings``. States are never merged: a scope mismatch is not
+    reported as stale, and an expired exception never reads as active.
+
+    ``commit_range``, ``compensating_controls``, and ``review_trigger``
+    are metadata-only: they are carried on the record but enforce
+    nothing. ``project_identities`` is the set of identifiers the
+    scanned project is known by (project id, directory name, remote
+    fingerprint); repository scope is enforced only against these, and
+    an absent identity is recorded — never treated as a match.
     """
-    live = _live_ids(findings, escalations)
+    live = _live_targets(findings, escalations, policy_ids, changed_tool_keys)
     evaluations = []
     for entry in entries:
         warnings = []
-        target = entry["finding_or_policy"]
-        matched = target in live
+        target_type = entry.get("target_type", "unspecified")
+        target_id = entry.get("target_id") or entry.get("finding_or_policy", "")
+        label = f"{target_type}:{target_id}"
+        if target_type not in ("unspecified",) + TARGET_TYPES:
+            evaluations.append({
+                "exception_id": entry.get("exception_id"),
+                "target_type": target_type,
+                "target_id": target_id,
+                "state": "invalid",
+                "risk_owner": entry.get("risk_owner"),
+                "expires_at": entry.get("expires_at"),
+                "compensating_controls": entry.get("compensating_controls") or [],
+                "review_trigger": entry.get("review_trigger") or [],
+                "warnings": [
+                    (
+                        f"Exception {entry.get('exception_id')} has unknown target_type "
+                        f"{target_type!r}; it can never activate."
+                    )
+                ],
+            })
+            continue
+        matched = target_id in live.get(target_type, set())
         if entry.get("expired"):
             state = "expired"
             warnings.append(
-                f"Exception {entry['exception_id']} ({target}) expired on "
+                f"Exception {entry['exception_id']} ({label}) expired on "
                 f"{entry.get('expires_at')} and no longer applies."
             )
         elif not matched:
             state = "stale"
             warnings.append(
-                f"Exception {entry['exception_id']} ({target}) matches no current "
-                f"finding, policy, or escalation — the authority has shifted."
+                f"Exception {entry['exception_id']} ({label}) matches no current "
+                f"target — the authority has shifted."
             )
         else:
             state = "active"
         scope_repo = (entry.get("scope") or {}).get("repository")
-        if scope_repo and project_repository and scope_repo != project_repository:
-            warnings.append(
-                f"Exception {entry['exception_id']} scope repository "
-                f"{scope_repo!r} does not match scanned project "
-                f"{project_repository!r}."
-            )
-            if state == "active":
-                state = "stale"
+        if scope_repo:
+            identities = set(project_identities or ())
+            if identities and scope_repo not in identities:
+                state = "scope-mismatch"
+                warnings.append(
+                    f"Exception {entry['exception_id']} scope repository "
+                    f"{scope_repo!r} does not match the scanned project; "
+                    f"it is not active here."
+                )
+            elif not identities:
+                warnings.append(
+                    f"Exception {entry['exception_id']} scope repository "
+                    f"{scope_repo!r} is unverified (no project identity); "
+                    f"recorded, not enforced."
+                )
         evaluations.append({
             "exception_id": entry["exception_id"],
-            "finding_or_policy": target,
+            "target_type": target_type,
+            "target_id": target_id,
             "state": state,
             "risk_owner": entry.get("risk_owner"),
             "expires_at": entry.get("expires_at"),

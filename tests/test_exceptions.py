@@ -96,6 +96,54 @@ exceptions:
         with pytest.raises(ExceptionError):
             load_exceptions(path)
 
+    def test_explicit_target_type(self, tmp_path):
+        path = _write(str(tmp_path / "e.yml"), """
+exceptions:
+  - exception_id: E2
+    target_type: escalation
+    target_id: ESC_MCP_SERVER_ADDED
+    risk_owner: o@example.com
+    rationale: "Reviewed."
+""")
+        entries, _ = load_exceptions(path)
+        assert entries[0]["target_type"] == "escalation"
+        assert entries[0]["target_id"] == "ESC_MCP_SERVER_ADDED"
+
+    def test_legacy_key_auto_classified(self, tmp_path):
+        path = _write(str(tmp_path / "e.yml"), """
+exceptions:
+  - exception_id: E3
+    finding_or_policy: CAP_shell
+    risk_owner: o@example.com
+    rationale: "Legacy file."
+""")
+        entries, _ = load_exceptions(path)
+        assert entries[0]["target_type"] == "unspecified"
+        assert entries[0]["target_id"] == "CAP_shell"
+
+    def test_unknown_target_type_rejected(self, tmp_path):
+        path = _write(str(tmp_path / "e.yml"), """
+exceptions:
+  - exception_id: E4
+    target_type: vibe
+    target_id: X
+    risk_owner: o@example.com
+    rationale: "x"
+""")
+        with pytest.raises(ExceptionError):
+            load_exceptions(path)
+
+    def test_split_target_keys_rejected(self, tmp_path):
+        path = _write(str(tmp_path / "e.yml"), """
+exceptions:
+  - exception_id: E5
+    target_type: finding
+    risk_owner: o@example.com
+    rationale: "x"
+""")
+        with pytest.raises(ExceptionError):
+            load_exceptions(path)
+
 
 class TestEvaluateExceptions:
     def test_active(self):
@@ -122,20 +170,61 @@ class TestEvaluateExceptions:
             [{"id": "ESC_MCP_SERVER_ADDED", "severity": "high"}])
         assert evaluations[0]["state"] == "active"
 
-    def test_scope_mismatch_marks_stale(self):
+    def test_policy_target_matches_policy_id(self):
+        entry = _entry()
+        entry.update({"target_type": "policy", "target_id": "deny-shell"})
+        evaluations = evaluate_exceptions(
+            [entry], [_finding()], [], policy_ids=["deny-shell"])
+        assert evaluations[0]["state"] == "active"
+
+    def test_policy_target_stale_without_match(self):
+        entry = _entry()
+        entry.update({"target_type": "policy", "target_id": "deny-shell"})
+        evaluations = evaluate_exceptions([entry], [_finding()], [], policy_ids=[])
+        assert evaluations[0]["state"] == "stale"
+
+    def test_authority_change_target_matches_tool(self):
+        entry = _entry()
+        entry.update({"target_type": "authority_change", "target_id": "tool:x"})
+        evaluations = evaluate_exceptions(
+            [entry], [], [], changed_tool_keys=["tool:x"])
+        assert evaluations[0]["state"] == "active"
+
+    def test_invalid_target_type_state(self):
+        entry = _entry()
+        entry.update({"target_type": "vibe", "target_id": "X"})
+        evaluations = evaluate_exceptions([entry], [_finding()], [])
+        assert evaluations[0]["state"] == "invalid"
+        assert evaluations[0]["warnings"]
+
+    def test_review_trigger_is_metadata_only(self):
+        entry = _entry()
+        entry["review_trigger"] = ["New external tool"]
+        entry["scope"] = {"repository": None, "commit_range": "v1..v2"}
+        evaluations = evaluate_exceptions([entry], [_finding()], [])
+        assert evaluations[0]["state"] == "active"
+
+    def test_scope_mismatch_state(self):
         entry = _entry()
         entry["scope"] = {"repository": "acme/other", "commit_range": None}
         evaluations = evaluate_exceptions(
-            [entry], [_finding()], [], project_repository="acme/agent")
-        assert evaluations[0]["state"] == "stale"
+            [entry], [_finding()], [], project_identities={"acme/agent"})
+        assert evaluations[0]["state"] == "scope-mismatch"
         assert evaluations[0]["warnings"]
 
     def test_scope_match_stays_active(self):
         entry = _entry()
         entry["scope"] = {"repository": "acme/agent", "commit_range": None}
         evaluations = evaluate_exceptions(
-            [entry], [_finding()], [], project_repository="acme/agent")
+            [entry], [_finding()], [], project_identities={"acme/agent"})
         assert evaluations[0]["state"] == "active"
+
+    def test_unverified_scope_recorded_not_enforced(self):
+        entry = _entry()
+        entry["scope"] = {"repository": "acme/agent", "commit_range": None}
+        evaluations = evaluate_exceptions([entry], [_finding()], [])
+        assert evaluations[0]["state"] == "active"
+        assert evaluations[0]["warnings"]
 
 
 class TestExceptionsCli:

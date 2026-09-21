@@ -1,4 +1,4 @@
-# SafeAI — Static AI Capability & Risk Analyzer
+# SafeAI — Agent Authority Security for the Software Supply Chain
 
 [![CI](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml/badge.svg)](https://github.com/ikaruscareer/SafeAI/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ikaruscareer/SafeAI/badge)](https://scorecard.dev/viewer/?uri=github.com/ikaruscareer/SafeAI)
@@ -8,7 +8,19 @@
 
 Enjoying SafeAI? A ⭐ on [GitHub](https://github.com/ikaruscareer/SafeAI) helps more security teams find it.
 
-**SafeAI** is a static analysis tool that scans AI application source code for security risks, capability exposure, and governance gaps. It is offline and source-private by default — it never executes agents or calls LLMs, and network activity occurs only through explicitly enabled integration commands (currently only `--pr-comment-post`). It integrates into CI/CD pipelines.
+**Know what your AI agent can do before you deploy it.**
+
+**SafeAI** statically maps agent capabilities, tools, MCP integrations, and authority changes, then turns material changes into explainable CI/CD security decisions and portable evidence. Technically, SafeAI is a *Static AI Capability & Risk Analyzer*: it scans AI application source code for security risks, capability exposure, and governance gaps. It is offline and source-private by default — it never executes agents or calls LLMs, and network activity occurs only through explicitly enabled integration commands (currently only `--pr-comment-post`). It integrates into CI/CD pipelines.
+
+**Three pillars — DISCOVER / COMPARE / GOVERN:**
+
+| Pillar | Question | What SafeAI does |
+|---|---|---|
+| **DISCOVER** | What can the agent access? | Builds an evidence-backed model of agent authority: tools, MCP servers, filesystem, shell, databases, APIs, destinations, memory, delegation, autonomy, approval controls |
+| **COMPARE** | What changed? | Diffs authority against the approved baseline: new tools, `read → write` widening, new destinations, removed approval gates |
+| **GOVERN** | Should that change be allowed? | Deterministic CI/CD decisions — `pass`, `review-required`, `block`, `accepted-exception` — with evidence, never an opaque score |
+
+> SafeAI is not a runtime guardrail and does not certify an agent as safe. It provides source-first, evidence-backed visibility into agent authority and meaningful changes *before deployment*.
 
 > 🌐 [safeai-analyzer.ikaruscareer.com](https://safeai-analyzer.ikaruscareer.com) — project landing page
 
@@ -41,6 +53,59 @@ SafeAI analyzes AI applications without executing them, helping developers disco
 Designed to be lightweight, explainable, and community-driven, SafeAI aims to become an open foundation for AI capability and risk analysis.
 
 SafeAI sits before runtime guardrails and red-teaming tools in the security lifecycle. It scans agent source code at commit time — detecting framework-specific capabilities, MCP misconfigurations, and prompt injection patterns — before you ever deploy an agent to staging. It does not replace runtime tools (Microsoft AGT), evaluation frameworks (LangSmith, DeepEval), or red-teaming scanners (Promptfoo, Garak). It complements them: find the risk in code first, then validate at runtime.
+
+---
+
+## Example: authority-change report
+
+*SafeAI's most important security event is not simply that a finding exists. It is that an agent's effective authority materially changes.*
+
+```
+Agent: customer-support-agent            Baseline: release v2.4.0 (approved)
+
+AUTHORITY CHANGE (material)
++ tool:        crm_update
++ capability:  database write
++ destination: production CRM
++ access:      read → write
+- human approval gate (GOV_APPROVAL_MISSING)
+
+Policy decision: BLOCK
+Reason: production write authority was added without an approved
+        exception or required approval control.
+Evidence: source files · tool definition · baseline manifest ·
+          current manifest · policy profile · SafeAI version ·
+          ruleset version · commit SHA
+```
+
+The reviewer learns *what the agent can now do that it could not do
+before* — and the decision cites evidence, not a score.
+
+---
+
+## Agent Authority Model
+
+SafeAI builds an analytical model — not an observation of runtime
+permissions — of what an agent is empowered to do:
+
+```
+Agent
+  → Tool / MCP Server / Skill / Workflow Node
+    → Capability
+      → Access Mode (none < read < write < mutate < execute)
+        → Data / Destination / Resource
+          → Authority
+```
+
+Every authority statement carries a class: **declared** (config says so),
+**detected** (code shows it), **inferred** (heuristic, confidence-labelled),
+**repository/IaC-observed** (in-repo infrastructure grants), or
+**unknown**. Runtime-granted authority (live IAM, deployed network policy,
+runtime identity) is explicitly **unknown** to the static scanner —
+*unknown is an evidence state, not evidence of safety*, and SafeAI never
+converts it into a pass.
+
+---
 
 <img width="1024" height="1024" alt="SafeAI_Concept" src="https://github.com/user-attachments/assets/c07999b2-79d5-4200-9eec-ce1ab4e63cc8" />
 

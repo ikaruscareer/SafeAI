@@ -1,6 +1,95 @@
 # SafeAI — Roadmap
 
-SafeAI is a **Static AI Capability & Risk Analyzer** — think SonarQube for AI agents and workflows.
+SafeAI is **Agent Authority Security for the Software Supply Chain**.
+Technically, it is a *Static AI Capability & Risk Analyzer* — think
+SonarQube for AI agents and workflows.
+
+> **Core product question:** what authority does this AI agent have, what
+> changed, what evidence supports that conclusion, and should the change
+> be allowed?
+>
+> SafeAI does not try to answer "Is this AI safe?" — no static scan can
+> certify a system as lawful, secure, or safe.
+
+---
+
+## Product model: Discover / Compare / Govern
+
+- **DISCOVER** — what can this agent access or control? Tools, MCP
+  servers, filesystem, shell, databases, APIs, cloud services, external
+  destinations, memory, delegation, autonomy, human approval controls.
+- **COMPARE** — what changed from the previously approved state? New
+  tools, new MCP servers, `read → write` / `write → execute` widening,
+  new destinations, expanded data reachability, removed approval gates,
+  increased autonomy, new delegation paths, new credential dependencies,
+  infrastructure authority changes.
+- **GOVERN** — should this authority change be allowed? Deterministic
+  outcomes (`pass | warn | review-required | block |
+  accepted-exception`, `safeai/kya/contract.py: POLICY_OUTCOMES`), each
+  explaining what changed, why it matters, the evidence, affected tool /
+  capability / destination, confidence, responsible policy, and baseline
+  used. Developers understand the decision without opening a dashboard.
+  Scores inform; they never decide.
+
+## ChangeGuard is the flagship
+
+KYA ChangeGuard / Agent Authority ChangeGuard is the centre of this
+roadmap:
+
+```
+Agent source/configuration changes
+  → SafeAI static analysis
+    → Agent authority model
+      → Approved baseline
+        → Authority diff
+          → Material change detection
+            → Policy evaluation
+              → PASS / REVIEW / BLOCK
+                → Evidence artifact
+```
+
+> **SafeAI's most important security event is not simply that a finding
+> exists. It is that an agent's effective authority materially changes.**
+
+Material-change examples: `read → write`, `write → execute`, new shell
+capability, new external destination, new MCP server, new database
+access, new credential dependency, removed human approval, expanded
+memory scope, increased autonomy, new delegation path.
+
+Change classification (conceptual, never a numerical score):
+`NO_CHANGE | LOW_CHANGE | MATERIAL_CHANGE | HIGH_RISK_CHANGE | UNKNOWN`.
+
+## Agent Authority Model
+
+```
+Agent
+  → Tool / MCP Server / Skill / Workflow Node
+    → Capability
+      → Access Mode (none < read < write < mutate < execute)
+        → Data / Destination / Resource
+          → Authority
+```
+
+This is a SafeAI analytical model, not observed runtime permission.
+Authority classes: **declared** · **detected** · **inferred**
+(confidence-labelled) · **repository/IaC-observed** · **unknown** ·
+**runtime-granted** (explicitly outside static analysis; future
+Corporate reconciliation only).
+
+**Unknown is a first-class security concept.** Tool access: inferred.
+Runtime IAM: unknown. Dynamic tool binding: unknown. Network egress:
+unknown. Runtime identity: unknown. *Unknown is an evidence state, not
+evidence of safety* — SafeAI never converts it into a pass, a
+false-positive assumption, or a false-negative assumption.
+
+## Framework strategy: depth over breadth
+
+Framework churn is high. SafeAI's durable asset is its authority model,
+evidence model, and change semantics — not the number of framework
+adapters. Core-team depth on Claude Code, MCP, OpenAI Agents, LangGraph,
+CrewAI, Cursor, Windsurf, and generic Python/TypeScript agent patterns;
+long-tail frameworks arrive via the community plugin SDK (CE 2.3), not
+the core team.
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
@@ -420,7 +509,7 @@ The earlier "Visibility & Intelligence" sketch (trend tracking, architecture map
 
 *Goal: turn SafeAI's static capability map into a CI-runnable adversarial test suite for agents.*
 
-**Rationale:** Static analysis tells you what an agent *can do* and what *changed*; adversarial validation tests whether the agent *resists* manipulation at those exact risk surfaces. NIST AI 600-1 describes structured pre-deployment testing as a mandatory activity for GenAI systems. This feature is *not* a runtime sandbox, hallucination benchmark, or general jailbreak lab — it is a tightly scoped pre-deployment harness generated directly from the KYA manifest.
+**Rationale:** Static analysis tells you what an agent *can do* and what *changed*; adversarial validation tests whether the agent *resists* manipulation at those exact risk surfaces. NIST AI 600-1 describes structured pre-deployment testing as a mandatory activity for GenAI systems. This feature is *not* a runtime sandbox, hallucination benchmark, or general jailbreak lab — it is a tightly scoped pre-deployment harness generated directly from the KYA manifest. Direction: **capability-informed validation generation** — SafeAI discovers the risky chain (e.g. untrusted input → agent → shell tool → external HTTP) and exports a recommended validation plan ("test whether untrusted input can cause shell execution followed by external data transmission"); execution belongs to specialised tools (Promptfoo, Garak, Invariant, internal harnesses), with resulting evidence linked back to the authority finding. SafeAI integrates; it does not become a generic red-team platform.
 
 **Status: ⏳ planned.** CE-V 1-2 are Community Edition; the external handoff (CE-V 3) belongs in Corporate (EE3).
 
@@ -460,8 +549,9 @@ Preserved strategic exclusions — requested features the Community scanner will
 - No live IAM reads (AWS/Azure/GCP), Kubernetes API access, or telemetry ingestion.
 - No compliance certification claims; mappings are taxonomy, not coverage.
 - No user/global machine configuration scanning by default.
-- No automatic code modification, auto-remediation, or automatic PR creation.
+- No automatic code modification, auto-remediation, or automatic PR creation (automatic PR creation is not a core security capability).
 - No plugin marketplace; no model hallucination scoring; no exploit generation.
+- No generic jailbreak platform, hallucination testing, LLM evaluation, runtime monitoring, AI-SPM replacement, GRC platform, compliance dashboard, opaque AI security score, or framework-adapter race; no SIEM replacement.
 
 ---
 
@@ -496,8 +586,8 @@ Mindset: sequencing matters more than features — get it wrong and CE becomes u
 - Protect the **SafeAI** name and the **KYA** positioning; keep "Know Your Agent" an operating principle, not a claimed standard.
 - Price on **agents or repositories under governance**, not seats; keep the free tier genuinely useful at small scale.
 
-## EE1 — Organisational Evidence Registry
-*The first thing to sell. Aggregation and ownership, not analytics. Per the
+## EE1 — Agent Evidence Registry
+*Inventory + ownership + evidence. The first thing to sell. Aggregation and ownership, not analytics. Per the
 re-baseline (§Five outcomes, item 5): ship the evidence chain — registry,
 ownership, exceptions, attestations, retention — before dashboards and
 integrations, not charts first.*
@@ -513,7 +603,8 @@ integrations, not charts first.*
 - Registry coverage reporting: unscanned / stale / drifted repositories and agents.
 - **Org-wide AI-BOM aggregation** — centralised AI-BOM across all scanned repositories. Aggregate models, agents, MCP servers, datasets, and vector stores into a single compliance-ready inventory. Dashboard shows asset counts, ownership coverage, governance status per asset type. Export as CycloneDX 1.6 JSON for regulatory submissions.
 
-## EE2 — Policy Governance and Evidence Integrity
+## EE2 — Governance and Approval
+*Policies + exceptions + approvals + attestations.*
 - Private rule and policy registries, org-wide distribution and version pinning.
 - Central baseline management and approved-exception inheritance across repositories.
 - Signed attestations and tamper-evident, immutable scan evidence with retention controls.
@@ -523,8 +614,8 @@ integrations, not charts first.*
 - DevSecOps integrations: GitHub, GitLab, Azure DevOps, Jenkins, Jira, ServiceNow, SIEM, GRC, artifact stores.
 - Trend analysis and executive reporting — only once ownership, schemas and workflow are stable.
 
-## EE3 — Live Authority Reconciliation
-*The highest-value corporate capability, and the reason the edition boundary exists.*
+## EE3 — Authority Reconciliation
+*Static/IaC/live authority comparison. The highest-value corporate capability, and the reason the edition boundary exists.*
 - Read-only reconciliation of declared capability against live granted authority: AWS IAM, Azure Managed Identity, GCP IAM, Kubernetes RBAC, service accounts, network policies.
 - Continuous drift detection between approved baseline authority and current deployed authority.
 - Cross-environment comparison (dev / staging / prod divergence).
@@ -532,7 +623,8 @@ integrations, not charts first.*
 - Capability-informed test-plan export to third-party evaluation, red-team and runtime-governance tools, with results linked to the exact scan and policy decision.
 - Delivered as a separate explicitly installed component with scoped read-only credentials — never inside the core scanner, so the offline guarantee holds.
 
-## EE4 — Regulated-Industry Content and Federation
+## EE4 — Enterprise Integrations
+*GRC/SIEM/ticketing/reporting — SafeAI integrates with these ecosystems rather than replacing them.*
 - Maintained compliance-oriented policy and rule packs: HIPAA/patient data, PCI/transaction security, GDPR/data protection, EU AI Act mappings, org-specific packs.
 - Control-mapped evidence exports for GRC and audit workflows, with explicit non-certification language.
 - Optional federated registry — safe KYA evidence across business groups without centralising source code.
@@ -611,6 +703,19 @@ it:
   export` (portable inventory, `--include-history`/`--include-suppressed`);
   `--rules <dir>` custom-rule directory loader; GitLab CI + Azure Pipelines
   detection (already in `ci_context.PROVIDERS`).
+
+---
+
+## Terminology
+
+Prefer: Agent Authority · Authority Change · Material Change ·
+Authority Diff · ChangeGuard · Security Evidence · Evidence Boundary ·
+Approved Baseline · Security Decision · Declared Authority · Observed
+Repository Authority · Unknown Authority.
+
+Avoid overusing: AI risk score · AI safety score · compliance score ·
+secure agent score · "certified safe" · "guaranteed secure". The product
+is evidence-driven, not score-driven.
 
 ---
 

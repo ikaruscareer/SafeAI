@@ -93,10 +93,10 @@ the core team.
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.4.0 shipped (ChangeGuard lanes + evidence
-> hardening: Lane A/B decisions, material-change classification,
-> `--fail-on-authority-change`, provenance/gateability + registry v7,
-> file-backed exceptions, data-flow paths in PR output).
+> **Current state:** v2.4.0 release in progress (ChangeGuard lanes +
+> evidence hardening: Lane A/B decisions, material-change
+> classification, `--fail-on-authority-change`, provenance/gateability +
+> registry v7, file-backed exceptions, data-flow paths in PR output).
 > Next milestone: v2.5.0 (Static IaC).
 
 ---
@@ -368,7 +368,7 @@ Status legend: ✅ **Shipped** · 🔄 **In progress / partial** · ⏳ **Planne
 - ✅ **Governance signal detection** — timeout, retry policy, approval workflow, audit logging, rate limiting, circuit breaker, backpressure, health check. **Shipped in v1.9.0** (8 `GOV_*` rules, `GovernanceAnalyzer`, per-tool dedup, scoped source confirmation).
 - ✅ **Better terminal output** — severity-grouped summary, clear layout, improved signal-to-noise (v1.4-b).
 - ✅ **Severity-weighted trust score** — 7-category weighted scoring keyed on `safeai/severity.py`.
-- ✅ **Security Scorecard** — a deterministic, auditable 0–10 report summarising a scan into an overall score, per-category scores, and a `pass`/`warn`/`fail` outcome. Markdown, JSON (`scorecard-schema.json`), and GitHub Actions step summary outputs. `--scorecard-fail-under N` gating. ~55 tests (`safeai/scorecard.py`).
+- ✅ **Security Scorecard** — a deterministic, auditable 0–10 report summarising a scan into an overall score, per-category scores, and a `pass`/`warn`/`fail` outcome. Informational unless explicitly selected: score-based gating exists only via opt-in `--scorecard-fail-under`. Evidence → authority → change → policy → decision; the score never decides on its own. Markdown, JSON (`scorecard-schema.json`), and GitHub Actions step summary outputs. `--scorecard-fail-under N` gating. ~55 tests (`safeai/scorecard.py`).
 
 ### Exit criterion
 > ✅ **Achieved.** A reviewer sees, in a PR comment, that a specific **named tool** gained a specific **new authority** — and SafeAI records that change, the policy decision and the assurance boundary in local KYA history. Ordinary SAST does not produce that.
@@ -553,6 +553,7 @@ packs on this SDK, not as core-team shallow adapters.*
 - Parse in-repo IaC incrementally: Terraform first, then CloudFormation, Kubernetes manifests, Helm, serverless configs.
 - Normalised authority vocabulary emitted by both code scanning and IaC parsers, with confidence labels (`declared | repo-IaC-observed | partially-resolved | unverified-runtime`).
 - Compare declared capability against granted authority, both directions: capability without grant (probable breakage), grant without capability (excess authority); rules cover semantic authority classes (excessive wildcards, privileged production paths, mismatched authority).
+- Planned correlation verdicts: `MATCH | EXCESS_AUTHORITY | AUTHORITY_MISMATCH | UNKNOWN` (Terraform first; the normalized authority model later extends to Kubernetes, Helm, CloudFormation, serverless).
 - Report confidence honestly: repository IaC is not proof of deployed state; the assurance boundary must say so. IaC-derived grants enrich the Agent System Card.
 - Exit criterion: SafeAI shows which permissions an agent appears able to use, which permissions repository IaC grants, where they disagree, and what remains unknowable statically.
 
@@ -560,8 +561,8 @@ packs on this SDK, not as core-team shallow adapters.*
 
 ## Review decision lanes (accepted direction)
 
-*Goal: make "who decides" as explicit as "what changed". Shipped in
-v2.4.0; items below are delivered behavior, not direction.*
+*Goal: make "who decides" as explicit as "what changed". Ships in
+v2.4.0 (this release); items below are delivered behavior, not direction.*
 
 - **Two formal lanes.** Lane A — deterministic gates (`--fail-on*`,
   `--scorecard-fail-under`, `deny` policy actions) yields machine verdicts.

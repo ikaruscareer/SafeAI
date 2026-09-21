@@ -133,7 +133,7 @@ converts it into a pass.
 | **Baseline & Escalation Gating** | `--fail-on-new` for new/regressed findings, `--fail-on-escalation` for authority changes, `--pr-comment` PR summaries |
 | **Policy-as-Code & Suppressions** | `allow`/`warn`/`require_review`/`deny` policy with selectors; required-reason suppressions |
 | **Assurance Boundary** | Every scan states exactly what it did and could not verify — never a fixed disclaimer |
-| **Security Scorecard** | Deterministic 0–10 score with per-category breakdown and `pass`/`warn`/`fail` outcome; `--scorecard`, `--scorecard-json`, `--scorecard-summary`, and `--scorecard-fail-under` to gate CI on a minimum score |
+| **Security Scorecard** | Deterministic 0–10 score with per-category breakdown and `pass`/`warn`/`fail` outcome; informational unless you opt into `--scorecard-fail-under` gating — evidence and policy decide, the score does not |
 | **CI/CD Integration** | SARIF 2.1.0 output, exit codes, GitHub Actions **Marketplace action** and workflow included |
 | **Community Scan** | Governed private-pilot workflow for scanning public third-party agent frameworks with responsible disclosure (`community-scans/`) — private by default, human-reviewed before any publication |
 | **Multi-Format Reports** | Terminal, JSON, SARIF 2.1.0, HTML, canonical KYA manifest, PR comment, Security Scorecard |

@@ -48,6 +48,55 @@ def _analyzer_for_rule(rule_id):
     return "unknown"
 
 
+# Analyzers whose evidence is a human-authored declaration (config files,
+# permission grants, tool definitions) rather than inferred code behavior.
+# Findings from these analyzers carry provenance_class "declared" when
+# they are structured (non-heuristic); everything else structured is
+# "detected", regex-fallback evidence is "inferred", and evidence-less
+# findings are "unknown" — never overstated.
+_DECLARED_ANALYZERS = frozenset({
+    "mcp",
+    "model_config",
+    "claude_code",
+    "prompt_file",
+    "skill",
+    "tool_def",
+    "workflow",
+})
+
+#: Gateability vocabulary: Lane-A deterministic gates may only consume
+#: "deterministic" findings; "review-only" findings (inferred or unknown
+#: provenance) can raise Lane-B review events but never fail a gate alone.
+GATEABILITY_DETERMINISTIC = "deterministic"
+GATEABILITY_REVIEW_ONLY = "review-only"
+
+PROVENANCE_CLASSES = ("declared", "detected", "inferred", "unknown")
+GATEABILITY_VALUES = (GATEABILITY_DETERMINISTIC, GATEABILITY_REVIEW_ONLY)
+
+
+def provenance_class_for(finding, analyzer, heuristic):
+    """Return the field-level provenance class for a normalized finding."""
+    evidence = finding.get("evidence") or finding.get("message")
+    if not evidence and not finding.get("file"):
+        return "unknown"
+    if heuristic:
+        return "inferred"
+    if analyzer in _DECLARED_ANALYZERS:
+        return "declared"
+    return "detected"
+
+
+def gateability_for(finding, provenance_class):
+    """Return the gateability for a normalized finding.
+
+    Heuristic or unknown-provenance findings are review-only: no heuristic
+    may fail a Lane-A deterministic gate on its own.
+    """
+    if provenance_class in ("inferred", "unknown"):
+        return GATEABILITY_REVIEW_ONLY
+    return GATEABILITY_DETERMINISTIC
+
+
 def normalize_findings(findings):
     """Normalize findings in place: fingerprint, IDs, confidence, provenance.
 
@@ -69,11 +118,27 @@ def normalize_findings(findings):
 
         if not finding.get("provenance"):
             heuristic = bool(finding.get("regex_fallback")) or finding.get("source") == "regex"
+            analyzer = _analyzer_for_rule(rule_id)
             finding["provenance"] = {
-                "analyzer": _analyzer_for_rule(rule_id),
+                "analyzer": analyzer,
                 "heuristic": heuristic,
                 "evidence": [redact_secrets(str(finding.get("evidence") or finding.get("message") or ""))],
             }
+        else:
+            heuristic = bool(finding["provenance"].get("heuristic"))
+            analyzer = finding["provenance"].get("analyzer") or _analyzer_for_rule(rule_id)
+
+        # Field-level provenance class + gateability (v2.4 evidence
+        # hardening). Custom analyzers may pre-set these; we never
+        # overwrite an explicit value.
+        finding.setdefault(
+            "provenance_class",
+            provenance_class_for(finding, analyzer, heuristic),
+        )
+        finding.setdefault(
+            "gateability",
+            gateability_for(finding, finding["provenance_class"]),
+        )
 
         # Evidence persisted to manifests/registry is always redacted.
         if finding.get("evidence"):

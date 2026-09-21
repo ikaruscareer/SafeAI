@@ -103,6 +103,13 @@ def print_summary(report):
             print("Policy profile:", profile)
         for reason in (policy.get("reasons") or [])[:5]:
             print(f"  - {reason}")
+        # Lane B prints questions for a human; Lane A prints verdicts.
+        questions = [
+            m for m in (policy.get("matches") or [])
+            if m.get("lane") == "B"
+        ]
+        for match in questions[:5]:
+            print(f"  ? [{match.get('policy_id')}] {match.get('message') or 'requires human review'}")
 
     suppressions = report.get("suppressions")
     if suppressions and suppressions.get("suppressed"):

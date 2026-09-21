@@ -204,7 +204,46 @@ def _first_scan_summary(report):
     return lines
 
 
+def _dataflow_paths(report, budget=7):
+    """Newly reachable source→sink paths as compact Markdown lines.
+
+    Only new/regressed ``DATAFLOW_*`` findings (baseline mode) surface
+    here, alongside escalations. Paths are single-file heuristics — the
+    heading says so. Returns at most ``budget`` lines including the
+    heading and a ``+N more`` overflow line.
+    """
+    ranked = []
+    for finding in report.get("findings") or []:
+        rule_id = str(finding.get("rule_id") or "")
+        if not rule_id.startswith("DATAFLOW_"):
+            continue
+        if finding.get("status") not in ("new", "regressed"):
+            continue
+        sink = rule_id[len("DATAFLOW_"):]
+        evidence = str(finding.get("evidence") or "")
+        source = ""
+        if "->" in evidence:
+            source = evidence.split("->")[0].replace("source:", "").strip()
+        label = f"{source} → {sink}" if source else sink
+        where = f"{finding.get('file')}:{finding.get('line')}"
+        ranked.append((_severity_rank(finding.get("severity")), label, where))
+
+    if not ranked:
+        return []
+    ranked.sort(key=lambda item: (item[0], item[1], item[2]))
+
+    lines = ["**New data-flow paths** (heuristic, single-file — not verified):", ""]
+    shown = ranked[: max(0, budget - 3)]
+    for _, label, where in shown:
+        lines.append(f"- `{label}` in `{where}`")
+    hidden = len(ranked) - len(shown)
+    if hidden > 0:
+        lines.append(f"- +{hidden} more {_plural(hidden, 'path')}")
+    return lines[:budget]
+
+
 def _details_line(report, diff, shown):
+    """One collapsed line of context. Never expands the reviewer's work."""
     """One collapsed line of context. Never expands the reviewer's work."""
     counts = diff.get("counts") or {}
     bits = []
@@ -301,6 +340,15 @@ def render_pr_comment(report, ci_context=None):
         shown += 1
 
     lines.extend(body)
+    # Newly reachable data-flow paths ride alongside escalations inside the
+    # same line budget (details line + footer need 4 reserved lines;
+    # _truncate below still enforces the hard cap).
+    remaining = MAX_LINES - 4 - len(lines) - 2
+    if remaining > 3:
+        paths = _dataflow_paths(report, budget=remaining)
+        if paths:
+            lines.extend(paths)
+            lines.append("")
     lines.extend(_details_line(report, diff, shown))
     lines = _truncate(lines, len(blocks), shown)
 

@@ -129,7 +129,74 @@ def _status_for(before_state, after_state):
     return "unchanged"
 
 
-def _tool_entry(tool_key_value, before_state, after_state, evaluate_combinations):
+#: Material-change classification vocabulary (conceptual classes, never a
+#: numerical score). UNKNOWN means the baseline lacked attribution, so the
+#: change cannot be classified — unknown is an evidence state, and it never
+#: fails a gate on its own.
+CHANGE_CLASSES = (
+    "NO_CHANGE",
+    "LOW_CHANGE",
+    "MATERIAL_CHANGE",
+    "HIGH_RISK_CHANGE",
+    "UNKNOWN",
+)
+_CHANGE_RANK = {name: index for index, name in enumerate(CHANGE_CLASSES)}
+
+
+def change_class_for(status, escalations, access_mode_changes, added):
+    """Classify one tool entry's authority change.
+
+    Deterministic and structural: HIGH_RISK on any critical escalation,
+    MATERIAL on new/escalated authority (new tool, gained capability,
+    widened access), LOW on shrunk authority, NO_CHANGE when unchanged,
+    UNKNOWN when the status itself is unknowable.
+    """
+    if status in (None, "unknown"):
+        return "UNKNOWN"
+    if status == "unchanged":
+        return "NO_CHANGE"
+    if status in ("reduced", "removed"):
+        return "LOW_CHANGE"
+    if any(str(e.get("severity", "")).lower() == "critical" for e in escalations or []):
+        return "HIGH_RISK_CHANGE"
+    if status in ("new", "escalated") and (added or access_mode_changes or escalations):
+        return "MATERIAL_CHANGE"
+    if status in ("new", "escalated"):
+        return "LOW_CHANGE"
+    return "UNKNOWN"
+
+
+def _inferred_only(added, access_mode_changes):
+    """True when every structural change signal is inferred evidence.
+
+    Inferred-only changes print as review questions; they never fail a
+    Lane-A deterministic gate on their own.
+    """
+    signals = list(added or []) + list(access_mode_changes or [])
+    if not signals:
+        return False
+    return all(bool(s.get("inferred")) for s in signals)
+
+
+def authority_gate_tripped(tools, threshold):
+    """True when a tool authority change meets a `--fail-on-authority-change`
+    threshold (``"material"`` or ``"high-risk"``).
+
+    Inferred-only changes never trip the gate; UNKNOWN never trips it:
+    unknown is an evidence state, not evidence of unsafety.
+    """
+    threshold_rank = {"material": 2, "high-risk": 3}[threshold]
+    for tool in tools or []:
+        cls = tool.get("change_class", "UNKNOWN")
+        # UNKNOWN is unrankable by construction: it never trips a gate.
+        rank = -1 if cls == "UNKNOWN" else _CHANGE_RANK.get(cls, -1)
+        if rank >= threshold_rank and not tool.get("inferred_only"):
+            return True
+    return False
+
+
+def _tool_entry(tool_key_value, before_state, after_state,
+evaluate_combinations):
     status = _status_for(before_state, after_state)
     before_caps = {c["name"]: c for c in (before_state or {}).get("capabilities") or []}
     after_caps = {c["name"]: c for c in (after_state or {}).get("capabilities") or []}
@@ -155,6 +222,8 @@ def _tool_entry(tool_key_value, before_state, after_state, evaluate_combinations
         "tool_key": tool_key_value,
         "tool": reference.get("tool") or {"kind": "unknown", "name": None, "framework": None},
         "status": status,
+        "change_class": change_class_for(status, escalations, access_mode_changes, added),
+        "inferred_only": _inferred_only(added, access_mode_changes),
         "access_summary": {
             "before": (before_state or {}).get("access_summary"),
             "after": (after_state or {}).get("access_summary"),
@@ -218,6 +287,9 @@ def compute_capability_diff(current_report, baseline_report):
                 e for e in entry["escalations"]
                 if e["id"].startswith("ESC_COMBO_")
             ]
+            entry["change_class"] = change_class_for(
+                "unknown", entry["escalations"], [], [])
+            entry["inferred_only"] = False
 
         if entry["status"] != "unchanged" or entry["escalations"]:
             all_escalations.extend(entry["escalations"])
@@ -244,14 +316,26 @@ def compute_capability_diff(current_report, baseline_report):
 
     tools.sort(key=lambda t: t["tool_key"])
 
+    change_counts = {cls: 0 for cls in CHANGE_CLASSES}
+    for entry in tools:
+        change_counts[entry.get("change_class", "UNKNOWN")] += 1
+    if unattributed and unattributed.get("change_class") in change_counts:
+        change_counts[unattributed["change_class"]] += 1
+    highest_change = "NO_CHANGE"
+    for entry in tools:
+        cls = entry.get("change_class", "UNKNOWN")
+        if cls != "UNKNOWN" and _CHANGE_RANK.get(cls, 0) > _CHANGE_RANK[highest_change]:
+            highest_change = cls
+
     result = {
         "schema_version": CAPABILITY_DIFF_SCHEMA_VERSION,
         "baseline_available": True,
         "baseline_tool_attribution": bool(baseline_attributed),
         "tools": tools,
         "unattributed": unattributed,
-        "counts": {**counts, **legacy["counts"]},
+        "counts": {**counts, **legacy["counts"], "by_change_class": change_counts},
         "highest_escalation": highest_severity(all_escalations),
+        "highest_change_class": highest_change,
         "legacy": legacy,
         # v1 fields kept at the top level for backward compatibility.
         "added": legacy["added"],

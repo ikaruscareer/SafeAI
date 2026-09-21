@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-21
+
+**Agent Authority ChangeGuard precision and evidence hardening.**
+
+### Added — Review decision lanes (WS1)
+
+- Lane A (deterministic gates) vs Lane B (mandatory-review questions):
+  `evaluate_policy` publishes canonical outcomes (`pass | warn |
+  review-required | block`) mapped from the policy-DSL actions, plus the
+  winning `action`, `lane`, per-match lanes, and a `lanes` summary.
+  Terminal prints Lane-B matches as review questions; gates print
+  verdicts — never blended.
+- Review floor: new-or-changed prompt/config-definition findings
+  (`PROMPT_*`, `PROMPT_FILE_*`, `SKILL_*`, `TOOL_DEF_*`, `MODEL_CONFIG_*`,
+  `WORKFLOW_*`, `CC_*`) resolve to at least `require_review`, never
+  `pass` — even with zero other matches.
+- Fixed: SafeAI's own manifests failed Contract v1 validation on every
+  non-`warn` policy outcome (`deny`/`require_review`/`allow` are not
+  contract outcomes). Decisions now publish mapped outcomes, so
+  `safeai manifest validate` accepts real scan output.
+
+### Added — Material-change classification and authority gate (WS2)
+
+- Per-tool `change_class` (`NO_CHANGE | LOW_CHANGE | MATERIAL_CHANGE |
+  HIGH_RISK_CHANGE | UNKNOWN`, never a score) with `inferred_only`
+  tracking, `by_change_class` counts, and `highest_change_class` on the
+  capability diff. UNKNOWN (unattributed baselines) never fails a gate.
+- New `--fail-on-authority-change material|high-risk` gate (requires
+  `--baseline`); inferred-only changes never trip it. Wired through the
+  GitHub Action (`fail-on-authority-change` input) and `extra-args`.
+
+### Added — Evidence hardening (WS3)
+
+- Per-finding `provenance_class` (`declared | detected | inferred |
+  unknown`) and `gateability` (`deterministic | review-only`) attached
+  at normalization, carried in manifests, validated by Contract v1 and
+  the manifest JSON schema (optional, backward-compatible enums).
+- Registry schema v7 (additive): `scan_findings.provenance_class` and
+  `scan_findings.gateability` columns; pre-v2.4 rows read NULL.
+- Deterministic report generation covered by double-scan digest test.
+
+### Added — File-backed exception schema (WS4)
+
+- `.safeai/exceptions.yml` records: `exception_id`, `finding_or_policy`,
+  scope, named `risk_owner`, `rationale`, `compensating_controls`,
+  `expires_at`, `review_trigger`. Expired or stale (nothing live matches)
+  exceptions warn on stderr by default; `--strict-exceptions` fails the
+  scan (exit 1). Invalid files are hard errors — silent exceptions are
+  never permitted.
+
+### Added — Source-to-destination paths in PR output (WS5)
+
+- New-or-regressed `DATAFLOW_*` paths render alongside escalations in
+  `--pr-comment` inside the existing 60-line cap, labelled heuristic
+  and single-file. No heuristic fails a Lane-A gate on its own.
+
 ## [2.3.0] - 2026-09-16
 
 **Plugin SDK and Rule Ecosystem (CE 2.3).**

@@ -81,7 +81,8 @@ def build_install_command(version, find_links=""):
 
 
 def build_scan_argv(path, fail_on, sarif, rules="", baseline="", fail_on_new=False,
-                    fail_on_escalation="", no_registry=True, extra_args=None,
+                    fail_on_escalation="", fail_on_authority_change="",
+                    no_registry=True, extra_args=None,
                     scorecard="", scorecard_json="", scorecard_summary="",
                     scorecard_fail_under="", pr_comment_post=False):
     """Build the ``python -m safeai scan`` argv as a list (no shell)."""
@@ -97,6 +98,8 @@ def build_scan_argv(path, fail_on, sarif, rules="", baseline="", fail_on_new=Fal
         argv += ["--fail-on-new"]
     if fail_on_escalation:
         argv += ["--fail-on-escalation", fail_on_escalation]
+    if fail_on_authority_change:
+        argv += ["--fail-on-authority-change", fail_on_authority_change]
     if no_registry:
         argv += ["--no-registry"]
     if scorecard:
@@ -223,6 +226,7 @@ def main(argv=None):
     baseline = action_input("baseline")
     fail_on_new = as_bool(action_input("fail-on-new", "false"))
     fail_on_escalation = action_input("fail-on-escalation")
+    fail_on_authority_change = action_input("fail-on-authority-change")
     no_registry = as_bool(action_input("no-registry", "true"))
     skip_install = as_bool(env_val("SAFEAI_ACTION_SKIP_INSTALL"))
     scorecard = action_input("scorecard", "safeai-scorecard.md")
@@ -268,6 +272,13 @@ def main(argv=None):
         print(
             f"::error::fail-on-escalation must be one of "
             f"{', '.join(FAIL_ON_CHOICES)}; got {fail_on_escalation!r}",
+            file=sys.stderr,
+        )
+        return 2
+    if fail_on_authority_change and fail_on_authority_change not in ("material", "high-risk"):
+        print(
+            "::error::fail-on-authority-change must be one of material, high-risk; "
+            f"got {fail_on_authority_change!r}",
             file=sys.stderr,
         )
         return 2
@@ -337,6 +348,7 @@ def main(argv=None):
         baseline=baseline,
         fail_on_new=fail_on_new,
         fail_on_escalation=fail_on_escalation,
+        fail_on_authority_change=fail_on_authority_change,
         no_registry=no_registry,
         extra_args=extra_args,
         scorecard=scorecard,

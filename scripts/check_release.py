@@ -5,7 +5,7 @@ import yaml
 
 
 def main():
-    tag_version = "2.3.0"
+    tag_version = "2.4.0"
 
     # Check version matches tag
     from safeai.version import SAFEAI_VERSION

@@ -25,6 +25,60 @@ DEFAULT_POLICY_PATH = os.path.join(".safeai", "policy.yml")
 ACTIONS = ("allow", "warn", "require_review", "deny")
 _ACTION_RANK = {action: index for index, action in enumerate(ACTIONS)}
 
+#: Canonical report outcomes (``safeai.kya.contract.POLICY_OUTCOMES``).
+#: Policy files keep the action DSL; published decisions use outcome
+#: vocabulary so manifests validate against Contract v1. Lane A prints
+#: machine verdicts (gates); Lane B prints human questions (mandatory
+#: review, never auto-passes).
+ACTION_OUTCOME = {
+    "allow": "pass",
+    "warn": "warn",
+    "require_review": "review-required",
+    "deny": "block",
+}
+LANE_OF_ACTION = {
+    "allow": "A",
+    "warn": "A",
+    "require_review": "B",
+    "deny": "A",
+}
+
+#: Rule families whose *new-or-changed* findings are definition changes
+#: (prompts, agent configs, tool/skill/model/workflow definitions,
+#: Claude Code permissions). They resolve to at least require_review —
+#: never pass — even with zero other matches.
+_REVIEW_FLOOR_PREFIXES = (
+    "PROMPT_",
+    "PROMPT_FILE_",
+    "SKILL_",
+    "TOOL_DEF_",
+    "MODEL_CONFIG_",
+    "WORKFLOW_",
+    "CC_",
+)
+
+#: Finding statuses that count as new-or-changed for the review floor.
+_NEWISH_STATUSES = frozenset({"new", "introduced", "reopened", "regressed"})
+
+
+def lane_of_finding(finding):
+    """Return the review-decision lane for a finding: ``"B"`` when its
+    gateability is review-only (heuristic or unknown provenance), else
+    ``"A"``. Lane B items are questions for a human, never gate verdicts.
+    """
+    if str(finding.get("gateability", "")).lower() == "review-only":
+        return "B"
+    return "A"
+
+
+def _is_review_floor_trigger(finding):
+    """True when a finding is a new-or-changed prompt/config definition —
+    the review floor applies (outcome at least require_review)."""
+    rule_id = str(finding.get("rule_id") or "")
+    if not rule_id.startswith(_REVIEW_FLOOR_PREFIXES):
+        return False
+    return str(finding.get("status", "new")) in _NEWISH_STATUSES
+
 #: Built-in profile names and their bundled YAML files.
 _BUILTIN_PROFILES = {
     "developer": "developer.yml",
@@ -268,18 +322,27 @@ def evaluate_policy(policy, report):
     still recorded in match details for auditability. Evaluation order is
     deterministic (file order), and the outcome uses action precedence.
 
-    Returns a decision dict: ``outcome``, ``reasons``, ``matches``.
+    Returns a decision dict: ``outcome`` (canonical POLICY_OUTCOMES
+    vocabulary), ``action`` (winning policy-DSL action), ``lane``
+    (``"A"`` verdict or ``"B"`` question), ``lanes`` (match counts per
+    lane), ``reasons``, ``matches`` (each carrying its ``lane``).
+
+    New-or-changed prompt/config-definition findings floor the outcome
+    at require_review: they print as Lane-B questions, never pass.
     """
     if policy is None:
         return {
             "outcome": "warn",
+            "action": "warn",
+            "lane": "A",
+            "lanes": {"A": 0, "B": 0},
             "reasons": ["No policy file supplied; default posture 'warn'."],
             "matches": [],
         }
 
     matches = []
     highest = _ACTION_RANK[policy["default_action"]]
-    outcome = policy["default_action"]
+    action = policy["default_action"]
 
     for pol in policy["policies"]:
         matched_findings = []
@@ -290,6 +353,7 @@ def evaluate_policy(policy, report):
                     "fingerprint": finding.get("fingerprint"),
                     "rule_id": finding.get("rule_id"),
                     "status": finding.get("status", "unknown"),
+                    "lane": lane_of_finding(finding),
                     "reasons": reasons,
                 })
         if not matched_findings:
@@ -299,6 +363,7 @@ def evaluate_policy(policy, report):
         match_record = {
             "policy_id": pol["id"],
             "action": pol["action"],
+            "lane": LANE_OF_ACTION[pol["action"]],
             "message": pol["message"],
             "matched": matched_findings,
         }
@@ -306,13 +371,42 @@ def evaluate_policy(policy, report):
 
         if active and _ACTION_RANK[pol["action"]] > highest:
             highest = _ACTION_RANK[pol["action"]]
-            outcome = pol["action"]
+            action = pol["action"]
+
+    # Review floor: new-or-changed prompt/config definitions never pass.
+    floor_triggered = any(
+        _is_review_floor_trigger(f)
+        for f in report.get("findings") or []
+        if f.get("status") != "suppressed"
+    )
+    if floor_triggered and highest < _ACTION_RANK["require_review"]:
+        highest = _ACTION_RANK["require_review"]
+        action = "require_review"
+
+    outcome = ACTION_OUTCOME[action]
+    lanes = {"A": 0, "B": 0}
+    for m in matches:
+        lanes[m["lane"]] = lanes.get(m["lane"], 0) + 1
+    if floor_triggered and not matches:
+        lanes["B"] += 1
 
     reasons = [
         f"Policy '{m['policy_id']}' matched {len(m['matched'])} finding(s) -> {m['action']}"
         for m in matches
     ]
+    if floor_triggered:
+        reasons.append(
+            "New-or-changed prompt/config definition requires human review "
+            "(outcome floor: require_review)."
+        )
     if not reasons:
         reasons.append(f"No policies matched; default action '{policy['default_action']}'.")
 
-    return {"outcome": outcome, "reasons": reasons, "matches": matches}
+    return {
+        "outcome": outcome,
+        "action": action,
+        "lane": LANE_OF_ACTION[action],
+        "lanes": lanes,
+        "reasons": reasons,
+        "matches": matches,
+    }

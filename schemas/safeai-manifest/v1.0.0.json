@@ -103,6 +103,8 @@
           "remediation": {"type": ["string", "null"]},
           "confidence": {"type": ["string", "null"]},
           "provenance": {"type": "object"},
+          "provenance_class": {"enum": ["declared", "detected", "inferred", "unknown"]},
+          "gateability": {"enum": ["deterministic", "review-only"]},
           "location": {"type": "object"},
           "fingerprint": {"type": ["string", "null"]},
           "status": {"type": "string"}

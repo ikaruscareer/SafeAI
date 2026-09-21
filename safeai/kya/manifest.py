@@ -46,6 +46,8 @@ def _finding_entry(finding):
         "remediation": finding.get("remediation"),
         "confidence": confidence_label(finding.get("confidence_label") or finding.get("confidence")),
         "provenance": finding.get("provenance") or {"analyzer": "unknown", "evidence": []},
+        "provenance_class": finding.get("provenance_class", "unknown"),
+        "gateability": finding.get("gateability", "review-only"),
         "location": {
             "path": normalize_path(finding.get("file")),
             "line_start": int(finding.get("line") or 0),

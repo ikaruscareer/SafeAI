@@ -145,6 +145,7 @@ def test_registry_persists_plugin_versions(kya_project, tmp_path):
     import json
     import sqlite3
 
+    from safeai.kya import REGISTRY_SCHEMA_VERSION
     from safeai.kya.registry.connection import migrate
     from safeai.kya.registry.persist import persist_scan
 
@@ -152,7 +153,7 @@ def test_registry_persists_plugin_versions(kya_project, tmp_path):
     db_path = str(tmp_path / "registry.db")
     conn = sqlite3.connect(db_path)
     try:
-        assert migrate(conn) == 6
+        assert migrate(conn) == REGISTRY_SCHEMA_VERSION
         persist_scan(conn, manifest)
         row = conn.execute("SELECT plugin_versions_json FROM scans").fetchone()
         stored = json.loads(row[0])
@@ -166,6 +167,7 @@ def test_registry_persists_plugin_versions(kya_project, tmp_path):
 def test_migration_v6_adds_nullable_column(tmp_path):
     import sqlite3
 
+    from safeai.kya import REGISTRY_SCHEMA_VERSION
     from safeai.kya.registry.connection import migrate
     from safeai.kya.registry.schema import _MIGRATIONS
 
@@ -186,7 +188,7 @@ def test_migration_v6_adds_nullable_column(tmp_path):
             " VALUES ('s1', 'p1', '2.2.1', '{}', 'abc')"
         )
         conn.commit()
-        assert migrate(conn) == 6
+        assert migrate(conn) == REGISTRY_SCHEMA_VERSION
         row = conn.execute(
             "SELECT safeai_version, plugin_versions_json FROM scans WHERE scan_id = 's1'"
         ).fetchone()

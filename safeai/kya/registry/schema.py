@@ -215,6 +215,18 @@ _SCHEMA_V6 = """
 ALTER TABLE scans ADD COLUMN plugin_versions_json TEXT;
 """
 
+# --- Migration 7 (v2.4): per-finding provenance class + gateability -----
+#
+# Adds ``provenance_class`` (declared|detected|inferred|unknown) and
+# ``gateability`` (deterministic|review-only) columns to ``scan_findings``,
+# carrying the v2.4 evidence-hardening fields per scan. NULL for scans
+# persisted before v2.4 (the manifest itself always carries the fields
+# going forward; pre-v2.4 rows predate the vocabulary).
+_SCHEMA_V7 = """
+ALTER TABLE scan_findings ADD COLUMN provenance_class TEXT;
+ALTER TABLE scan_findings ADD COLUMN gateability TEXT;
+"""
+
 #: Forward-only migrations, applied in ascending order. Migrations are
 #: additive: no migration drops, rewrites, or reorders an existing row.
 _MIGRATIONS = {
@@ -224,4 +236,5 @@ _MIGRATIONS = {
     4: _SCHEMA_V4,
     5: _SCHEMA_V5,
     6: _SCHEMA_V6,
+    7: _SCHEMA_V7,
 }

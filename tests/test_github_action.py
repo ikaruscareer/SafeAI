@@ -114,6 +114,7 @@ def test_action_inputs_map_to_real_cli_flags():
         "baseline",    # --baseline
         "fail-on-new", # --fail-on-new
         "fail-on-escalation",  # --fail-on-escalation
+        "fail-on-authority-change",  # --fail-on-authority-change
         "no-registry", # --no-registry
         "extra-args",  # additional argv elements (safe, list-based)
         "scorecard",           # --scorecard

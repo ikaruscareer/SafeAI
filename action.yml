@@ -52,6 +52,12 @@ inputs:
       (--fail-on-escalation): critical, high, or medium. Requires baseline.
     required: false
     default: ''
+  fail-on-authority-change:
+    description: >-
+      Minimum tool authority-change class that fails the scan
+      (--fail-on-authority-change): material or high-risk. Requires baseline.
+    required: false
+    default: ''
   no-registry:
     description: 'Do not create or update the local KYA registry (--no-registry).'
     required: false
@@ -133,6 +139,7 @@ runs:
         INPUT_BASELINE: ${{ inputs.baseline }}
         INPUT_FAIL_ON_NEW: ${{ inputs.fail-on-new }}
         INPUT_FAIL_ON_ESCALATION: ${{ inputs.fail-on-escalation }}
+        INPUT_FAIL_ON_AUTHORITY_CHANGE: ${{ inputs.fail-on-authority-change }}
         INPUT_NO_REGISTRY: ${{ inputs.no-registry }}
         INPUT_EXTRA_ARGS: ${{ inputs.extra-args }}
         INPUT_SCORECARD: ${{ inputs.scorecard }}

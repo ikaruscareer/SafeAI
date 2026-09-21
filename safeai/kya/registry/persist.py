@@ -323,8 +323,9 @@ def persist_scan(conn, manifest):
                 location = finding.get("location") or {}
                 conn.execute(
                     "INSERT OR REPLACE INTO scan_findings("
-                    "scan_id, fingerprint, status, severity, rule_id, path, line, finding_json"
-                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "scan_id, fingerprint, status, severity, rule_id, path, line, finding_json, "
+                    "provenance_class, gateability"
+                    ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         scan_id,
                         fp,
@@ -334,6 +335,8 @@ def persist_scan(conn, manifest):
                         location.get("path"),
                         location.get("line_start"),
                         json.dumps(finding, sort_keys=True, default=str),
+                        finding.get("provenance_class"),
+                        finding.get("gateability"),
                     ),
                 )
 

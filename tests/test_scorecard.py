@@ -311,7 +311,7 @@ def test_build_scorecard_status_pass():
     """A scan with no active findings yields status pass."""
     report = _base_report([])
     scan_meta = _base_scan_meta()
-    policy = _base_policy(outcome="allow")
+    policy = _base_policy(outcome="pass")
     args = _base_args()
 
     scorecard = build_scorecard(report, scan_meta, policy, scan_args=args)
@@ -335,7 +335,7 @@ def test_build_scorecard_status_fail_policy():
     findings = [_base_finding(severity="low")]
     report = _base_report(findings)
     scan_meta = _base_scan_meta()
-    policy = _base_policy(outcome="deny")
+    policy = _base_policy(outcome="block")
     args = _base_args()
 
     scorecard = build_scorecard(report, scan_meta, policy, scan_args=args)

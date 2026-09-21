@@ -348,7 +348,7 @@ def build_scorecard(report: dict, scan_meta: dict, policy_decision: dict,
         f for f in active
         if _severity_index(f.get("severity", "medium")) >= threshold_index
     ]
-    if policy_outcome == "deny":
+    if policy_outcome == "block":
         status = "fail"
         blocking = active
     elif blocking:

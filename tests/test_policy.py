@@ -56,7 +56,7 @@ policies:
 """)
     policy = load_policy(path)
     decision = evaluate_policy(policy, _report([_finding()]))
-    assert decision["outcome"] == "deny"
+    assert decision["outcome"] == "block"
     assert decision["matches"][0]["policy_id"] == "deny-shell"
     assert decision["matches"][0]["matched"][0]["rule_id"] == "CAP_shell"
 
@@ -73,7 +73,7 @@ policies:
 """)
     policy = load_policy(path)
     decision = evaluate_policy(policy, _report([_finding()]))
-    assert decision["outcome"] == "deny"
+    assert decision["outcome"] == "block"
     assert len(decision["matches"]) == 2
 
 
@@ -103,7 +103,7 @@ policies:
     low = evaluate_policy(policy, _report([_finding(severity="high")]))
     assert low["outcome"] == "warn"
     crit = evaluate_policy(policy, _report([_finding(severity="critical")]))
-    assert crit["outcome"] == "deny"
+    assert crit["outcome"] == "block"
 
 
 def test_capability_selector(tmp_path):
@@ -118,7 +118,7 @@ policies:
     policy = load_policy(path)
     caps = [{"name": "shell", "category": "Shell"}]
     decision = evaluate_policy(policy, _report([_finding()], capabilities=caps))
-    assert decision["outcome"] == "deny"
+    assert decision["outcome"] == "block"
     no_caps = evaluate_policy(policy, _report([_finding()], capabilities=[]))
     assert no_caps["outcome"] == "warn"
 
@@ -136,7 +136,7 @@ policies:
     policy = load_policy(path)
     assets = [{"name": "remote-server", "remote": True, "authentication": None}]
     decision = evaluate_policy(policy, _report([_finding()], mcp_assets=assets))
-    assert decision["outcome"] == "require_review"
+    assert decision["outcome"] == "review-required"
 
     auth_assets = [{"name": "remote-server", "remote": True, "authentication": {"type": "oauth"}}]
     decision2 = evaluate_policy(policy, _report([_finding()], mcp_assets=auth_assets))
@@ -200,5 +200,153 @@ policies:
     with open(manifest_path) as fh:
         manifest = json.load(fh)
     decision = manifest["summary"]["policy_decision"]
-    assert decision["outcome"] == "require_review"
+    assert decision["outcome"] == "review-required"
     assert any("review-shell" in r for r in decision["reasons"])
+
+
+# ── WS1 (v2.4): review decision lanes ──────────────────────────────────
+
+from safeai.kya.policy import (
+    ACTION_OUTCOME,
+    LANE_OF_ACTION,
+    lane_of_finding,
+)
+
+
+def _policy_doc(policies, default_action="warn"):
+    return {"version": "1", "default_action": default_action, "policies": policies}
+
+
+def _matched(policy_id="p1", action="deny"):
+    return {
+        "version": "1",
+        "default_action": "warn",
+        "policies": [{
+            "id": policy_id,
+            "when": {"finding_ids": ["CAP_shell"]},
+            "action": action,
+            "message": f"{action} shell",
+        }],
+    }
+
+
+def test_action_outcome_vocabulary_matches_contract():
+    from safeai.kya.contract import POLICY_OUTCOMES
+
+    assert set(ACTION_OUTCOME.values()) <= set(POLICY_OUTCOMES)
+    assert ACTION_OUTCOME == {
+        "allow": "pass",
+        "warn": "warn",
+        "require_review": "review-required",
+        "deny": "block",
+    }
+
+
+def test_lane_assignment():
+    assert LANE_OF_ACTION == {"allow": "A", "warn": "A", "require_review": "B", "deny": "A"}
+    assert lane_of_finding({"gateability": "review-only"}) == "B"
+    assert lane_of_finding({"gateability": "deterministic"}) == "A"
+    assert lane_of_finding({}) == "A"
+
+
+def test_decision_carries_action_lane_lanes(tmp_path):
+    path = _write(tmp_path, """
+policies:
+  - id: deny-shell
+    when: {finding_ids: [CAP_shell]}
+    action: deny
+""")
+    policy = load_policy(path)
+    decision = evaluate_policy(policy, _report([_finding()]))
+    assert decision["outcome"] == "block"
+    assert decision["action"] == "deny"
+    assert decision["lane"] == "A"
+    assert decision["lanes"] == {"A": 1, "B": 0}
+    assert decision["matches"][0]["lane"] == "A"
+
+
+def test_review_match_is_lane_b_question(tmp_path):
+    path = _write(tmp_path, """
+policies:
+  - id: review-shell
+    when: {finding_ids: [CAP_shell]}
+    action: require_review
+""")
+    policy = load_policy(path)
+    decision = evaluate_policy(policy, _report([_finding()]))
+    assert decision["outcome"] == "review-required"
+    assert decision["lane"] == "B"
+    assert decision["lanes"] == {"A": 0, "B": 1}
+    assert decision["matches"][0]["lane"] == "B"
+
+
+def test_review_floor_new_prompt_definition(tmp_path):
+    path = _write(tmp_path, """
+default_action: allow
+policies: []
+""")
+    policy = load_policy(path)
+    finding = _finding(rule="PROMPT_INJECTION", severity="high", status="new")
+    decision = evaluate_policy(policy, _report([finding]))
+    assert decision["outcome"] == "review-required"
+    assert decision["lane"] == "B"
+    assert any("floor" in r for r in decision["reasons"])
+
+
+def test_review_floor_ignores_suppressed(tmp_path):
+    path = _write(tmp_path, """
+default_action: allow
+policies: []
+""")
+    policy = load_policy(path)
+    finding = _finding(rule="PROMPT_INJECTION", severity="high", status="suppressed")
+    decision = evaluate_policy(policy, _report([finding]))
+    assert decision["outcome"] == "pass"
+
+
+def test_review_floor_ignores_resolved(tmp_path):
+    path = _write(tmp_path, """
+default_action: allow
+policies: []
+""")
+    policy = load_policy(path)
+    finding = _finding(rule="SKILL_EMBEDDED_PROMPT", severity="medium", status="resolved")
+    decision = evaluate_policy(policy, _report([finding]))
+    assert decision["outcome"] == "pass"
+
+
+def test_review_floor_never_lowers_deny(tmp_path):
+    path = _write(tmp_path, """
+default_action: warn
+policies:
+  - id: deny-prompt
+    when: {finding_ids: [PROMPT_INJECTION]}
+    action: deny
+""")
+    policy = load_policy(path)
+    finding = _finding(rule="PROMPT_INJECTION", severity="critical", status="new")
+    decision = evaluate_policy(policy, _report([finding]))
+    assert decision["outcome"] == "block"
+
+
+def test_manifest_decision_validates_against_contract(kya_project, tmp_path):
+    import json
+
+    from safeai.kya.contract import validate_manifest
+
+    safeai_dir = os.path.join(kya_project["root"], ".safeai")
+    os.makedirs(safeai_dir, exist_ok=True)
+    with open(os.path.join(safeai_dir, "policy.yml"), "w") as fh:
+        fh.write("""
+policies:
+  - id: deny-shell
+    when: {finding_ids: [CAP_subprocess_shell]}
+    action: deny
+""")
+    manifest_path = os.path.join(str(tmp_path), "m.json")
+    main(["scan", kya_project["root"], "--manifest", manifest_path,
+          "--sarif", os.path.join(tmp_path, "r.sarif"), "--no-registry"])
+    with open(manifest_path) as fh:
+        manifest = json.load(fh)
+    errors, _ = validate_manifest(manifest)
+    assert errors == []

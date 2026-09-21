@@ -30,6 +30,8 @@ COMPATIBLE_SCHEMA_VERSIONS = ("1.0", "1.1", "1.2")
 
 SEVERITIES = ("critical", "high", "medium", "low", "info")
 POLICY_OUTCOMES = ("pass", "warn", "review-required", "block", "accepted-exception")
+PROVENANCE_CLASSES = ("declared", "detected", "inferred", "unknown")
+GATEABILITY_VALUES = ("deterministic", "review-only")
 
 
 def contract_block():
@@ -131,6 +133,14 @@ def validate_manifest(document):
                 _err(errors, f"{base}.severity",
                      f"must be one of {', '.join(SEVERITIES)}, "
                      f"got {finding.get('severity')!r}")
+            if "provenance_class" in finding and finding["provenance_class"] not in PROVENANCE_CLASSES:
+                _err(errors, f"{base}.provenance_class",
+                     f"must be one of {', '.join(PROVENANCE_CLASSES)}, "
+                     f"got {finding['provenance_class']!r}")
+            if "gateability" in finding and finding["gateability"] not in GATEABILITY_VALUES:
+                _err(errors, f"{base}.gateability",
+                     f"must be one of {', '.join(GATEABILITY_VALUES)}, "
+                     f"got {finding['gateability']!r}")
 
     # --- summary / policy decision ----------------------------------------
     summary = document.get("summary")

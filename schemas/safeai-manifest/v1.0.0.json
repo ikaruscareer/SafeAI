@@ -150,6 +150,37 @@
         }
       }
     },
+    "authority_changes": {
+      "description": "Compact per-tool authority changes (v2.4 portable change evidence).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool_key", "change_class"],
+        "properties": {
+          "tool_key": {"type": "string"},
+          "status": {"type": ["string", "null"]},
+          "change_class": {"enum": ["NO_CHANGE", "LOW_CHANGE", "MATERIAL_CHANGE", "HIGH_RISK_CHANGE", "UNKNOWN"]},
+          "change_types": {"type": "array", "items": {"type": "string"}},
+          "inferred_only": {"type": "boolean"}
+        }
+      }
+    },
+    "exception_evaluations": {
+      "description": "Policy exception evaluation records (v2.4 exception evidence).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["exception_id", "state"],
+        "properties": {
+          "exception_id": {"type": "string"},
+          "target_type": {"type": "string"},
+          "target_id": {"type": ["string", "null"]},
+          "state": {"enum": ["active", "expired", "stale", "scope-mismatch", "invalid"]},
+          "risk_owner": {"type": ["string", "null"]},
+          "expires_at": {"type": ["string", "null"]}
+        }
+      }
+    },
     "integrity": {
       "description": "Offline integrity block (added in contract v1.0.0, Workstream 2). Absent on pre-2.2 manifests.",
       "type": "object",

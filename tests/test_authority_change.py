@@ -5,8 +5,10 @@ import os
 
 from safeai.analysis.capability_diff import (
     CHANGE_CLASSES,
+    CHANGE_TYPES,
     authority_gate_tripped,
     change_class_for,
+    change_types_for,
 )
 from safeai.cmd.cli import main
 
@@ -52,6 +54,54 @@ class TestChangeClass:
 
     def test_escalated_without_signals_is_low(self):
         assert change_class_for("escalated", [], [], []) == "LOW_CHANGE"
+
+
+class TestChangeTypes:
+    def test_vocabulary_is_stable(self):
+        assert "AUTHORITY_ADDED" in CHANGE_TYPES
+        assert "UNKNOWN_CHANGE" in CHANGE_TYPES
+        # Absent by design: no per-tool signal exists yet.
+        assert "INFRASTRUCTURE_AUTHORITY_CHANGED" not in CHANGE_TYPES
+        assert "CREDENTIAL_SCOPE_EXPANDED" not in CHANGE_TYPES
+        assert "PROMPT_OR_DEFINITION_CHANGED" not in CHANGE_TYPES
+
+    def test_escalation_ids_map(self):
+        assert change_types_for("new", [{"id": "ESC_MCP_SERVER_ADDED"}]) == [
+            "AUTHORITY_ADDED"]
+        assert change_types_for("escalated", [{"id": "ESC_MCP_READ_TO_MUTATE"}]) == [
+            "AUTHORITY_ESCALATED"]
+        assert change_types_for("new", [{"id": "ESC_NEW_EXTERNAL_DESTINATION"}]) == [
+            "AUTHORITY_ADDED", "DESTINATION_ADDED"]
+        assert change_types_for("new", [{"id": "ESC_APPROVAL_GATE_REMOVED"}]) == [
+            "APPROVAL_REMOVED", "AUTHORITY_ADDED"]
+        assert change_types_for("new", [{"id": "ESC_MEMORY_SCOPE_EXPANDED"}]) == [
+            "AUTHORITY_ADDED", "DATA_REACH_EXPANDED"]
+        assert change_types_for("new", [{"id": "ESC_AUTONOMY_INCREASED"}]) == [
+            "AUTHORITY_ADDED", "AUTONOMY_INCREASED"]
+        assert change_types_for(
+            "new", [{"id": "ESC_COMBO_DELEGATION_EXTERNAL_SIDE_EFFECT"}]) == [
+            "AUTHORITY_ADDED", "DELEGATION_ADDED"]
+
+    def test_structural_fallback(self):
+        assert change_types_for("new", []) == ["AUTHORITY_ADDED"]
+        assert change_types_for("reduced", []) == ["AUTHORITY_REDUCED"]
+        assert change_types_for("removed", []) == ["AUTHORITY_REMOVED"]
+        assert change_types_for("unknown", []) == ["UNKNOWN_CHANGE"]
+        assert change_types_for("unchanged", []) == []
+
+    def test_unmapped_escalation_contributes_nothing(self):
+        assert change_types_for("unchanged", [{"id": "ESC_FUTURE_X"}]) == []
+
+    def test_severity_never_creates_type(self):
+        assert change_types_for(
+            "unchanged", [{"id": "ESC_FUTURE_X", "severity": "critical"}]) == []
+
+    def test_sorted_and_deduped(self):
+        types = change_types_for("new", [
+            {"id": "ESC_MCP_SERVER_ADDED"},
+            {"id": "ESC_WRITE_TOOL_ADDED"},
+        ])
+        assert types == ["AUTHORITY_ADDED"]
 
 
 class TestAuthorityGateTripped:
@@ -139,6 +189,7 @@ class TestFailOnAuthorityChange:
         added = next(t for t in diff["tools"] if t["tool_key"] == "mcp_server:writer")
         assert added["status"] == "new"
         assert added["change_class"] in ("MATERIAL_CHANGE", "HIGH_RISK_CHANGE")
+        assert "AUTHORITY_ADDED" in added["change_types"]
         assert diff["highest_change_class"] in ("MATERIAL_CHANGE", "HIGH_RISK_CHANGE")
 
     def test_new_server_fails_gate(self, tmp_path):

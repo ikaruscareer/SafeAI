@@ -58,6 +58,37 @@ def _finding_entry(finding):
     }
 
 
+def _authority_change_entries(report):
+    """Compact per-tool authority changes for portable evidence.
+
+    Carries change_class + change_types (never severity-derived beyond
+    the classification itself); full tool entries stay in the report.
+    """
+    entries = []
+    diff = report.get("capability_diff") or {}
+    for tool in diff.get("tools") or []:
+        if tool.get("status", "unchanged") == "unchanged" and not tool.get("escalations"):
+            continue
+        entries.append({
+            "tool_key": tool.get("tool_key"),
+            "status": tool.get("status"),
+            "change_class": tool.get("change_class", "UNKNOWN"),
+            "change_types": tool.get("change_types") or [],
+            "inferred_only": bool(tool.get("inferred_only")),
+        })
+    entries.sort(key=lambda e: str(e.get("tool_key")))
+    return entries
+
+
+def _authority_change_counts(report):
+    """Summary counts of authority change classes (portable, additive)."""
+    diff = report.get("capability_diff") or {}
+    counts = (diff.get("counts") or {}).get("by_change_class")
+    if isinstance(counts, dict):
+        return dict(counts)
+    return {}
+
+
 def _capability_counts(agents, report):
     counts = {}
     seen = set()
@@ -190,6 +221,18 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
         ],
         "findings": findings,
         "escalations": _escalation_entries(report),
+        "authority_changes": _authority_change_entries(report),
+        "exception_evaluations": [
+            {
+                "exception_id": e.get("exception_id"),
+                "target_type": e.get("target_type", "unspecified"),
+                "target_id": e.get("target_id") or e.get("finding_or_policy"),
+                "state": e.get("state"),
+                "risk_owner": e.get("risk_owner"),
+                "expires_at": e.get("expires_at"),
+            }
+            for e in (report.get("exception_evaluations") or [])
+        ],
         "summary": {
             "risk_score": trust.get("overall_ai_risk_score"),
             "severity_counts": severity_counts,
@@ -198,6 +241,7 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
             "component_count": len(report.get("components") or []),
             "dependency_count": len(report.get("dependency_inventory") or []),
             "policy_decision": policy_decision or {"outcome": "warn", "reasons": ["No policy file supplied; default posture."]},
+            "authority_change_counts": _authority_change_counts(report),
         },
         # v1.2: the assurance boundary states what this scan verified and
         # what it structurally cannot. ``limitations`` is kept as the

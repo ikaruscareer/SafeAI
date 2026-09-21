@@ -178,6 +178,72 @@ def _inferred_only(added, access_mode_changes):
     return all(bool(s.get("inferred")) for s in signals)
 
 
+#: Semantic authority change types, derived from tool status + escalation
+#: ids (never from severity). Only types with observable signals exist:
+#: infrastructure, credential-scope, and prompt/definition changes have no
+#: per-tool signal yet and are intentionally absent.
+CHANGE_TYPES = (
+    "AUTHORITY_ADDED",
+    "AUTHORITY_ESCALATED",
+    "AUTHORITY_REDUCED",
+    "AUTHORITY_REMOVED",
+    "DESTINATION_ADDED",
+    "DATA_REACH_EXPANDED",
+    "APPROVAL_REMOVED",
+    "AUTONOMY_INCREASED",
+    "DELEGATION_ADDED",
+    "UNKNOWN_CHANGE",
+)
+
+_ESCALATION_CHANGE_TYPE = {
+    "ESC_SHELL_ADDED": "AUTHORITY_ADDED",
+    "ESC_MCP_SERVER_ADDED": "AUTHORITY_ADDED",
+    "ESC_WRITE_TOOL_ADDED": "AUTHORITY_ADDED",
+    "ESC_ACCESS_MODE_INCREASED": "AUTHORITY_ESCALATED",
+    "ESC_FILESYSTEM_WRITE_ADDED": "AUTHORITY_ESCALATED",
+    "ESC_MCP_READ_TO_MUTATE": "AUTHORITY_ESCALATED",
+    "ESC_EXTERNAL_ACCESS_ADDED": "DESTINATION_ADDED",
+    "ESC_NEW_EXTERNAL_DESTINATION": "DESTINATION_ADDED",
+    "ESC_MEMORY_SCOPE_EXPANDED": "DATA_REACH_EXPANDED",
+    "ESC_APPROVAL_GATE_REMOVED": "APPROVAL_REMOVED",
+    "ESC_AUTONOMY_INCREASED": "AUTONOMY_INCREASED",
+    "ESC_COMBO_UNTRUSTED_INPUT_SHELL": "AUTHORITY_ESCALATED",
+    "ESC_COMBO_AUTONOMY_BROAD_DATA": "AUTONOMY_INCREASED",
+    "ESC_COMBO_DELEGATION_EXTERNAL_SIDE_EFFECT": "DELEGATION_ADDED",
+}
+
+_STATUS_CHANGE_TYPE = {
+    "new": "AUTHORITY_ADDED",
+    "escalated": "AUTHORITY_ESCALATED",
+    "reduced": "AUTHORITY_REDUCED",
+    "removed": "AUTHORITY_REMOVED",
+    "unchanged": None,
+    "unknown": "UNKNOWN_CHANGE",
+}
+
+
+def change_types_for(status, escalations):
+    """Derive semantic change types for one tool entry.
+
+    Escalation ids map to their semantic type; the structural status
+    supplies the fallback (new → ADDED, reduced → REDUCED, ...).
+    Unmapped escalation ids contribute nothing — severity never creates
+    a type. Returns a sorted list (possibly empty for unchanged tools).
+    """
+    types = set()
+    for escalation in escalations or []:
+        mapped = _ESCALATION_CHANGE_TYPE.get(str(escalation.get("id") or ""))
+        if mapped:
+            types.add(mapped)
+    fallback = _STATUS_CHANGE_TYPE.get(status)
+    if fallback:
+        types.add(fallback)
+    elif status not in ("unchanged", None):
+        types.add("UNKNOWN_CHANGE")
+    types.discard(None)
+    return sorted(types)
+
+
 def authority_gate_tripped(tools, threshold):
     """True when a tool authority change meets a `--fail-on-authority-change`
     threshold (``"material"`` or ``"high-risk"``).
@@ -223,6 +289,7 @@ evaluate_combinations):
         "tool": reference.get("tool") or {"kind": "unknown", "name": None, "framework": None},
         "status": status,
         "change_class": change_class_for(status, escalations, access_mode_changes, added),
+        "change_types": change_types_for(status, escalations),
         "inferred_only": _inferred_only(added, access_mode_changes),
         "access_summary": {
             "before": (before_state or {}).get("access_summary"),
@@ -289,6 +356,7 @@ def compute_capability_diff(current_report, baseline_report):
             ]
             entry["change_class"] = change_class_for(
                 "unknown", entry["escalations"], [], [])
+            entry["change_types"] = change_types_for("unknown", entry["escalations"])
             entry["inferred_only"] = False
 
         if entry["status"] != "unchanged" or entry["escalations"]:

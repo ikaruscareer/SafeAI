@@ -139,6 +139,115 @@ class TestContractEnums:
         assert errors == []
 
 
+class TestManifestEvidence:
+    def _report(self, **overrides):
+        report = {
+            "files_scanned": 1,
+            "counts": {},
+            "detected_frameworks": [],
+            "findings": [],
+            "normalized_capabilities": [],
+            "trust_score": {"overall_ai_risk_score": 50, "categories": {}},
+            "capability_diff": {
+                "tools": [{
+                    "tool_key": "tool:x", "status": "new",
+                    "change_class": "MATERIAL_CHANGE",
+                    "change_types": ["AUTHORITY_ADDED"],
+                    "inferred_only": False, "escalations": [],
+                }],
+                "counts": {"by_change_class": {"MATERIAL_CHANGE": 1}},
+            },
+            "exception_evaluations": [{
+                "exception_id": "E1", "target_type": "finding",
+                "target_id": "CAP_shell", "state": "active",
+                "risk_owner": "o@example.com", "expires_at": None,
+            }],
+        }
+        report.update(overrides)
+        return report
+
+    def _manifest(self, report):
+        from safeai.kya.manifest import build_manifest
+
+        return build_manifest(
+            report,
+            project={"project_id": "p", "source_root": "."},
+            scan_meta={"scan_id": "s", "completed_at": "2026-01-01T00:00:00Z"},
+            safeai_meta={"version": "2.4.0"},
+            agents=[],
+        )
+
+    def test_authority_changes_carried(self):
+        manifest = self._manifest(self._report())
+        assert manifest["authority_changes"] == [{
+            "tool_key": "tool:x", "status": "new",
+            "change_class": "MATERIAL_CHANGE",
+            "change_types": ["AUTHORITY_ADDED"],
+            "inferred_only": False,
+        }]
+        assert manifest["summary"]["authority_change_counts"] == {"MATERIAL_CHANGE": 1}
+
+    def test_exceptions_carried(self):
+        manifest = self._manifest(self._report())
+        assert manifest["exception_evaluations"] == [{
+            "exception_id": "E1", "target_type": "finding",
+            "target_id": "CAP_shell", "state": "active",
+            "risk_owner": "o@example.com", "expires_at": None,
+        }]
+
+    def test_empty_by_default(self):
+        manifest = self._manifest(self._report(
+            capability_diff={}, exception_evaluations=[]))
+        assert manifest["authority_changes"] == []
+        assert manifest["exception_evaluations"] == []
+        assert manifest["summary"]["authority_change_counts"] == {}
+
+    def test_manifest_validates(self):
+        manifest = self._manifest(self._report())
+        doc = dict(manifest)
+        doc.update({
+            "schema_version": "1.2",
+            "manifest_type": "safeai.kya",
+            "project": {"project_id": "p"},
+            "summary": {"policy_decision": {"outcome": "pass"}},
+            "assurance_boundary": {},
+            "limitations": ["static only"],
+        })
+        errors, _ = validate_manifest(doc)
+        assert errors == []
+
+    def test_bad_change_class_rejected(self):
+        from safeai.kya.contract import validate_manifest as validate
+
+        doc = self._manifest(self._report())
+        doc["authority_changes"] = [{"tool_key": "t", "change_class": "SPICY"}]
+        base = dict(doc)
+        base.update({
+            "schema_version": "1.2", "manifest_type": "safeai.kya",
+            "project": {"project_id": "p"},
+            "summary": {"policy_decision": {"outcome": "pass"}},
+            "assurance_boundary": {}, "limitations": ["x"],
+        })
+        errors, _ = validate(base)
+        assert any("change_class" in e for e in errors)
+
+    def test_bad_exception_state_rejected(self):
+        from safeai.kya.contract import validate_manifest as validate
+
+        doc = self._manifest(self._report(exception_evaluations=[{
+            "exception_id": "E1", "state": "vibing",
+        }]))
+        base = dict(doc)
+        base.update({
+            "schema_version": "1.2", "manifest_type": "safeai.kya",
+            "project": {"project_id": "p"},
+            "summary": {"policy_decision": {"outcome": "pass"}},
+            "assurance_boundary": {}, "limitations": ["x"],
+        })
+        errors, _ = validate(base)
+        assert any("exception_evaluations" in e for e in errors)
+
+
 class TestMigrationV7:
     def test_version_is_7(self):
         assert REGISTRY_SCHEMA_VERSION == 7

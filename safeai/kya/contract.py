@@ -32,6 +32,8 @@ SEVERITIES = ("critical", "high", "medium", "low", "info")
 POLICY_OUTCOMES = ("pass", "warn", "review-required", "block", "accepted-exception")
 PROVENANCE_CLASSES = ("declared", "detected", "inferred", "unknown")
 GATEABILITY_VALUES = ("deterministic", "review-only")
+CHANGE_CLASSES = ("NO_CHANGE", "LOW_CHANGE", "MATERIAL_CHANGE", "HIGH_RISK_CHANGE", "UNKNOWN")
+EXCEPTION_STATES = ("active", "expired", "stale", "scope-mismatch", "invalid")
 
 
 def contract_block():
@@ -172,6 +174,42 @@ def validate_manifest(document):
                     _err(errors, f"{base}.severity",
                          f"must be one of {', '.join(SEVERITIES)}, "
                          f"got {escalation.get('severity')!r}")
+
+    # --- authority_changes (optional; v2.4 portable change evidence) --------
+    authority_changes = document.get("authority_changes")
+    if authority_changes is not None:
+        if not isinstance(authority_changes, list):
+            _err(errors, "$.authority_changes", "must be an array")
+        else:
+            for i, change in enumerate(authority_changes):
+                base = f"$.authority_changes[{i}]"
+                if not isinstance(change, dict):
+                    _err(errors, base, "must be an object")
+                    continue
+                if not change.get("tool_key"):
+                    _err(errors, f"{base}.tool_key", "must be a non-empty string")
+                if change.get("change_class") not in CHANGE_CLASSES:
+                    _err(errors, f"{base}.change_class",
+                         f"must be one of {', '.join(CHANGE_CLASSES)}, "
+                         f"got {change.get('change_class')!r}")
+
+    # --- exception_evaluations (optional; v2.4 exception evidence) ----------
+    evaluations = document.get("exception_evaluations")
+    if evaluations is not None:
+        if not isinstance(evaluations, list):
+            _err(errors, "$.exception_evaluations", "must be an array")
+        else:
+            for i, evaluation in enumerate(evaluations):
+                base = f"$.exception_evaluations[{i}]"
+                if not isinstance(evaluation, dict):
+                    _err(errors, base, "must be an object")
+                    continue
+                if not evaluation.get("exception_id"):
+                    _err(errors, f"{base}.exception_id", "must be a non-empty string")
+                if evaluation.get("state") not in EXCEPTION_STATES:
+                    _err(errors, f"{base}.state",
+                         f"must be one of {', '.join(EXCEPTION_STATES)}, "
+                         f"got {evaluation.get('state')!r}")
 
     # --- assurance boundary / limitations ---------------------------------
     if "assurance_boundary" not in document:

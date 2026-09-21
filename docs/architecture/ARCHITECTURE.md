@@ -296,6 +296,30 @@ Reports: Terminal │ JSON │ SARIF │ HTML │ PR comment │ Scorecard
 
 ---
 
+## Agent Authority Model
+
+The pipeline above converges on one analytical concept: **agent
+authority** — what an agent is empowered to do, derived statically:
+
+```
+Agent → Tool / MCP Server / Skill / Workflow Node → Capability
+  → Access Mode (none < read < write < mutate < execute)
+    → Data / Destination / Resource → Authority
+```
+
+Tool identity (`safeai/analysis/tool_identity.py`), tool surface, and
+capability diff (schema v2) key this model on `(tool_identity,
+capability, access_mode)`; escalation rules (`ESC_*`) and policy
+outcomes (`pass | warn | review-required | block |
+accepted-exception`) decide on *changes* to it. Authority classes:
+declared · detected · inferred (confidence-labelled) ·
+repository/IaC-observed · unknown · runtime-granted (out of scope for
+static analysis). Unknown is an evidence state, not evidence of safety.
+Strategy: `ROADMAP.md` (Discover / Compare / Govern),
+`docs/STRATEGIC_POSITIONING.md`.
+
+---
+
 ## Plugin Architecture
 
 Framework adapters, analyzers, and rules are pluggable. Adapters follow a

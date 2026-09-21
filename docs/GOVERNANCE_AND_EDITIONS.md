@@ -20,6 +20,11 @@ contributors and users. Linked from `README.md`, `CONTRIBUTING.md`, and
 
 ## Corporate Edition may include (separately installed, separately licensed)
 
+Corporate refocus (Roadmap 2): EE1 Agent Evidence Registry, EE2
+Governance and Approval, EE3 Authority Reconciliation, EE4 Enterprise
+Integrations — evidence, governance, and reconciliation on the same
+scanner, never a second scanner.
+
 - Cross-repository aggregation and organization ownership/review workflow.
 - SSO/RBAC/audit retention; central exceptions and policy distribution.
 - Signed, tamper-evident organizational evidence retention.

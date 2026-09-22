@@ -149,3 +149,25 @@ the leading `v`.
 
 Re-download the artifact. If it persists, open an issue at
 https://github.com/ikaruscareer/SafeAI/issues with the `security` label.
+
+## Release signing (maintainers)
+
+**Why Cosign is pinned.** `sigstore/cosign-installer` is pinned to an
+immutable commit SHA, and `cosign-release` is pinned explicitly to
+v2.6.1: the installer's own default fails its version validation and
+falls back to building cosign from HEAD, whose CLI breaks `sign-blob`.
+The pin (with rationale in `release.yml`) survives Dependabot bumps of
+the installer action itself.
+
+**What is signed.** Every `dist/*.whl` and `dist/*.tar.gz` gets a
+detached `.sig` signature and `.pem` certificate (keyless OIDC via
+GitHub Actions). SBOM, provenance, and `SHA256SUMS` ship alongside as
+attestations, not signed blobs.
+
+**How maintainers detect signing failures.** The pipeline signs, then
+*verifies* (`cosign verify-blob` against the artifact with the expected
+repository identity and OIDC issuer) before preparing release assets.
+Verification failure fails the step and blocks publish/release jobs via
+job dependencies. "The signing command completed" is never treated as
+integrity evidence. `tests/test_release_workflow.py` statically asserts
+the verify stage, SHA pins, and cosign pin on every CI run.

@@ -53,6 +53,20 @@ verdicts agree on every required-field and enum rule.
   `safeai/kya/util.py:redact_secrets`; raw source blocks and secret values
   are never emitted.
 
+## v2.4 evidence fields (additive, optional)
+
+- Findings carry `provenance_class` (`declared | detected | inferred |
+  unknown`) and `gateability` (`deterministic | review-only`).
+- `authority_changes` lists per-tool `change_class`, `change_types`,
+  and `inferred_only`; `summary` carries `authority_change_counts` and
+  `highest_change_class`.
+- `exception_evaluations` records each exception's `target_type`,
+  `target_id`, `state` (`active | expired | stale | scope-mismatch |
+  invalid`), owner, and expiry — so an external consumer can answer why
+  a finding was permitted without reading local SQLite state.
+- Pre-v2.4 manifests omit these keys and remain readable: validators
+  treat absence as unknown, never as safe.
+
 ## Not a guarantee
 
 A valid manifest proves **structure**, not truth: import validates declared

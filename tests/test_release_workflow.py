@@ -25,8 +25,7 @@ def _load():
 
 def _walk_steps(workflow):
     for job in (workflow.get("jobs") or {}).values():
-        for step in job.get("steps") or []:
-            yield step
+        yield from job.get("steps") or []
 
 
 def test_all_actions_pinned_to_sha():

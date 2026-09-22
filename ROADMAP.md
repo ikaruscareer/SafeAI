@@ -93,10 +93,11 @@ the core team.
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.4.0 release in progress (ChangeGuard lanes +
-> evidence hardening: Lane A/B decisions, material-change
-> classification, `--fail-on-authority-change`, provenance/gateability +
-> registry v7, file-backed exceptions, data-flow paths in PR output).
+> **Current state:** v2.4.0 tagged; release pipeline blocked on a
+> Cosign installer regression (fix: PR #192, explicit `cosign-release`
+> pin + fail-closed verify stage). v2.4.x hardening in progress:
+> governable UNKNOWN authority, authority dimension blocks, manifest
+> exception/change evidence, PR lane sections.
 > Next milestone: v2.5.0 (Static IaC).
 
 ---

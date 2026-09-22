@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — v2.4.x Security Architecture Hardening
+
+- Release pipeline signs *and* verifies: `cosign verify-blob` against
+  the artifact with the expected repository identity and OIDC issuer
+  runs before asset preparation; verification failure blocks publish.
+  `cosign-release` pinned explicitly to v2.6.1; `tests/test_release_workflow.py`
+  statically asserts SHA pins, the verify stage, and fail-closed wiring.
+- Governable UNKNOWN authority: policy-file `authority: unknown`
+  (`allow | warn | require_review | deny`), `--unknown-authority
+  pass|review|block` CLI fallback (explicit file setting wins), and an
+  optional `unknown-authority` GitHub Action input. Default behavior
+  unchanged: UNKNOWN never fails alone and is never shown as safe.
+- Authority dimension block on capability-diff tool entries
+  (`capabilities`, `destinations`, `data_scope`, `approval`, `autonomy`,
+  `delegation` with per-dimension provenance; `credential`/`identity`
+  honestly `unknown`), plus semantic `change_types` derived from
+  escalation ids and structural status.
+- Manifest evidence: top-level `exception_evaluations` (id, target,
+  state, owner, expiry) and `authority_changes` entries plus
+  `summary.authority_change_counts` / `summary.highest_change_class`
+  (additive; Contract v1 + JSON schema validate the new enums).
+- PR comments separate CI-gate escalations from a **Human review**
+  Lane-B questions section inside the 60-line cap; data-flow paths
+  remain heuristic-labelled and gate-inert.
+- Exception model: explicit `target_type` (`finding | policy |
+  escalation | authority_change`) + `target_id` with legacy
+  `finding_or_policy` back-compat; distinct `scope-mismatch` and
+  `invalid` states; review triggers documented as metadata-only.
+
 ## [2.4.0] - 2026-09-21
 
 **Agent Authority ChangeGuard precision and evidence hardening.**

@@ -105,6 +105,12 @@ runtime identity) is explicitly **unknown** to the static scanner —
 *unknown is an evidence state, not evidence of safety*, and SafeAI never
 converts it into a pass.
 
+**What decisions mean.** `pass` means no configured deterministic gate
+triggered — never "the agent is safe." `unknown` means unattributable
+evidence — never "no risk detected." Organizations can govern unknown
+authority explicitly (`authority.unknown` policy, `--unknown-authority`),
+but the default leaves it visible and unfailed.
+
 ---
 
 <img width="1024" height="1024" alt="SafeAI_Concept" src="https://github.com/user-attachments/assets/c07999b2-79d5-4200-9eec-ce1ab4e63cc8" />

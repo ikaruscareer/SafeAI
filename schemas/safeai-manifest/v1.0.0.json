@@ -121,6 +121,8 @@
         "agent_count": {"type": "integer"},
         "component_count": {"type": "integer"},
         "dependency_count": {"type": "integer"},
+        "authority_change_counts": {"type": "object"},
+        "highest_change_class": {"enum": ["NO_CHANGE", "LOW_CHANGE", "MATERIAL_CHANGE", "HIGH_RISK_CHANGE", "UNKNOWN"]},
         "policy_decision": {
           "type": "object",
           "required": ["outcome"],

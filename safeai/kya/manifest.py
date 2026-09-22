@@ -242,6 +242,8 @@ def build_manifest(report, *, project, scan_meta, safeai_meta, agents,
             "dependency_count": len(report.get("dependency_inventory") or []),
             "policy_decision": policy_decision or {"outcome": "warn", "reasons": ["No policy file supplied; default posture."]},
             "authority_change_counts": _authority_change_counts(report),
+            "highest_change_class": (report.get("capability_diff") or {}).get(
+                "highest_change_class", "NO_CHANGE"),
         },
         # v1.2: the assurance boundary states what this scan verified and
         # what it structurally cannot. ``limitations`` is kept as the

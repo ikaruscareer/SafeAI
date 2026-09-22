@@ -271,3 +271,14 @@ exceptions:
         main(["scan", kya_project["root"],
               "--sarif", os.path.join(str(tmp_path), "r.sarif"), "--no-registry"])
         assert "E-OK" not in capsys.readouterr().err
+
+    def test_invalid_file_is_hard_error(self, kya_project, tmp_path):
+        self._exceptions_file(kya_project["root"], """
+exceptions:
+  - exception_id: E-BAD
+    finding_or_policy: CAP_shell
+    rationale: "No owner."
+""")
+        with __import__("pytest").raises(SystemExit):
+            main(["scan", kya_project["root"],
+                  "--sarif", os.path.join(str(tmp_path), "r.sarif"), "--no-registry"])

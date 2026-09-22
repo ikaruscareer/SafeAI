@@ -242,8 +242,31 @@ def _dataflow_paths(report, budget=7):
     return lines[:budget]
 
 
+def _review_questions(report, budget=7):
+    """Lane-B policy matches as reviewer questions (never CI gates).
+
+    Returns at most ``budget`` lines including the heading and overflow
+    line. Empty when no Lane-B matches exist.
+    """
+    seen = []
+    decision = report.get("policy_decision") or {}
+    for match in decision.get("matches") or []:
+        if match.get("lane") != "B":
+            continue
+        seen.append((match.get("policy_id") or "review",
+                     match.get("message") or "requires human review"))
+    if not seen:
+        return []
+    lines = ["**Human review** (questions for a reviewer — not CI gates):", ""]
+    for policy_id, message in seen[: max(0, budget - 3)]:
+        lines.append(f"- ? [{policy_id}] {message}")
+    hidden = len(seen) - len(lines) + 2
+    if hidden > 0:
+        lines.append(f"- +{hidden} more {_plural(hidden, 'question')}")
+    return lines[:budget]
+
+
 def _details_line(report, diff, shown):
-    """One collapsed line of context. Never expands the reviewer's work."""
     """One collapsed line of context. Never expands the reviewer's work."""
     counts = diff.get("counts") or {}
     bits = []
@@ -345,9 +368,14 @@ def render_pr_comment(report, ci_context=None):
     # _truncate below still enforces the hard cap).
     remaining = MAX_LINES - 4 - len(lines) - 2
     if remaining > 3:
-        paths = _dataflow_paths(report, budget=remaining)
-        if paths:
-            lines.extend(paths)
+        sections = _dataflow_paths(report, budget=remaining)
+        questions = _review_questions(
+            report, budget=max(0, remaining - len(sections)))
+        if sections and questions:
+            sections.append("")
+        sections.extend(questions)
+        if sections:
+            lines.extend(sections)
             lines.append("")
     lines.extend(_details_line(report, diff, shown))
     lines = _truncate(lines, len(blocks), shown)

@@ -120,3 +120,44 @@ class TestRenderWithPaths:
         # No baseline_available tools -> escalations pathAbsent; first-scan
         # summary renders instead.
         assert "establishing a baseline" in text or "no capability escalations" in text
+
+
+def _decision(matches):
+    return {"outcome": "review-required", "action": "require_review",
+            "lane": "B", "lanes": {"A": 0, "B": len(matches)},
+            "reasons": [], "matches": matches}
+
+
+def _match(policy_id="review-shell", lane="B", message="Shell needs eyes"):
+    return {"policy_id": policy_id, "action": "require_review", "lane": lane,
+            "message": message, "matched": []}
+
+
+class TestReviewQuestions:
+    def test_questions_rendered(self):
+        report = _report([], tools=[_tool()])
+        report["policy_decision"] = _decision([_match()])
+        text = render_pr_comment(report)
+        assert "Human review" in text
+        assert "? [review-shell]" in text
+        assert "not CI gates" in text
+
+    def test_lane_a_matches_excluded(self):
+        report = _report([], tools=[_tool()])
+        report["policy_decision"] = _decision([_match(lane="A")])
+        text = render_pr_comment(report)
+        assert "Human review" not in text
+
+    def test_no_matches_no_section(self):
+        report = _report([], tools=[_tool()])
+        report["policy_decision"] = _decision([])
+        text = render_pr_comment(report)
+        assert "Human review" not in text
+
+    def test_cap_with_questions(self):
+        matches = [_match(policy_id=f"p{i}") for i in range(20)]
+        report = _report([], tools=[_tool()])
+        report["policy_decision"] = _decision(matches)
+        text = render_pr_comment(report)
+        assert len(text.splitlines()) <= MAX_LINES
+        assert "Human review" in text

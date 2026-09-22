@@ -16,6 +16,8 @@ Backward compatibility: the returned document still carries the v1 flat
 
 from safeai.analysis.capabilities import access_mode_rank
 from safeai.analysis.escalation import (
+    DATA_NAMES,
+    DESTINATION_NAMES,
     classify_escalations,
     highest_severity,
 )
@@ -242,6 +244,74 @@ def change_types_for(status, escalations):
         types.add("UNKNOWN_CHANGE")
     types.discard(None)
     return sorted(types)
+def _cap_provenance(cap):
+    return "inferred" if cap.get("inferred") else "detected"
+
+
+def authority_for(after_caps, escalations):
+    """Build the per-tool authority dimension block.
+
+    Every dimension carries its own provenance; dimensions with no
+    observable signal are ``unknown`` — never guessed. In particular,
+    ``credential`` has no per-tool signal yet and ``identity`` is
+    unobservable to static analysis, so both are always unknown here.
+    """
+    after_caps = after_caps or []
+    esc_ids = {str(e.get("id") or "") for e in escalations or []}
+
+    def _matching(names):
+        matched = [
+            c for c in after_caps
+            if str(c.get("name") or "").lower() in names
+            or str(c.get("category") or "").lower() in names
+        ]
+        return matched
+
+    dest_caps = _matching(DESTINATION_NAMES)
+    data_caps = _matching(DATA_NAMES)
+
+    def _list_dim(caps):
+        if not caps:
+            return {"values": [], "provenance_class": "unknown"}
+        prov = "inferred" if all(c.get("inferred") for c in caps) else "detected"
+        return {"values": sorted({str(c.get("name")) for c in caps if c.get("name")}),
+                "provenance_class": prov}
+
+    def _flag_dim(present, state):
+        if present:
+            return {"state": state, "provenance_class": "detected"}
+        return {"state": "unknown", "provenance_class": "unknown"}
+
+    return {
+        "capabilities": [
+            {"name": c.get("name"), "access_mode": c.get("access_mode"),
+             "provenance_class": _cap_provenance(c)}
+            for c in sorted(after_caps, key=lambda c: str(c.get("name")))
+            if c.get("name")
+        ],
+        "destinations": _list_dim(dest_caps),
+        "data_scope": _list_dim(data_caps),
+        "approval": _flag_dim("ESC_APPROVAL_GATE_REMOVED" in esc_ids, "removed"),
+        "autonomy": _flag_dim("ESC_AUTONOMY_INCREASED" in esc_ids, "increased"),
+        "delegation": _flag_dim(
+            "ESC_COMBO_DELEGATION_EXTERNAL_SIDE_EFFECT" in esc_ids, "present"),
+        "credential": {"state": "unknown", "provenance_class": "unknown"},
+        "identity": {"state": "unknown", "provenance_class": "unknown"},
+    }
+
+
+def authority_unknown():
+    """All-unknown authority block for removed tools (no after-state)."""
+    return {
+        "capabilities": [],
+        "destinations": {"values": [], "provenance_class": "unknown"},
+        "data_scope": {"values": [], "provenance_class": "unknown"},
+        "approval": {"state": "unknown", "provenance_class": "unknown"},
+        "autonomy": {"state": "unknown", "provenance_class": "unknown"},
+        "delegation": {"state": "unknown", "provenance_class": "unknown"},
+        "credential": {"state": "unknown", "provenance_class": "unknown"},
+        "identity": {"state": "unknown", "provenance_class": "unknown"},
+    }
 
 
 def authority_gate_tripped(tools, threshold):
@@ -284,12 +354,15 @@ evaluate_combinations):
         before_state, after_state, status, evaluate_combinations=evaluate_combinations
     )
     reference = after_state or before_state or {}
+    after_caps = (after_state or {}).get("capabilities") or []
     return {
         "tool_key": tool_key_value,
         "tool": reference.get("tool") or {"kind": "unknown", "name": None, "framework": None},
         "status": status,
         "change_class": change_class_for(status, escalations, access_mode_changes, added),
         "change_types": change_types_for(status, escalations),
+        "authority": authority_for(after_caps, escalations) if after_state is not None
+        else authority_unknown(),
         "inferred_only": _inferred_only(added, access_mode_changes),
         "access_summary": {
             "before": (before_state or {}).get("access_summary"),
@@ -357,6 +430,7 @@ def compute_capability_diff(current_report, baseline_report):
             entry["change_class"] = change_class_for(
                 "unknown", entry["escalations"], [], [])
             entry["change_types"] = change_types_for("unknown", entry["escalations"])
+            entry["authority"] = authority_unknown()
             entry["inferred_only"] = False
 
         if entry["status"] != "unchanged" or entry["escalations"]:

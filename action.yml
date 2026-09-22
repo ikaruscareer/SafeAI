@@ -58,6 +58,13 @@ inputs:
       (--fail-on-authority-change): material or high-risk. Requires baseline.
     required: false
     default: ''
+  unknown-authority:
+    description: >-
+      How to govern unattributable (UNKNOWN) tool authority when the policy
+      file sets no authority.unknown (--unknown-authority): pass, review, or
+      block. Optional; explicit policy file setting always wins.
+    required: false
+    default: ''
   no-registry:
     description: 'Do not create or update the local KYA registry (--no-registry).'
     required: false
@@ -140,6 +147,7 @@ runs:
         INPUT_FAIL_ON_NEW: ${{ inputs.fail-on-new }}
         INPUT_FAIL_ON_ESCALATION: ${{ inputs.fail-on-escalation }}
         INPUT_FAIL_ON_AUTHORITY_CHANGE: ${{ inputs.fail-on-authority-change }}
+        INPUT_UNKNOWN_AUTHORITY: ${{ inputs.unknown-authority }}
         INPUT_NO_REGISTRY: ${{ inputs.no-registry }}
         INPUT_EXTRA_ARGS: ${{ inputs.extra-args }}
         INPUT_SCORECARD: ${{ inputs.scorecard }}

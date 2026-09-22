@@ -210,6 +210,17 @@ class ScanPostProcessor:
             if profile is None:
                 self.parser.error(f"Unknown policy profile: {profile_name!r}")
             policy_doc = kya_policy.merge_profile(profile, policy_doc)
+        # CLI fallback for UNKNOWN authority governance: an explicit policy
+        # file (or profile) setting always wins; the flag only fills the gap.
+        if policy_doc is None:
+            policy_doc = {"version": "1", "default_action": "warn", "policies": []}
+        unknown_cli = getattr(self.args, "unknown_authority", None)
+        if unknown_cli and not (policy_doc.get("authority") or {}).get("unknown"):
+            policy_doc = dict(policy_doc)
+            policy_doc["authority"] = {
+                "unknown": {"pass": "allow", "review": "require_review",
+                            "block": "deny"}[unknown_cli],
+            }
         self.policy_decision = kya_policy.evaluate_policy(policy_doc, self.report)
         self.report["policy_decision"] = self.policy_decision
         self.report["policy_profile"] = profile_name

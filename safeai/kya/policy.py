@@ -158,13 +158,20 @@ def merge_profile(profile, user_policy):
         merged["profile"] = True
         profile_policies.append(merged)
     user_policies = user_policy.get("policies") if user_policy else []
+    user_authority = (user_policy or {}).get("authority") or {}
+    profile_authority = profile.get("authority") or {}
+    if not user_authority and isinstance(profile_authority, dict):
+        unknown = str(profile_authority.get("unknown") or "").lower()
+        if unknown in _ACTION_RANK:
+            user_authority = {"unknown": unknown}
     merged_doc = {
         "version": "1",
-        "default_action": (user_policy or {}).get("default_action", profile.get("default_action", "warn")),
+        "default_action": (user_policy or {}).get("default_action",
+profile.get("default_action", "warn")),
         "policies": profile_policies + list(user_policies),
+        "authority": user_authority,
     }
     return merged_doc
-
 
 def default_policy_path(root):
     return os.path.join(root, DEFAULT_POLICY_PATH)
@@ -207,10 +214,24 @@ def load_policy(path):
             "message": raw.get("message") or raw.get("reason") or "",
         })
 
+    authority = document.get("authority") or {}
+    if not isinstance(authority, dict):
+        raise PolicyError(f"Policy file {path}: 'authority' must be a mapping.")
+    unknown_action = authority.get("unknown")
+    if unknown_action is not None:
+        unknown_action = str(unknown_action).lower()
+        if unknown_action not in _ACTION_RANK:
+            raise PolicyError(
+                f"Policy file {path}: 'authority.unknown' must be one of "
+                f"{', '.join(ACTIONS)}, got {unknown_action!r}."
+            )
+    authority_policy = {"unknown": unknown_action} if unknown_action else {}
+
     return {
         "version": str(document.get("version", "1")),
         "default_action": default_action,
         "policies": validated,
+        "authority": authority_policy,
     }
 
 
@@ -383,6 +404,30 @@ def evaluate_policy(policy, report):
         highest = _ACTION_RANK["require_review"]
         action = "require_review"
 
+    # Authority UNKNOWN governance (opt-in): organizations decide what
+    # unattributable authority means. Default (absent) changes nothing.
+    unknown_tools = [
+        t.get("tool_key")
+        for t in ((report.get("capability_diff") or {}).get("tools") or [])
+        if t.get("change_class") == "UNKNOWN"
+    ]
+    unknown_action = (policy.get("authority") or {}).get("unknown")
+    if unknown_action and unknown_tools:
+        matches.append({
+            "policy_id": "authority:unknown",
+            "action": unknown_action,
+            "lane": LANE_OF_ACTION[unknown_action],
+            "message": (
+                f"Tool authority could not be attributed to the baseline "
+                f"({len(unknown_tools)} tool(s))."
+            ),
+            "matched": [{"tool_key": key} for key in sorted(
+                str(k) for k in unknown_tools if k)],
+        })
+        if _ACTION_RANK[unknown_action] > highest:
+            highest = _ACTION_RANK[unknown_action]
+            action = unknown_action
+
     outcome = ACTION_OUTCOME[action]
     lanes = {"A": 0, "B": 0}
     for m in matches:
@@ -390,10 +435,18 @@ def evaluate_policy(policy, report):
     if floor_triggered and not matches:
         lanes["B"] += 1
 
-    reasons = [
-        f"Policy '{m['policy_id']}' matched {len(m['matched'])} finding(s) -> {m['action']}"
-        for m in matches
-    ]
+    reasons = []
+    for m in matches:
+        if m["policy_id"] == "authority:unknown":
+            reasons.append(
+                f"Authority UNKNOWN on {len(m['matched'])} tool(s) -> {m['action']}: "
+                f"tool authority could not be attributed to the baseline."
+            )
+        else:
+            reasons.append(
+                f"Policy '{m['policy_id']}' matched {len(m['matched'])} finding(s) "
+                f"-> {m['action']}"
+            )
     if floor_triggered:
         reasons.append(
             "New-or-changed prompt/config definition requires human review "

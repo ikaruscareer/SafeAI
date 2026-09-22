@@ -82,6 +82,7 @@ def build_install_command(version, find_links=""):
 
 def build_scan_argv(path, fail_on, sarif, rules="", baseline="", fail_on_new=False,
                     fail_on_escalation="", fail_on_authority_change="",
+                    unknown_authority="",
                     no_registry=True, extra_args=None,
                     scorecard="", scorecard_json="", scorecard_summary="",
                     scorecard_fail_under="", pr_comment_post=False):
@@ -100,6 +101,8 @@ def build_scan_argv(path, fail_on, sarif, rules="", baseline="", fail_on_new=Fal
         argv += ["--fail-on-escalation", fail_on_escalation]
     if fail_on_authority_change:
         argv += ["--fail-on-authority-change", fail_on_authority_change]
+    if unknown_authority:
+        argv += ["--unknown-authority", unknown_authority]
     if no_registry:
         argv += ["--no-registry"]
     if scorecard:
@@ -227,6 +230,7 @@ def main(argv=None):
     fail_on_new = as_bool(action_input("fail-on-new", "false"))
     fail_on_escalation = action_input("fail-on-escalation")
     fail_on_authority_change = action_input("fail-on-authority-change")
+    unknown_authority = action_input("unknown-authority")
     no_registry = as_bool(action_input("no-registry", "true"))
     skip_install = as_bool(env_val("SAFEAI_ACTION_SKIP_INSTALL"))
     scorecard = action_input("scorecard", "safeai-scorecard.md")
@@ -279,6 +283,13 @@ def main(argv=None):
         print(
             "::error::fail-on-authority-change must be one of material, high-risk; "
             f"got {fail_on_authority_change!r}",
+            file=sys.stderr,
+        )
+        return 2
+    if unknown_authority and unknown_authority not in ("pass", "review", "block"):
+        print(
+            "::error::unknown-authority must be one of pass, review, block; "
+            f"got {unknown_authority!r}",
             file=sys.stderr,
         )
         return 2
@@ -349,6 +360,7 @@ def main(argv=None):
         fail_on_new=fail_on_new,
         fail_on_escalation=fail_on_escalation,
         fail_on_authority_change=fail_on_authority_change,
+        unknown_authority=unknown_authority,
         no_registry=no_registry,
         extra_args=extra_args,
         scorecard=scorecard,

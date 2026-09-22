@@ -94,6 +94,11 @@ def _build_parser():
     scan.add_argument("--policy-profile",
                       choices=["developer", "strict-ci", "mcp", "rag", "production-agent"],
                       help="Named policy profile to load (extends --policy, does not replace it)")
+    scan.add_argument("--unknown-authority", choices=["pass", "review", "block"],
+                      help="How to govern unattributable (UNKNOWN) tool authority when the "
+                           "policy file sets no authority.unknown: pass (default, unchanged), "
+                           "review (require human review), or block. Explicit policy file "
+                           "setting always wins.")
     scan.add_argument("--suppressions",
                       help="Suppressions YAML file (default: <scan-root>/.safeai/suppressions.yml if present)")
     scan.add_argument("--strict-suppressions", action="store_true",

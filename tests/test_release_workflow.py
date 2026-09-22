@@ -92,7 +92,15 @@ def test_verify_uses_expected_identity_and_fails_closed():
     assert "verify-blob" in body
     assert "certificate-identity-regexp" in body
     assert "certificate-oidc-issuer" in body
-    assert "token.actions.githubusercontent.com" in body
+    # Exact-match (not substring): the OIDC issuer must be precisely the
+    # GitHub Actions issuer. Equality comparison also keeps CodeQL's
+    # incomplete-URL-substring-sanitization query quiet: this asserts
+    # workflow text, it sanitizes no URL.
+    import re as _re
+
+    issuer = _re.search(r"--certificate-oidc-issuer\s+\"([^\"]+)\"", body)
+    assert issuer is not None, "verify step must pin --certificate-oidc-issuer"
+    assert issuer.group(1) == "https://token.actions.githubusercontent.com"
     # No `|| true`, no `continue-on-error`: verification failure fails the job.
     assert "|| true" not in body
     assert verify.get("continue-on-error") is not True

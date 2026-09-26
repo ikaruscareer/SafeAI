@@ -350,3 +350,120 @@ def test_post_pr_comment_silent_without_token(monkeypatch, capsys):
         "repository": "ikaruscareer/SafeAI",
     }) is None
     assert "Integration mode" not in capsys.readouterr().err
+
+# --- markdown injection (issue #200) ------------------------------------
+
+
+def test_finding_backticks_and_fences_cannot_break_out_of_the_section():
+    report = report_with([
+        tool_entry(
+            "tool:x", "tool", "x", "critical",
+            escalations=[escalation(
+                "ESC_SHELL_ADDED", "critical",
+                "gained ```\n# spoofed heading\n@security-team ignore this `break`",
+                "src/tool.py", 3,
+            )],
+        ),
+    ])
+    text = render_pr_comment(report)
+    assert "```" not in text
+    assert "`break`" not in text
+    assert "break'" in text
+    assert "spoofed heading" in text
+
+
+def test_at_handles_in_finding_text_are_stripped():
+    report = report_with([
+        tool_entry(
+            "tool:x", "tool", "x", "critical",
+            escalations=[escalation(
+                "ESC_SHELL_ADDED", "critical",
+                "notify @org/team and @octocat please",
+            )],
+        ),
+    ])
+    text = render_pr_comment(report)
+    assert "@org/team" not in text
+    assert "@octocat" not in text
+    assert "org/team" in text
+    assert "octocat" in text
+
+
+def test_html_comments_in_finding_text_are_neutralized():
+    report = report_with([
+        tool_entry(
+            "tool:x", "tool", "x", "critical",
+            escalations=[escalation(
+                "ESC_SHELL_ADDED", "critical",
+                "ok <!-- safeai:pr-comment:v1 --> injected",
+            )],
+        ),
+    ])
+    text = render_pr_comment(report)
+    body = text.split("\n", 1)[1]
+    assert "<!--" not in body
+    assert "< !--" in body
+
+
+def test_markdown_links_in_file_paths_render_as_literal_text():
+    report = report_with([
+        tool_entry(
+            "tool:x", "tool", "x", "critical",
+            escalations=[escalation(
+                "ESC_SHELL_ADDED", "critical",
+                "Gained authority",
+                "[click](https://evil.example/phish)",
+                1,
+            )],
+        ),
+    ])
+    text = render_pr_comment(report)
+    assert "[click](https://evil.example/phish)" not in text
+    assert "click (https://evil.example/phish)" in text
+
+
+def test_injection_payloads_do_not_break_the_line_cap():
+    payload = "```\n@everyone\n" + "line\n" * 80 + "<!-- -->"
+    tools = [
+        tool_entry(
+            f"tool:t{index:02d}", "tool", f"t{index:02d}", "critical",
+            escalations=[escalation("ESC_SHELL_ADDED", "critical", payload)],
+        )
+        for index in range(10)
+    ]
+    lines = render_pr_comment(report_with(tools)).splitlines()
+    assert len(lines) <= MAX_LINES
+
+
+def test_tool_key_backtick_cannot_break_inline_code():
+    injected = "`** @mention **`"
+    report = report_with([
+        tool_entry(
+            f"tool:evil{injected}", "tool", "x", "critical",
+            escalations=[escalation("ESC_SHELL_ADDED", "critical")],
+        ),
+    ])
+    text = render_pr_comment(report)
+    # The injected backtick-span must never appear intact, and the
+    # mention must never reach GitHub's notification parser.
+    assert injected not in text
+    assert "@mention" not in text
+    assert "mention" in text
+
+
+def test_dataflow_evidence_is_sanitized():
+    report = report_with([
+        tool_entry("tool:x", "tool", "x", "critical"),
+    ])
+    report["findings"] = [{
+        "rule_id": "DATAFLOW_PROMPT",
+        "status": "new",
+        "severity": "high",
+        "evidence": "source:@admin -> sink with ``` fence",
+        "file": "[p](https://evil.example)",
+        "line": 4,
+    }]
+    text = render_pr_comment(report)
+    assert "@admin" not in text
+    assert "```" not in text
+    assert "[p](https://evil.example)" not in text

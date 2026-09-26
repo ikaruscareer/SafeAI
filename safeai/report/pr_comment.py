@@ -20,11 +20,46 @@ Design constraints, all enforced by tests:
 * Nothing is posted anywhere. This module returns a string.
 """
 
+import re
 import sys
 
 from safeai.analysis.tool_identity import display_name
 from safeai.kya.assurance import BOUNDARY_SENTENCE
 from safeai.severity import ESCALATION_SEVERITIES
+
+#: Mentions that would notify a user or team if left raw in a PR comment.
+_AT_HANDLE = re.compile(
+    r"@([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?"
+    r"(?:/[A-Za-z0-9](?:[A-Za-z0-9_-]{0,38}[A-Za-z0-9])?)?)"
+)
+
+#: Markdown inline links in attacker-controlled paths/messages.
+_MD_LINK = re.compile(r"\[([^\]]*)\]\(([^)]*)\)")
+
+
+def sanitize_pr_text(value):
+    """Neutralize markdown that could break or weaponize a PR comment.
+
+    Finding messages, file paths, data-flow evidence, and remediation
+    text all originate in the scanned diff. A crafted branch can put
+    backticks, fences, HTML comments, ``@mentions``, or ``[x](url)``
+    links into those fields. This helper:
+
+    * collapses newlines so injection cannot inflate the 60-line cap
+    * replaces backticks (so fences and inline-code breakouts die)
+    * breaks HTML comment delimiters
+    * strips the leading ``@`` from GitHub-style handles
+    * renders markdown links as plain ``label (url)`` text
+    """
+    text = str(value or "")
+    text = text.replace(chr(13) + chr(10), chr(10)).replace(chr(13), chr(10))
+    text = " ".join(part.strip() for part in text.split(chr(10)))
+    text = text.replace("`", "'")
+    text = text.replace("<!--", "< !--").replace("-->", "-- >")
+    text = _AT_HANDLE.sub(r"\1", text)
+    text = _MD_LINK.sub(r"\1 (\2)", text)
+    return text
+
 
 #: CI keys on this to find its own previous comment.
 MARKER = "<!-- safeai:pr-comment:v1 -->"
@@ -69,7 +104,7 @@ def _evidence_label(evidence):
     for item in evidence or []:
         if not isinstance(item, dict):
             continue
-        path = item.get("path")
+        path = sanitize_pr_text(item.get("path"))
         if not path:
             continue
         line = item.get("line")
@@ -151,17 +186,17 @@ def _recommended_action(escalation):
     remediation = escalation.get("remediation") or {}
     actions = remediation.get("recommended_actions") or []
     if not actions:
-        summary = (remediation.get("summary") or "").strip()
+        summary = sanitize_pr_text(remediation.get("summary") or "").strip()
         return summary or None
-    return str(actions[0]).strip() or None
+    return sanitize_pr_text(actions[0]).strip() or None
 
 
 def _render_block(block):
     """Two lines per tool: what it is, then why it matters."""
     mark = _SEVERITY_MARK.get(block["severity"], block["severity"])
-    lines = [f"**`{block['tool_key']}`** — {_access_phrase(block)}  ⚠️ {mark}"]
+    lines = [f"**`{sanitize_pr_text(block['tool_key'])}`** — {_access_phrase(block)}  ⚠️ {mark}"]
     primary = block["escalations"][0]
-    detail = str(primary.get("summary") or primary.get("id") or "").strip()
+    detail = sanitize_pr_text(primary.get("summary") or primary.get("id") or "").strip()
     evidence = _evidence_label(primary.get("evidence"))
     extra = len(block["escalations"]) - 1
     parts = [detail] if detail else []
@@ -200,7 +235,9 @@ def _first_scan_summary(report):
         lines.append("")
         lines.append("Highest-authority capabilities found:")
         for name, mode, tool_key in capabilities:
-            lines.append(f"- `{tool_key}` — {name} ({mode})")
+            lines.append(
+                f"- `{sanitize_pr_text(tool_key)}` — {sanitize_pr_text(name)} ({mode})"
+            )
     return lines
 
 
@@ -220,12 +257,12 @@ def _dataflow_paths(report, budget=7):
         if finding.get("status") not in ("new", "regressed"):
             continue
         sink = rule_id[len("DATAFLOW_"):]
-        evidence = str(finding.get("evidence") or "")
+        evidence = sanitize_pr_text(finding.get("evidence") or "")
         source = ""
         if "->" in evidence:
             source = evidence.split("->")[0].replace("source:", "").strip()
-        label = f"{source} → {sink}" if source else sink
-        where = f"{finding.get('file')}:{finding.get('line')}"
+        label = sanitize_pr_text(f"{source} → {sink}" if source else sink)
+        where = sanitize_pr_text(f"{finding.get('file')}:{finding.get('line')}")
         ranked.append((_severity_rank(finding.get("severity")), label, where))
 
     if not ranked:
@@ -253,8 +290,8 @@ def _review_questions(report, budget=7):
     for match in decision.get("matches") or []:
         if match.get("lane") != "B":
             continue
-        seen.append((match.get("policy_id") or "review",
-                     match.get("message") or "requires human review"))
+        seen.append((sanitize_pr_text(match.get("policy_id") or "review"),
+                     sanitize_pr_text(match.get("message") or "requires human review")))
     if not seen:
         return []
     lines = ["**Human review** (questions for a reviewer — not CI gates):", ""]

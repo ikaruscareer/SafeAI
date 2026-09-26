@@ -290,6 +290,7 @@ class ScanOrchestrator:
         self.mcp_capabilities = []
         self.env_inventory = []
         self.dependency_correlation = None
+        self.iac_correlation = None
         self.counts = {}
         self.trust_score = {}
         self.project_graph = {}
@@ -596,6 +597,24 @@ class ScanOrchestrator:
 
         self.report["dependency_inventory"] = self.env_inventory
         self.report["dependency_correlation"] = self.dependency_correlation
+        # IaC authority correlation (v2.5): match in-repo Terraform /
+        # Kubernetes grants against the declared tool surface. Findings
+        # are review-only by construction (ADR-0008) and join the single
+        # count/score/relativize pass like every other correlation.
+        from safeai.analysis.iac_correlation import correlate_iac_authority
+        from safeai.iac import scan_iac
+
+        iac_grants, iac_bindings, iac_identities, iac_meta = scan_iac(
+            self.directory, self.excluded_paths
+        )
+        iac_findings, self.iac_correlation = correlate_iac_authority(
+            self.report, iac_grants, iac_bindings, iac_identities, iac_meta
+        )
+        if iac_findings:
+            for finding in iac_findings:
+                finding["file"] = _relativize(finding.get("file"), self.directory)
+                self.findings.append(finding)
+        self.report["iac_correlations"] = self.iac_correlation
         # Tool ↔ implementation mapping (CE 1.5): correlate declared tools
         # with their implementations and surface orphan states.
         from safeai.analysis.tool_implementation import map_tool_implementations

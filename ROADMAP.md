@@ -569,32 +569,48 @@ sections, release sign+verify, governable UNKNOWN authority.*
 *Goal: show repo-granted authority next to declared capability with
 honest confidence — least-privilege evidence for agents, review-only.
 Decisions: ADR-0006 (Terraform + K8s YAML collectors only, stdlib-only
-parsers), ADR-0007 (canonical authority model: Identity + Grant triple,
-`MATCH | EXCESS_AUTHORITY | AUTHORITY_MISMATCH | UNVERIFIED_LINK |
-UNKNOWN`, `UNVERIFIED_LINK` default), ADR-0008 (all IaC output starts
-Lane B; graduation needs published precision + explicit opt-in).*
+parsers, per-field resolution), ADR-0007 (canonical authority model),
+ADR-0008 (all IaC output starts Lane B; graduation needs published
+precision + explicit opt-in), ADR-0009 (explicit authority graph with
+strict verdict semantics — no family matching, no string-coincidence
+links, no fake attachment permissions).*
 
 - **Collectors** (`safeai/iac/`): Terraform brace-block scanner →
-  Grant triples (actions/resources/attachments; interpolation, modules,
-  dynamic blocks, and external payloads yield `partially-resolved`,
-  never guessed); Kubernetes RBAC YAML reader (Role/ClusterRole,
-  bindings, ServiceAccounts; best-effort lines). Each documents its
-  fidelity ceiling. CloudFormation/Helm/serverless deferred to v2.6.
-- **Correlation** (`safeai/analysis/iac_correlation.py`): declared
-  families (cloud, kubernetes) vs grant families; Agent→Identity links
-  only on exact static evidence (default `UNVERIFIED_LINK`); findings
+  Identities, Grants (per-field resolution), and GrantBinding chains
+  (Role → policy → statement; attachments are relationships, never
+  permissions); trust policies excluded; managed/external/module
+  content recorded unresolved, never guessed. Kubernetes RBAC reader
+  builds ServiceAccount → Binding → Role → rule chains with namespace
+  isolation, plus workload references for linking. CloudFormation/Helm/
+  serverless deferred to v2.6.
+- **Linking** (`safeai/iac/linking.py`): Agent→Identity edges only
+  from workload manifests (`serviceAccountName`) and explicit config
+  references (role ARNs, identity keys) — tool-key or inventory-name
+  coincidence never links.
+- **Semantic matching** (`safeai/iac/semantics.py`): provider/service/
+  operation-class comparison with conservative wildcard reasoning
+  (`s3:GetObject` ≠ `iam:*`); un-normalizable semantics → UNKNOWN.
+- **Correlation**: verdicts `MATCH | EXCESS_AUTHORITY |
+  AUTHORITY_MISMATCH | UNVERIFIED_LINK | UNKNOWN` with strict
+  semantics — MATCH needs an evidenced link + compatible resolved
+  grant; EXCESS needs a linked grant strictly beyond need; MISMATCH
+  needs authoritatively visible absence (no unresolved shadow, no
+  modules); otherwise UNVERIFIED_LINK (ambiguous) or UNKNOWN. Findings
   `IAC_EXCESS_AUTHORITY` / `IAC_AUTHORITY_MISMATCH` /
   `IAC_UNVERIFIED_LINK` pre-set `provenance_class=repo-iac-observed`,
   `gateability=review-only`.
-- **Evidence**: manifest `iac_correlations` block + summary counts
-  (additive, Contract v1 + JSON schema); PR "Infrastructure authority"
-  Lane-B section inside the 60-line cap; invariant suite extended
-  (IaC never gates; verdicts cite both sides; links default
-  unverified; review-only stays Lane B).
-- **Measurement**: annotated Terraform/K8s fixture corpus
-  (`tests/fixtures/iac/`, seeds issue #167) with expected Grant
-  triples and verdicts — precision is tracked before any gate
-  graduation is even proposed.
+- **Evidence**: manifest `iac_correlations` schema v2 (identities,
+  agent_identity_links, grants, grant_bindings, verdicts with full
+  evidence refs) + summary counts (additive, Contract v1 + JSON
+  schema); PR "Infrastructure authority" Lane-B section inside the
+  60-line cap; invariant suite extended (IaC never gates; verdicts
+  cite evidence; links default unverified; unresolved shadows
+  absence claims).
+- **Measurement**: machine-readable benchmark corpus
+  (`tests/fixtures/iac/benchmark/catalog.yml`: Terraform, Kubernetes,
+  linking, and verdict cases) with a precision/recall harness, plus
+  adversarial tests — the precision boundary for any Lane-A
+  graduation proposal (seeds issue #167).
 - **Explicitly not in v2.5**: variable/module resolution, live IAM
   reads, new CI gates on IaC output, runtime reconciliation (EE3),
   CloudFormation/Helm/serverless.

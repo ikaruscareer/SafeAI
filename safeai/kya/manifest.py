@@ -94,8 +94,8 @@ def _iac_correlations_entry(report):
 
     Returns None when the scan carries no IaC correlation (no IaC
     sources, or a pre-v2.5 report) so the block stays absent rather
-    than empty. Grants keep their evidence refs; verdicts cite both
-    sides or are UNKNOWN.
+    than empty. Schema v2: identities, agent_identity_links, grants,
+    grant_bindings, verdicts with full evidence refs.
     """
     iac = report.get("iac_correlations")
     if not isinstance(iac, dict):
@@ -103,13 +103,14 @@ def _iac_correlations_entry(report):
     if not (iac.get("grants") or iac.get("verdicts")):
         return None
     return {
-        "schema_version": int(iac.get("schema_version") or 1),
+        "schema_version": int(iac.get("schema_version") or 2),
         "correlation_model": iac.get("correlation_model"),
         "lane": "B",
         "files": iac.get("files") or {},
-        "grants": iac.get("grants") or [],
-        "bindings": iac.get("bindings") or [],
         "identities": iac.get("identities") or [],
+        "agent_identity_links": iac.get("agent_identity_links") or [],
+        "grants": iac.get("grants") or [],
+        "grant_bindings": iac.get("grant_bindings") or [],
         "verdicts": iac.get("verdicts") or [],
         "counts": iac.get("counts") or {},
     }

@@ -290,6 +290,8 @@ class ScanOrchestrator:
         self.mcp_capabilities = []
         self.env_inventory = []
         self.dependency_correlation = None
+        self.iac_graph = None
+        self.iac_meta = None
         self.iac_correlation = None
         self.counts = {}
         self.trust_score = {}
@@ -597,18 +599,18 @@ class ScanOrchestrator:
 
         self.report["dependency_inventory"] = self.env_inventory
         self.report["dependency_correlation"] = self.dependency_correlation
-        # IaC authority correlation (v2.5): match in-repo Terraform /
-        # Kubernetes grants against the declared tool surface. Findings
-        # are review-only by construction (ADR-0008) and join the single
-        # count/score/relativize pass like every other correlation.
+        # IaC authority correlation (v2.5): match evidenced IaC grants
+        # against the declared tool surface. Findings are review-only by
+        # construction (ADR-0008) and join the single count/score/
+        # relativize pass like every other correlation. Evidence comes
+        # from collect_iac_evidence(); direct assemble() callers get an
+        # empty graph (no IaC), never an error.
         from safeai.analysis.iac_correlation import correlate_iac_authority
-        from safeai.iac import scan_iac
 
-        iac_grants, iac_bindings, iac_identities, iac_meta = scan_iac(
-            self.directory, self.excluded_paths
-        )
+        graph = dict(self.iac_graph or {})
+        graph["meta"] = self.iac_meta or {}
         iac_findings, self.iac_correlation = correlate_iac_authority(
-            self.report, iac_grants, iac_bindings, iac_identities, iac_meta
+            self.report, graph
         )
         if iac_findings:
             for finding in iac_findings:
@@ -666,6 +668,26 @@ class ScanOrchestrator:
             )
         return self.report
 
+    def collect_iac_evidence(self):
+        """Stage 5b: collect IaC authority evidence (v2.5 redesign).
+
+        First-class scan-stage artifact: walks the scan root once for
+        Terraform and Kubernetes sources, extracts the authority graph
+        (identities, grants, bindings, workload refs), and resolves
+        Agent→Identity links from explicit evidence. Respects scan root,
+        exclusions, size caps, and deterministic ordering (see
+        ``safeai.iac``). Never raises: failures yield an empty graph.
+        """
+        from safeai.iac import empty_graph, scan_iac
+
+        try:
+            graph, meta = scan_iac(self.directory, self.excluded_paths)
+        except Exception:
+            graph, meta = empty_graph(), {}
+        self.iac_graph = graph
+        self.iac_meta = meta
+        return graph
+
     def run(self):
         """Execute all stages in order and return the assembled report."""
         self.prepare()
@@ -673,6 +695,7 @@ class ScanOrchestrator:
         self.parse_frameworks()
         self.extract_components()
         self.analyze()
+        self.collect_iac_evidence()
         return self.assemble()
 
 

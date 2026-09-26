@@ -187,10 +187,37 @@ def _minimal_manifest():
         "assurance_boundary": {},
         "limitations": ["static analysis only"],
         "iac_correlations": {
-            "schema_version": 1,
+            "schema_version": 2,
             "lane": "B",
-            "grants": [{"source_file": "main.tf"}],
-            "verdicts": [{"family": "cloud", "verdict": "EXCESS_AUTHORITY"}],
+            "identities": [{"kind": "aws_iam_role", "name": "agent-role"}],
+            "agent_identity_links": [{
+                "agent": "<repo>",
+                "identity": {"kind": "aws_iam_role",
+                             "name": "agent-role"},
+                "link_type": "explicit-config-reference",
+            }],
+            "grants": [{
+                "identity": {"kind": "aws_iam_role", "name": "agent-role"},
+                "actions": {"values": ["s3:*"], "resolution": "resolved"},
+                "resources": {"values": ["*"], "resolution": "resolved"},
+                "source": "terraform", "source_file": "main.tf", "line": 10,
+            }],
+            "grant_bindings": [{
+                "identity": {"kind": "aws_iam_role", "name": "agent-role"},
+                "binding_kind": "attachment", "binding_name": "a",
+                "role": "policy:wide",
+            }],
+            "verdicts": [{
+                "agent_ref": "<repo>",
+                "identity_ref": {"kind": "aws_iam_role",
+                                 "name": "agent-role"},
+                "domain": "aws:s3",
+                "verdict": "EXCESS_AUTHORITY",
+                "declared_evidence_refs": ["tool:x"],
+                "grant_evidence_refs": ["main.tf:10"],
+                "link_evidence_refs": ["config.yaml:3"],
+                "resolution": "resolved",
+            }],
         },
     }
 
@@ -207,20 +234,45 @@ def test_iac_bad_verdict_rejected():
     assert any("verdict" in e for e in errors)
 
 
+def test_iac_verdict_without_evidence_rejected():
+    bad = copy.deepcopy(_minimal_manifest())
+    bad["iac_correlations"]["verdicts"][0]["declared_evidence_refs"] = []
+    bad["iac_correlations"]["verdicts"][0]["grant_evidence_refs"] = []
+    errors, _ = validate_manifest(bad)
+    assert any("evidence" in e for e in errors)
+
+
+def test_iac_lane_must_be_b():
+    bad = copy.deepcopy(_minimal_manifest())
+    bad["iac_correlations"]["lane"] = "A"
+    errors, _ = validate_manifest(bad)
+    assert any("lane" in e for e in errors)
+
+
 def test_scan_with_terraform_emits_valid_iac_manifest(tmp_path):
     root = tmp_path / "proj"
     root.mkdir()
     (root / "main.tf").write_text(
+        'resource "aws_iam_role" "agent_role" {\n'
+        '  name = "agent-role"\n'
+        '}\n'
         'resource "aws_iam_policy" "p" {\n'
+        '  name = "p"\n'
         '  statement {\n'
         '    actions = ["s3:GetObject"]\n'
         '    resources = ["*"]\n'
         '  }\n'
+        '}\n'
+        'resource "aws_iam_role_policy_attachment" "a" {\n'
+        '  role       = aws_iam_role.agent_role.name\n'
+        '  policy_arn = aws_iam_policy.p.arn\n'
         '}\n',
         encoding="utf-8",
     )
     manifest, _ = _scan_manifest(str(root), tmp_path)
     assert manifest["iac_correlations"]["counts"]["grants"] == 1
+    assert manifest["iac_correlations"]["schema_version"] == 2
+    assert manifest["iac_correlations"]["lane"] == "B"
     assert manifest["summary"]["iac_grant_count"] == 1
     errors, _ = validate_manifest(manifest)
     assert errors == []

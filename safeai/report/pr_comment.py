@@ -50,8 +50,12 @@ def sanitize_pr_text(value):
     * breaks HTML comment delimiters
     * strips the leading ``@`` from GitHub-style handles
     * renders markdown links as plain ``label (url)`` text
+    * drops C0 control characters (terminal escapes, null bytes)
     """
     text = str(value or "")
+    text = "".join(ch for ch in text
+                   if ch in (chr(10), chr(13))
+                   or (32 <= ord(ch) != 127))
     text = text.replace(chr(13) + chr(10), chr(10)).replace(chr(13), chr(10))
     text = " ".join(part.strip() for part in text.split(chr(10)))
     text = text.replace("`", "'")
@@ -279,12 +283,14 @@ def _dataflow_paths(report, budget=7):
     return lines[:budget]
 
 
-def _iac_authority(report, budget=5):
-    """IaC authority correlation verdicts as compact review-only lines.
+def _iac_authority(report, budget=9):
+    """IaC authority correlation verdicts as concise review-only lines.
 
     Lane B by construction (ADR-0008): verdicts inform human review and
-    never gate. Returns at most ``budget`` lines including the heading
-    and overflow line. Empty when the scan carries no IaC verdicts.
+    never gate. Only raw IaC evidence refs are shown — never arbitrary
+    IaC content — and every interpolated value passes through
+    ``sanitize_pr_text``. Returns at most ``budget`` lines including the
+    heading and overflow line. Empty when the scan carries no verdicts.
     """
     iac = report.get("iac_correlations") or {}
     verdicts = [v for v in iac.get("verdicts") or [] if isinstance(v, dict)]
@@ -292,24 +298,49 @@ def _iac_authority(report, budget=5):
         return []
     order = {"EXCESS_AUTHORITY": 0, "AUTHORITY_MISMATCH": 1,
              "UNVERIFIED_LINK": 2, "MATCH": 3, "UNKNOWN": 4}
+    grants = iac.get("grants") or []
     ranked = sorted(
         verdicts,
         key=lambda v: (order.get(str(v.get("verdict")), 5),
-                       str(v.get("family") or "")),
+                       str(v.get("domain") or "")),
     )
-    lines = ["**Infrastructure authority** (IaC evidence — review-only, never a gate):", ""]
-    for verdict in ranked[: max(0, budget - 3)]:
-        family = sanitize_pr_text(verdict.get("family") or "unknown")
-        label = sanitize_pr_text(str(verdict.get("verdict") or "UNKNOWN"))
-        refs = verdict.get("evidence_refs") or []
+    lines = [("**Infrastructure authority** (Lane B / review-only — "
+              "IaC evidence, never a gate):"), ""]
+    shown = ranked[: max(0, (budget - 3) // 3)]
+    for item in shown:
+        label = sanitize_pr_text(str(item.get("verdict") or "UNKNOWN"))
+        domain = sanitize_pr_text(str(item.get("domain") or "unknown"))
+        identity = item.get("identity_ref") or {}
+        who = sanitize_pr_text(str(identity.get("name") or "repository"))
+        lines.append(f"{label}   {domain} — {who}")
+        detail = _iac_verdict_detail(item, grants)
+        if detail:
+            lines.append(f"  {detail}")
+        refs = item.get("grant_evidence_refs") or []
         where = sanitize_pr_text(refs[0]) if refs else "repo IaC"
-        tools = verdict.get("declared_tools") or []
-        who = sanitize_pr_text(tools[0]) if tools else "no declared tool"
-        lines.append(f"- `{family}`: {label} — {who} (`{where}`)")
-    hidden = len(ranked) - len(lines) + 2
+        lines.append(f"  Evidence: `{where}`")
+    hidden = len(ranked) - len(shown)
     if hidden > 0:
         lines.append(f"- +{hidden} more {_plural(hidden, 'verdict')}")
     return lines[:budget]
+
+
+def _iac_verdict_detail(item, grants):
+    """One-line authority substance for a verdict (sanitized)."""
+    refs = set(item.get("grant_evidence_refs") or [])
+    for grant in grants:
+        if not isinstance(grant, dict):
+            continue
+        ref = f"{grant.get('source_file')}:{grant.get('line', 0)}"
+        if ref not in refs:
+            continue
+        actions = grant.get("actions") or {}
+        resources = grant.get("resources") or {}
+        first_action = (actions.get("values") or ["?"])[0]
+        first_resource = (resources.get("values") or ["?"])[0]
+        return sanitize_pr_text(f"{first_action} -> {first_resource}")
+    reason = str(item.get("reason") or "")
+    return sanitize_pr_text(reason.split(".")[0]) if reason else ""
 
 
 def _review_questions(report, budget=7):

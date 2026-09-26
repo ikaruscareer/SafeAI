@@ -479,21 +479,26 @@ def _iac_report(n_verdicts=2):
             escalations=[escalation("ESC_SHELL_ADDED", "critical")],
         ),
     ])
-    families = ["cloud", "kubernetes", "cloud", "kubernetes", "cloud",
-                "kubernetes"][:n_verdicts]
+    families = [("aws", "s3"), ("kubernetes", "*"), ("aws", "iam"),
+                ("aws", "s3"), ("kubernetes", "*"), ("aws", "ec2")]
     verdict_names = ["EXCESS_AUTHORITY", "UNVERIFIED_LINK",
                      "AUTHORITY_MISMATCH", "MATCH", "UNKNOWN",
                      "EXCESS_AUTHORITY"][:n_verdicts]
     report["iac_correlations"] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "lane": "B",
         "verdicts": [
-            {"family": fam, "verdict": name,
-             "declared_tools": ["tool:x"] if name != "EXCESS_AUTHORITY" else [],
-             "grants": [], "linked": name == "MATCH",
-             "link_evidence": None,
-             "evidence_refs": [f"infra{i}.tf:{10 + i}"]}
-            for i, (fam, name) in enumerate(zip(families, verdict_names))
+            {"agent_ref": "<repo>",
+             "identity_ref": {"kind": "aws_iam_role", "name": "agent-role",
+                              "namespace": ""},
+             "domain": f"{provider}:{service}", "verdict": name,
+             "declared_evidence_refs": ["tool:x"],
+             "grant_evidence_refs": [f"infra{i}.tf:{10 + i}"],
+             "link_evidence_refs": ["config.yaml:3"],
+             "resolution": "resolved",
+             "reason": f"{name} in {provider}:{service}."}
+            for i, ((provider, service), name)
+            in enumerate(zip(families, verdict_names))
         ],
         "counts": {"grants": n_verdicts, "verdicts": n_verdicts},
     }
@@ -507,6 +512,7 @@ def test_iac_section_renders_review_only_verdicts():
     assert "EXCESS_AUTHORITY" in text
     assert "UNVERIFIED_LINK" in text
     assert "infra0.tf:10" in text
+    assert "agent-role" in text
 
 
 def test_iac_section_absent_without_verdicts():
@@ -525,8 +531,8 @@ def test_iac_section_holds_line_cap():
 def test_iac_section_sanitizes_injection():
     report = _iac_report(n_verdicts=1)
     verdict = report["iac_correlations"]["verdicts"][0]
-    verdict["family"] = "cl`oud @team"
-    verdict["evidence_refs"] = ["[x](https://evil.example)"]
+    verdict["domain"] = "cl`oud @team"
+    verdict["grant_evidence_refs"] = ["[x](https://evil.example)"]
     text = render_pr_comment(report)
     assert "@team" not in text
     assert "[x](https://evil.example)" not in text

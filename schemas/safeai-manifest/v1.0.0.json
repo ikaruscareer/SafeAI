@@ -184,27 +184,71 @@
       }
     },
     "iac_correlations": {
-      "description": "IaC authority correlation evidence (v2.5, Lane B review-only).",
+      "description": "IaC authority correlation evidence (v2.5, Lane B review-only; schema_version 2 authority graph).",
       "type": "object",
       "properties": {
         "schema_version": {"type": "integer"},
         "correlation_model": {"type": "string"},
         "lane": {"const": "B"},
         "counts": {"type": "object"},
+        "files": {"type": "object"},
+        "identities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "name"],
+            "properties": {
+              "kind": {"type": "string"},
+              "name": {"type": "string"},
+              "namespace": {"type": "string"},
+              "source_ref": {"type": "string"}
+            }
+          }
+        },
+        "agent_identity_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["agent", "identity", "link_type"],
+            "properties": {
+              "agent": {"type": "string"},
+              "identity": {"type": "object"},
+              "link_type": {"type": "string"},
+              "confidence": {"type": "string"},
+              "evidence": {"type": "array"}
+            }
+          }
+        },
         "grants": {
           "type": "array",
           "items": {
             "type": "object",
             "required": ["source_file"],
             "properties": {
-              "principal": {"type": ["string", "null"]},
-              "action": {"type": ["string", "null"]},
-              "resource": {"type": ["string", "null"]},
+              "identity": {"type": "object"},
+              "actions": {"type": "object"},
+              "resources": {"type": "object"},
+              "scope": {"type": "string"},
               "source": {"type": "string"},
               "source_file": {"type": "string"},
               "line": {"type": "integer"},
               "provenance": {"type": "string"},
+              "fidelity": {"type": "array", "items": {"type": "string"}},
               "family": {"type": "string"}
+            }
+          }
+        },
+        "grant_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "identity": {"type": "object"},
+              "binding_kind": {"type": "string"},
+              "binding_name": {"type": "string"},
+              "role": {"type": "string"},
+              "source_file": {"type": "string"},
+              "line": {"type": "integer"}
             }
           }
         },
@@ -214,8 +258,16 @@
             "type": "object",
             "required": ["verdict"],
             "properties": {
+              "agent_ref": {"type": "string"},
+              "identity_ref": {"type": ["object", "null"]},
+              "domain": {"type": "string"},
               "family": {"type": "string"},
-              "verdict": {"enum": ["MATCH", "EXCESS_AUTHORITY", "AUTHORITY_MISMATCH", "UNVERIFIED_LINK", "UNKNOWN"]}
+              "verdict": {"enum": ["MATCH", "EXCESS_AUTHORITY", "AUTHORITY_MISMATCH", "UNVERIFIED_LINK", "UNKNOWN"]},
+              "declared_evidence_refs": {"type": "array", "items": {"type": "string"}},
+              "grant_evidence_refs": {"type": "array", "items": {"type": "string"}},
+              "link_evidence_refs": {"type": "array", "items": {"type": "string"}},
+              "resolution": {"type": "string"},
+              "reason": {"type": "string"}
             }
           }
         }

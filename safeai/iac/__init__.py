@@ -1,18 +1,21 @@
-"""IaC authority evidence collectors (v2.5, Lane B).
+"""IaC authority evidence collectors (v2.5 redesign).
 
 Walks the scan root for Terraform (``*.tf``) and Kubernetes YAML files,
-extracts Grant triples / bindings / identities, and hands them to
-``safeai.analysis.iac_correlation``. Self-contained: never touches the
-analyzer file cache, never executes anything, never leaves the repo.
+extracts Identities, Grants, GrantBindings, and workload references,
+then resolves Agent→Identity links from explicit evidence (see
+``safeai.iac.linking``). Self-contained: never touches the analyzer
+file cache, never executes anything, never leaves the repo.
 
-Fidelity ceiling (ADR-0006): heuristic extraction only. Unparseable
-files are recorded in ``meta["unparsed_files"]`` and skipped — never
-guessed.
+Fidelity ceiling (ADR-0006, refined ADR-0009): heuristic extraction
+only, per-field resolution states. Unparseable files are recorded in
+``meta["files"]["unparsed"]`` and skipped — never guessed.
 """
 
 import os
 
 from safeai.iac.k8s import parse_k8s_file
+from safeai.iac.linking import resolve_links
+from safeai.iac.model import identity_key
 from safeai.iac.terraform import parse_terraform_file
 
 #: Per-file read cap for IaC sources (pathological files are skipped).
@@ -82,42 +85,85 @@ def _read_capped(root, rel_path):
 
 
 def scan_iac(root, excluded_paths=None):
-    """Scan IaC sources under ``root``.
+    """Scan IaC sources under ``root`` into an authority graph.
 
-    Returns ``(grants, bindings, identities, meta)`` where ``meta`` has
-    ``tf_files``, ``yaml_files``, ``rbac_files``, and ``unparsed_files``.
-    Never raises.
+    Returns ``(graph, meta)`` where ``graph`` holds ``identities``,
+    ``grants``, ``grant_bindings``, ``workload_refs``, and
+    ``agent_links``, and ``meta`` holds ``files`` (terraform,
+    kubernetes_rbac, unparsed lists), ``has_modules``, and link
+    metadata. Never raises; deterministic ordering.
     """
-    grants, bindings, identities = [], [], []
-    meta = {"tf_files": [], "yaml_files": [], "rbac_files": [],
-            "unparsed_files": []}
+    identities, grants, bindings, workloads = [], [], [], []
+    meta = {"files": {"terraform": [], "kubernetes_rbac": [],
+                      "unparsed": []},
+            "has_modules": False}
     try:
         tf_files, yaml_files = collect_iac_files(root, excluded_paths)
     except Exception:
-        return grants, bindings, identities, meta
-    meta["tf_files"] = tf_files
-    meta["yaml_files"] = yaml_files
+        return empty_graph(), meta
+    meta["files"]["terraform"] = tf_files
+    seen_identities = set()
     for rel in tf_files:
         text = _read_capped(root, rel)
         if text is None:
-            meta["unparsed_files"].append(rel)
+            meta["files"]["unparsed"].append(rel)
             continue
         try:
-            grants.extend(parse_terraform_file(rel, text))
+            file_idents, file_grants, file_bindings, file_meta = (
+                parse_terraform_file(rel, text))
         except Exception:
-            meta["unparsed_files"].append(rel)
+            meta["files"]["unparsed"].append(rel)
+            continue
+        if file_meta.get("unparsed") and not (
+                file_idents or file_grants or file_bindings):
+            meta["files"]["unparsed"].append(rel)
+        if file_meta.get("module_refs"):
+            meta["has_modules"] = True
+        for ident in file_idents:
+            key = identity_key(ident)
+            if key not in seen_identities:
+                seen_identities.add(key)
+                identities.append(ident)
+        grants.extend(file_grants)
+        bindings.extend(file_bindings)
     for rel in yaml_files:
         text = _read_capped(root, rel)
         if text is None:
             continue
         try:
-            file_grants, file_bindings, file_identities = parse_k8s_file(rel, text)
+            (file_idents, file_grants, file_bindings, file_workloads,
+             file_meta) = parse_k8s_file(rel, text)
         except Exception:
-            meta["unparsed_files"].append(rel)
+            meta["files"]["unparsed"].append(rel)
             continue
-        if file_grants or file_bindings or file_identities:
-            meta["rbac_files"].append(rel)
+        if file_meta.get("unparsed"):
+            meta["files"]["unparsed"].append(rel)
+            continue
+        if file_idents or file_grants or file_bindings or file_workloads:
+            meta["files"]["kubernetes_rbac"].append(rel)
+        for ident in file_idents:
+            key = identity_key(ident)
+            if key not in seen_identities:
+                seen_identities.add(key)
+                identities.append(ident)
         grants.extend(file_grants)
         bindings.extend(file_bindings)
-        identities.extend(file_identities)
-    return grants, bindings, identities, meta
+        workloads.extend(file_workloads)
+    try:
+        links, link_meta = resolve_links(root, identities, workloads,
+                                         excluded_paths)
+    except Exception:
+        links, link_meta = [], {"workload_files": [], "config_files": [],
+                                "links": 0}
+    meta["files"]["unparsed"] = sorted(set(meta["files"]["unparsed"]))
+    meta["link_meta"] = link_meta
+    graph = {"identities": identities, "grants": grants,
+             "grant_bindings": bindings, "workload_refs": workloads,
+             "agent_links": links}
+    return graph, meta
+
+
+def empty_graph():
+    """Return an empty authority graph (no IaC evidence)."""
+    return {"identities": [], "grants": [], "grant_bindings": [],
+            "workload_refs": [], "agent_links": []}

@@ -221,6 +221,10 @@ def validate_manifest(document):
         if not isinstance(iac, dict):
             _err(errors, "$.iac_correlations", "must be an object")
         else:
+            if iac.get("lane") not in (None, "B"):
+                _err(errors, "$.iac_correlations.lane",
+                     f"must be 'B' (IaC output is review-only), "
+                     f"got {iac.get('lane')!r}")
             for i, verdict in enumerate(iac.get("verdicts") or []):
                 base = f"$.iac_correlations.verdicts[{i}]"
                 if not isinstance(verdict, dict):
@@ -230,6 +234,13 @@ def validate_manifest(document):
                     _err(errors, f"{base}.verdict",
                          f"must be one of {', '.join(CORRELATION_VERDICTS)}, "
                          f"got {verdict.get('verdict')!r}")
+                if verdict.get("verdict") not in (None, "UNKNOWN"):
+                    refs = (verdict.get("declared_evidence_refs") or []) + \
+                           (verdict.get("grant_evidence_refs") or [])
+                    if not refs:
+                        _err(errors, base,
+                             "non-UNKNOWN verdicts must cite declared or "
+                             "grant evidence refs")
             for i, grant in enumerate(iac.get("grants") or []):
                 base = f"$.iac_correlations.grants[{i}]"
                 if not isinstance(grant, dict):

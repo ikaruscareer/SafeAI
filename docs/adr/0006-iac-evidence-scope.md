@@ -11,8 +11,14 @@
   `safeai/iac/k8s.py` (RBAC YAML via PyYAML). Terraform-only plus
   Kubernetes RBAC YAML; CloudFormation/Helm/serverless deferred to v2.6.
   All IaC output is Lane B (review-only): no new gates, no exit-code
-  changes. Each collector documents its fidelity ceiling (no variable
-  resolution, no modules, no dynamic blocks, no `*`-expansion).
+  changes. Resolution is per-field (`resolved | partially-resolved |
+  unresolved`; ADR-0009): interpolation, modules, dynamic blocks, and
+  external payloads degrade the affected fields, never the whole grant
+  silently. Wildcards are observed breadth (flagged), not uncertainty.
+- Alternatives: add `python-hcl2` dependency (rejected: dependency
+  discipline, installer weight, offline guarantee); full HCL evaluation
+  (rejected: execution-adjacent, out of static scope); IaC-gated CI in
+  v2.5 (rejected: precision unmeasured — see ADR-0008).
 - Alternatives: add `python-hcl2` dependency (rejected: dependency
   discipline, installer weight, offline guarantee); full HCL evaluation
   (rejected: execution-adjacent, out of static scope); IaC-gated CI in

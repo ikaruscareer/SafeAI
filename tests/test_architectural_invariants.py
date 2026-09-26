@@ -240,12 +240,16 @@ def test_12_static_evidence_never_claims_runtime_proof():
         assert phrase not in blob
 
 
-def _iac_grant(family="cloud", provenance="repo-iac-observed"):
+def _iac_grant(name="agent-s3-access", actions=("s3:GetObject",),
+               resources=("*",), res="resolved"):
     return {
-        "principal": "agent-s3-access", "action": "s3:GetObject",
-        "resource": "*", "source": "terraform", "source_file": "main.tf",
-        "line": 10, "provenance": provenance, "fidelity_notes": [],
-        "family": family,
+        "identity": {"kind": "aws_iam_role", "name": name, "namespace": ""},
+        "actions": {"values": list(actions), "resolution": res, "notes": []},
+        "resources": {"values": list(resources), "resolution": res,
+                      "notes": []},
+        "scope": "", "source": "terraform", "source_file": "main.tf",
+        "line": 10, "provenance": "repo-iac-observed", "fidelity": [],
+        "family": "cloud",
     }
 
 
@@ -253,11 +257,16 @@ def _iac_report(tool_caps=()):
     return {
         "tool_surface": [
             {"tool_key": f"tool:{name}",
-             "capabilities": [{"name": cap}]}
+             "capabilities": [{"name": cap, "access_mode": "read"}]}
             for name, cap in tool_caps
         ],
         "findings": [],
     }
+
+
+def _iac_graph(grants=(), links=()):
+    return {"identities": [], "grants": list(grants),
+            "grant_bindings": [], "agent_links": list(links), "meta": {}}
 
 
 def test_13_iac_evidence_never_gates():
@@ -265,9 +274,9 @@ def test_13_iac_evidence_never_gates():
     # every finding the correlator emits is pre-set review-only.
     assert gateability_for({}, "repo-iac-observed") == "review-only"
     findings, _ = correlate_iac_authority(
-        _iac_report(), [_iac_grant()], [], [],
-        {"tf_files": ["main.tf"], "rbac_files": [], "unparsed_files": []})
-    assert findings, "EXCESS_AUTHORITY finding expected"
+        _iac_report(tool_caps=[("x", "s3")]), _iac_graph(
+            grants=[_iac_grant()]))
+    assert findings, "UNVERIFIED_LINK finding expected"
     for finding in findings:
         assert finding["gateability"] == "review-only"
         assert finding["provenance_class"] == "repo-iac-observed"
@@ -278,26 +287,24 @@ def test_13_iac_evidence_never_gates():
 
 def test_14_verdicts_cite_evidence_or_are_unknown():
     _, summary = correlate_iac_authority(
-        _iac_report(tool_caps=[("x", "s3")]), [_iac_grant()], [], [],
-        {"tf_files": ["main.tf"], "rbac_files": [], "unparsed_files": []})
+        _iac_report(tool_caps=[("x", "s3")]),
+        _iac_graph(grants=[_iac_grant()]))
     assert summary["verdicts"], "expected an UNVERIFIED_LINK verdict"
-    for verdict in summary["verdicts"]:
-        if verdict["verdict"] == "UNKNOWN":
+    for item in summary["verdicts"]:
+        if item["verdict"] == "UNKNOWN":
             continue
-        assert verdict["declared_tools"] or verdict["grants"], \
-            "non-UNKNOWN verdicts must cite declared tools or grants"
-        for grant in verdict["grants"]:
-            assert grant["source_file"], "grants must carry evidence refs"
+        refs = (item.get("declared_evidence_refs") or []) + \
+               (item.get("grant_evidence_refs") or [])
+        assert refs, "non-UNKNOWN verdicts must cite evidence refs"
 
 
 def test_15_agent_identity_links_default_unverified():
-    # Grants + declared capability with no static link: UNVERIFIED_LINK,
+    # Grants + declared requirement with no static link: UNVERIFIED_LINK,
     # never MATCH. MATCH requires an evidenced Agent-to-Identity edge.
     _, summary = correlate_iac_authority(
-        _iac_report(tool_caps=[("x", "s3")]), [_iac_grant()], [], [],
-        {"tf_files": ["main.tf"], "rbac_files": [], "unparsed_files": []})
+        _iac_report(tool_caps=[("x", "s3")]),
+        _iac_graph(grants=[_iac_grant()]))
     assert [v["verdict"] for v in summary["verdicts"]] == ["UNVERIFIED_LINK"]
-    assert summary["verdicts"][0]["linked"] is False
 
 
 def test_16_review_only_findings_stay_lane_b():

@@ -17,6 +17,11 @@
   the Agent→Identity edge lacks static evidence. Keep `change_type`
   (semantic vocabulary) separate from `change_class` (magnitude);
   vulnerability severity never determines change magnitude.
+- Refined by ADR-0009: Identity gains namespace isolation; Grants carry
+  per-field resolution and bind to identities via explicit GrantBinding
+  chains; links require workload/config evidence; verdicts carry full
+  evidence refs and strict semantics (MATCH/EXCESS/MISMATCH conditions,
+  UNKNOWN preferred over false conclusions).
 - Alternatives: a 10-level entity hierarchy (rejected: conflates entities,
   pipeline stages, and evidence states); reusing severity as magnitude
   (rejected: conceptually distinct dimensions, existing severity caps

@@ -9,27 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — v2.5 IaC Authority Evidence (Lane B)
 
-- IaC evidence collectors (`safeai/iac/`): Terraform brace-block
-  scanner → Grant triples (policies, attachments, role references;
-  interpolation/modules/dynamic blocks/external payloads degrade to
-  `partially-resolved`, never guessed) and Kubernetes RBAC YAML reader
-  (Role/ClusterRole, bindings, ServiceAccounts; best-effort lines).
-  ADRs 0006–0008 scope the work: collectors only, Lane B, no new gates.
-- Authority correlation (`safeai/analysis/iac_correlation.py`):
-  declared families (cloud, kubernetes) vs grant families with verdicts
-  `MATCH | EXCESS_AUTHORITY | AUTHORITY_MISMATCH | UNVERIFIED_LINK |
-  UNKNOWN` (`UNVERIFIED_LINK` default; `MATCH` needs a statically
-  evidenced Agent→Identity link). Findings `IAC_EXCESS_AUTHORITY` /
-  `IAC_AUTHORITY_MISMATCH` / `IAC_UNVERIFIED_LINK` pre-set
-  `provenance_class=repo-iac-observed`, `gateability=review-only`.
-- Manifest `iac_correlations` block + `summary.iac_grant_count` /
-  `iac_verdict_counts` (additive; Contract v1 + JSON schema validate the
-  new enums; `lane` pinned to `"B"`); PR "Infrastructure authority"
-  Lane-B section inside the 60-line cap; invariant suite extended
-  (IaC never gates; verdicts cite evidence; links default unverified).
-- Annotated Terraform/Kubernetes fixture corpus
-  (`tests/fixtures/iac/`, seeds issue #167) with expected Grant
-  triples and verdicts.
+- Explicit authority graph (`safeai/iac/model.py`, ADR-0009):
+  Identity (kind/name/namespace), Grant (per-field
+  resolved/partially-resolved/unresolved), GrantBinding chains,
+  AgentIdentityLink (workload/config evidence only), and verdicts
+  carrying agent, identity, declared, grant, and link evidence refs.
+- Terraform relationship extraction: identities, policy statements
+  (inline, attached, data-document-inherited), Role → policy →
+  statement bindings; attachments are relationships, never fake
+  permissions; trust policies excluded; managed/external/module
+  content recorded unresolved, never guessed.
+- Kubernetes RBAC chains: ServiceAccount → Binding → Role → rule
+  with namespace isolation, cluster scope, multi-subject/rule
+  support, workload references, and dangling-reference honesty.
+- Identity-link resolver: workload `serviceAccountName` and explicit
+  config references (role ARNs, identity keys) with file:line
+  evidence; string coincidence never links (namespace-aware).
+- Semantic matcher: provider/service/operation-class comparison with
+  conservative wildcard reasoning; un-normalizable semantics →
+  UNKNOWN. Strict verdicts: MATCH (evidenced link + compatible
+  resolved grant), EXCESS (linked grant strictly beyond need),
+  MISMATCH (authoritatively visible absence only), UNVERIFIED_LINK
+  (ambiguous default), UNKNOWN (preferred over false conclusions).
+- Orchestrator `collect_iac_evidence()` first-class stage;
+  assurance-boundary IaC inspection notes; manifest
+  `iac_correlations` schema v2 + summary counts (additive, Contract
+  v1 + JSON schema validate verdicts, evidence refs, Lane B);
+  PR "Infrastructure authority" Lane-B section inside the 60-line
+  cap with control-character sanitization.
+- Benchmark corpus (`tests/fixtures/iac/benchmark/catalog.yml`:
+  Terraform, Kubernetes, linking, verdict cases) with a
+  precision/recall harness, adversarial tests, and invariant
+  extensions (IaC never gates; unresolved shadows absence claims).
+  Findings `IAC_EXCESS_AUTHORITY` / `IAC_AUTHORITY_MISMATCH` /
+  `IAC_UNVERIFIED_LINK` remain `repo-iac-observed` / `review-only`;
+  no new gates, no exit-code changes, no new dependencies.
 
 ### Added — v2.4.x Security Architecture Hardening
 

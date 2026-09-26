@@ -1,302 +1,480 @@
-"""IaC authority correlation (v2.5 IaC evidence, Lane B).
+"""IaC authority correlation engine (v2.5 redesign).
 
-Compares **declared capability** (tool surface) against **granted
-authority** (Grant triples from in-repo Terraform / Kubernetes YAML)
-and records one verdict per authority family:
+Operates on the explicit authority graph — Identities, Grants,
+GrantBindings, AgentIdentityLinks — never on bare category families.
+Verdict semantics (strict):
 
-- ``MATCH`` — declared capability and IaC grant in the same family with
-  a statically evidenced Agent→Identity link. Recorded only (no finding).
-- ``EXCESS_AUTHORITY`` — IaC grants authority no declared capability
-  consumes (least-privilege gap).
-- ``AUTHORITY_MISMATCH`` — declared capability with no IaC grant in its
-  family while the repo does carry IaC (probable breakage, or the grant
-  lives outside this repository — the message says so).
-- ``UNVERIFIED_LINK`` — both sides present but no static link between
-  the agent and the granted identity (the common case).
-- ``UNKNOWN`` — IaC present but unparseable, or no usable signal.
+- ``MATCH`` — Agent→Identity link statically evidenced, declared
+  requirements map to the grant domain, a compatible grant exists, and
+  no unresolved material could change the conclusion.
+- ``EXCESS_AUTHORITY`` — linked grants strictly exceed what the linked
+  agent's requirements need. Unrelated grants are never excess.
+- ``AUTHORITY_MISMATCH`` — linked identity visibly lacks a grant the
+  requirements need, with authoritative (fully resolved, module-free)
+  evidence. Absence alone is never mismatch.
+- ``UNVERIFIED_LINK`` — requirements and grants coexist without a
+  static link. The most common outcome for ambiguous projects.
+- ``UNKNOWN`` — unresolved material, modules, unparsed IaC, or no
+  assessable counterpart. Preferred over false mismatch/excess.
 
 Every finding pre-sets ``provenance_class="repo-iac-observed"`` and
-``gateability="review-only"`` (preserved by ``enrich.normalize_findings``
-via setdefault). IaC output never fails a gate — see ADR-0008 and the
-architectural invariant suite. Repository IaC is evidence of declared
-grants, never proof of deployed permission.
+``gateability="review-only"`` (Lane B, ADR-0008). Repository IaC is
+evidence of declared grants, never proof of deployed permission.
 """
 
-#: Correlation finding rule ids.
+from safeai.iac import semantics
+from safeai.iac.model import (
+    PARTIALLY_RESOLVED,
+    RESOLVED,
+    UNRESOLVED,
+    verdict,
+)
+
+#: Correlation finding rule ids (stable public vocabulary).
 RULE_EXCESS = "IAC_EXCESS_AUTHORITY"
 RULE_MISMATCH = "IAC_AUTHORITY_MISMATCH"
 RULE_UNVERIFIED = "IAC_UNVERIFIED_LINK"
-
-#: Correlation verdict vocabulary (ADR-0007).
-VERDICTS = ("MATCH", "EXCESS_AUTHORITY", "AUTHORITY_MISMATCH",
-            "UNVERIFIED_LINK", "UNKNOWN")
-
-#: Authority families with IaC coverage in v2.5.
-FAMILIES = ("cloud", "kubernetes")
-
-#: Declared capability name -> IaC family. Exact match on the lowercased
-#: name only — never substring (house rule against jdbc/db-style FPs).
-_DECLARED_CAP_TO_FAMILY = {
-    "s3": "cloud",
-    "cloud": "cloud",
-    "cloud_services": "cloud",
-    "gcp": "cloud",
-    "kubernetes": "kubernetes",
-}
 
 _PROVENANCE = "repo-iac-observed"
 _GATEABILITY = "review-only"
 
 
-def _cap_name(cap):
-    if isinstance(cap, dict):
-        return cap.get("name")
-    return str(cap)
+def _surface_requirements(report):
+    """Build semantic requirements from the tool surface.
 
-
-def _declared_by_family(report):
-    """Map IaC family -> set of declaring tool keys (tool surface first)."""
-    by_family = {}
+    Returns ``[(agent_ref, descriptor, evidence_refs)]``. Capabilities
+    without an IaC-mappable domain, or without an access mode, yield
+    ``descriptor None`` (uncomparable — forces UNKNOWN when linked,
+    ignored otherwise).
+    """
+    requirements = []
     surface = report.get("tool_surface")
-    tools = []
-    if isinstance(surface, list):
-        tools = surface
-    elif isinstance(surface, dict):
-        tools = surface.get("tools") or []
+    tools = (surface if isinstance(surface, list)
+             else (surface or {}).get("tools") or [])
     for entry in tools:
         if not isinstance(entry, dict):
             continue
-        tool_key = entry.get("tool_key") or entry.get("name")
+        agent_ref = str(entry.get("tool_key") or "<unknown-tool>")
+        by_domain = {}
+        evidence = {}
         for cap in entry.get("capabilities") or []:
-            fam = _DECLARED_CAP_TO_FAMILY.get(str(_cap_name(cap) or "").lower())
-            if fam:
-                by_family.setdefault(fam, set()).add(str(tool_key))
-    if not by_family:
-        for cap in report.get("normalized_capabilities") or []:
-            fam = _DECLARED_CAP_TO_FAMILY.get(str(_cap_name(cap) or "").lower())
-            if fam:
-                by_family.setdefault(fam, set()).add("<surface>")
-    return by_family
+            if not isinstance(cap, dict):
+                continue
+            descriptor = semantics.normalize_requirement(
+                cap.get("name"), cap.get("access_mode"))
+            if descriptor is None:
+                continue
+            domain = (descriptor["provider"], descriptor["service"])
+            by_domain.setdefault(domain, set()).update(descriptor["ops"])
+            for item in cap.get("evidence") or []:
+                if isinstance(item, dict) and item.get("path"):
+                    evidence.setdefault(domain, set()).add(
+                        f"{item.get('path')}:{item.get('line', 0)}")
+        for domain, ops in by_domain.items():
+            requirements.append({
+                "agent_ref": agent_ref,
+                "provider": domain[0],
+                "service": domain[1],
+                "ops": set(ops),
+                "evidence_refs": sorted(evidence.get(domain, ())),
+            })
+    return requirements
 
 
-def _inventory_names(report):
-    """Lowercased config/credential names referenced by the agent."""
-    names = set()
-    for finding in report.get("findings") or []:
-        if finding.get("rule_id") == "ENV_DEP_INVENTORY":
-            for entry in finding.get("dep_inventory") or []:
-                name = entry.get("name")
-                if name:
-                    names.add(str(name).lower())
-    return names
+def _grant_domains(grants):
+    """Map (provider, service) -> list of grants with descriptors."""
+    domains = {}
+    for grant in grants or []:
+        if not isinstance(grant, dict):
+            continue
+        descriptor, unresolvable = semantics.grant_descriptor(grant)
+        domain = (descriptor["provider"], descriptor["service"])
+        domains.setdefault(domain, []).append((grant, descriptor,
+                                               unresolvable))
+    return domains
 
 
-def _link_evidence(name, inventory_names, tool_keys):
-    """Return link evidence string when an identity is statically linked.
+def _identity_links_map(links):
+    """Map identity key -> list of links."""
+    mapped = {}
+    for link in links or []:
+        if not isinstance(link, dict):
+            continue
+        ident = link.get("identity") or {}
+        key = (str(ident.get("kind") or ""),
+               str(ident.get("namespace") or ""),
+               str(ident.get("name") or ""))
+        mapped.setdefault(key, []).append(link)
+    return mapped
 
-    A link exists only on case-insensitive exact match against a name the
-    agent references (env/config inventory) or a tool key. Partial and
-    substring matches never link — they stay UNVERIFIED_LINK.
+
+def link_refs_for(keys, links_by_identity):
+    """Evidence refs for a set of linked identity keys (deterministic)."""
+    refs = set()
+    for key in keys or []:
+        for link in links_by_identity.get(key) or []:
+            for ev in link.get("evidence") or []:
+                refs.add(f"{ev.get('file')}:{ev.get('line', 0)}")
+    return sorted(refs)
+
+
+def _expand_admin_grants(domains, req_domains):
+    """Share bare-star grants across observed AWS domains.
+
+    A literal ``*`` action is provider-wide admin: it genuinely covers
+    requirements in any domain. Evaluating it only in its own ``(*,*)``
+    bucket would hide privilege behind the wildcard (and fabricate
+    MISMATCH next to real coverage). The ``(*,*)`` record itself is
+    kept as UNKNOWN inventory; copies participate per-domain. Scoped
+    to AWS — the only producer of provider-"*" descriptors.
     """
-    lowered = str(name or "").lower().strip()
-    if not lowered or lowered in ("<unattached>", "<unnamed>", "<unknown-role>"):
-        return None
-    if lowered in inventory_names:
-        return f"identity {name!r} referenced in dependency inventory"
-    if lowered in {str(k).lower() for k in tool_keys}:
-        return f"identity {name!r} matches a tool key"
-    return None
+    star_items = []
+    for domain, items in domains.items():
+        if domain == ("*", "*"):
+            star_items.extend(items)
+    if not star_items:
+        return domains
+    expanded = dict(domains)
+    targets = ({d for d in req_domains if d[0] == "aws"}
+               | {d for d in domains
+                  if d != ("*", "*") and d[0] == "aws"})
+    for domain in sorted(targets):
+        expanded.setdefault(domain, []).extend(star_items)
+    return expanded
 
 
-def correlate_iac_authority(report, grants, bindings, identities, meta=None):
-    """Correlate IaC grants against the declared tool surface.
+def _shadowed_providers(grants):
+    """Providers whose grant set contains unresolved material."""
+    """Providers whose grant set contains unresolved material.
 
-    Returns ``(findings, summary)``. Findings target the ``IAC_*`` rule
-    ids, all review-only. ``summary`` carries grants, bindings,
-    identities, per-family verdicts, and counts for report rendering,
-    the manifest, and PR output.
+    An unresolved grant could hide permissions in its provider, so
+    absence claims (MISMATCH) are degraded to UNKNOWN there. Empty
+    grants fall back to the source family hint (cloud→aws); truly
+    unknown origins shadow everything.
     """
-    meta = meta or {}
-    grants = [g for g in grants or [] if isinstance(g, dict)]
-    bindings = [b for b in bindings or [] if isinstance(b, dict)]
-    identities = [i for i in identities or [] if isinstance(i, dict)]
+    shadowed = set()
+    for grant in grants or []:
+        if not isinstance(grant, dict):
+            continue
+        actions = grant.get("actions") or {}
+        resources = grant.get("resources") or {}
+        if actions.get("resolution") == UNRESOLVED or \
+                resources.get("resolution") == UNRESOLVED:
+            descriptor, _ = semantics.grant_descriptor(grant)
+            provider = descriptor.get("provider") or "*"
+            if provider == "*":
+                provider = {"cloud": "aws",
+                            "kubernetes": "kubernetes"}.get(
+                                grant.get("family") or "", "*")
+            shadowed.add(provider)
+    return shadowed
 
-    declared = _declared_by_family(report)
-    inventory_names = _inventory_names(report)
-    tool_keys = set()
-    surface = report.get("tool_surface")
-    tools = surface if isinstance(surface, list) else (surface or {}).get("tools") or []
-    for entry in tools:
-        if isinstance(entry, dict) and entry.get("tool_key"):
-            tool_keys.add(entry["tool_key"])
 
-    grants_by_family = {}
-    for grant in grants:
-        fam = grant.get("family")
-        if fam in FAMILIES:
-            grants_by_family.setdefault(fam, []).append(grant)
+def _grant_identity_key(grant):
+    """Full identity triple for a grant (namespaces isolate)."""
+    """Full identity triple for a grant (namespaces isolate)."""
+    ident = grant.get("identity") or {}
+    return (str(ident.get("kind") or ""), str(ident.get("namespace") or ""),
+            str(ident.get("name") or ""))
 
-    identity_names = [i.get("name") for i in identities]
-    principal_names = [g.get("principal") for g in grants]
-    for binding in bindings:
-        principal_names.append(binding.get("subject_name"))
-        principal_names.append(binding.get("role"))
+
+def correlate_iac_authority(report, graph):
+    """Correlate declared requirements against evidenced grants.
+
+    ``graph`` holds ``identities``, ``grants``, ``grant_bindings``,
+    ``agent_links``, and ``meta``. Returns ``(findings, summary)`` with
+    the v2 ``iac_correlations`` shape. Never raises on malformed input.
+    """
+    graph = graph or {}
+    grants = [g for g in graph.get("grants") or [] if isinstance(g, dict)]
+    links = [l for l in graph.get("agent_links") or []
+             if isinstance(l, dict)]
+    meta = graph.get("meta") or {}
+
+    requirements = _surface_requirements(report)
+    domains = _grant_domains(grants)
+    links_by_identity = _identity_links_map(links)
+    agent_linked = sorted(links_by_identity)
+    shadowed = _shadowed_providers(grants)
+
+    req_domains = {}
+    for req in requirements:
+        req_domains.setdefault((req["provider"], req["service"]), []).append(req)
+    # A requirement for "any service" ((aws, *)) applies to every
+    # observed service of that provider.
+    expanded = {}
+    for domain, reqs in req_domains.items():
+        provider, service = domain
+        if service == "*":
+            targets = [o for o in domains
+                       if o[0] == provider and o != domain]
+            if targets:
+                # A wildcard-service requirement is evaluated against
+                # each observed service; the bare (provider, *) self
+                # domain would only duplicate those verdicts.
+                for observed in targets:
+                    expanded.setdefault(observed, []).extend(reqs)
+                continue
+        expanded.setdefault(domain, []).extend(reqs)
+    req_domains = expanded
+
+    # Bare-star grants (provider-wide admin from Terraform) genuinely
+    # cover requirements in every AWS domain — including domains with
+    # no other grants, where they prevent false MISMATCH. Scoped to
+    # AWS: only Terraform produces provider-"*" descriptors today, and
+    # a TF star is AWS-admin, never Kubernetes-admin.
+    domains = _expand_admin_grants(domains, req_domains)
 
     findings = []
     verdicts = []
-    has_iac = bool((meta.get("tf_files") or meta.get("rbac_files"))
-                   or grants or bindings or identities)
+    modules = bool(meta.get("has_modules"))
+    unparsed = bool(meta.get("unparsed_files"))
 
-    for fam in FAMILIES:
-        family_grants = grants_by_family.get(fam, [])
-        family_tools = sorted(declared.get(fam, ()))
-        linked = None
-        for candidate in identity_names + principal_names:
-            evidence = _link_evidence(candidate, inventory_names, tool_keys)
-            if evidence:
-                linked = evidence
-                break
-        refs = sorted({f"{g.get('source_file')}:{g.get('line', 1)}"
-                       for g in family_grants})
-        grant_refs = [
-            {"principal": g.get("principal"), "action": g.get("action"),
-             "resource": g.get("resource"), "source_file": g.get("source_file"),
-             "line": g.get("line", 1), "provenance": g.get("provenance")}
-            for g in family_grants
-        ]
-
-        if family_grants and family_tools and linked:
-            verdict = "MATCH"
-        elif family_grants and family_tools:
-            verdict = "UNVERIFIED_LINK"
-        elif family_grants:
-            verdict = "EXCESS_AUTHORITY"
-        elif family_tools and has_iac:
-            # IaC exists but this family is uncovered — except when the
-            # IaC itself failed to parse, in which case claiming absence
-            # would be dishonest: UNKNOWN, recorded but silent.
-            if meta.get("unparsed_files"):
-                verdict = "UNKNOWN"
-            else:
-                verdict = "AUTHORITY_MISMATCH"
-        else:
+    for domain in sorted(set(req_domains) | set(domains)):
+        verdict_obj = _decide_domain(
+            domain, req_domains.get(domain, []),
+            domains.get(domain, []), links_by_identity, agent_linked,
+            shadowed,
+            authoritative=not (modules or unparsed))
+        if verdict_obj is None:
             continue
-
-        verdicts.append({
-            "family": fam,
-            "verdict": verdict,
-            "declared_tools": family_tools,
-            "grants": grant_refs,
-            "linked": bool(linked),
-            "link_evidence": linked,
-            "evidence_refs": refs,
-        })
-        finding = _verdict_finding(fam, verdict, family_tools, family_grants,
-                                   linked, refs)
+        verdicts.append(verdict_obj)
+        finding = _verdict_finding(verdict_obj)
         if finding is not None:
             findings.append(finding)
 
     findings.sort(key=lambda f: (f.get("file", ""), int(f.get("line") or 0),
                                  f.get("rule_id", "")))
-    counts = {"grants": len(grants), "verdicts": len(verdicts)}
-    for verdict in verdicts:
-        key = verdict["verdict"].lower()
+    counts = {"grants": len(grants), "verdicts": len(verdicts),
+              "identities": len(graph.get("identities") or []),
+              "agent_links": len(links)}
+    for item in verdicts:
+        key = str(item.get("verdict") or "UNKNOWN").lower()
         counts[key] = counts.get(key, 0) + 1
+    files = dict(meta.get("files") or {})
     summary = {
-        "schema_version": 1,
-        "correlation_model": "grant-triple vs tool-surface families (ADR-0007)",
+        "schema_version": 2,
+        "correlation_model": "authority-graph v2 (identities, grants, "
+                             "bindings, links; ADR-0007/0009)",
         "lane": "B",
-        "files": {
-            "terraform": list(meta.get("tf_files") or []),
-            "kubernetes_rbac": list(meta.get("rbac_files") or []),
-            "unparsed": list(meta.get("unparsed_files") or []),
-        },
-        "grants": [
-            {"principal": g.get("principal"), "action": g.get("action"),
-             "resource": g.get("resource"), "source": g.get("source"),
-             "source_file": g.get("source_file"), "line": g.get("line", 1),
-             "provenance": g.get("provenance"),
-             "fidelity_notes": list(g.get("fidelity_notes") or []),
-             "family": g.get("family")}
-            for g in grants
-        ],
-        "bindings": bindings,
-        "identities": identities,
+        "files": files,
+        "identities": graph.get("identities") or [],
+        "agent_identity_links": links,
+        "grants": grants,
+        "grant_bindings": graph.get("grant_bindings") or [],
         "verdicts": verdicts,
         "counts": counts,
     }
     return findings, summary
 
 
-def _verdict_finding(fam, verdict, tools, grants, linked, refs):
-    """Build the review-only finding for a verdict (None for MATCH/UNKNOWN)."""
-    if verdict in ("MATCH", "UNKNOWN"):
+def _decide_domain(domain, reqs, grant_items, links_by_identity,
+                   agent_linked, shadowed, authoritative):
+    """Decide one (provider, service) domain. None when nothing to say."""
+    provider, service = domain
+    domain_name = f"{provider}:{service}"
+
+    linked_grants = []
+    linked_identities = []
+    for grant, descriptor, unresolvable in grant_items:
+        # Exact triple match (kind, namespace, name): namespaces
+        # isolate — a same-named identity in another namespace never
+        # links. AWS identities carry no namespace on either side.
+        key = _grant_identity_key(grant)
+        if key not in links_by_identity:
+            continue
+        link = links_by_identity[key][0]
+        linked_grants.append((grant, descriptor, unresolvable, link, key))
+        if key not in linked_identities:
+            linked_identities.append(key)
+
+    declared_refs = sorted({ref for req in reqs
+                            for ref in req.get("evidence_refs") or []}
+                           | {req.get("agent_ref") for req in reqs})
+    grant_refs = sorted({f"{g.get('source_file')}:{g.get('line', 0)}"
+                         for g, _, _ in grant_items})
+    link_refs = sorted({ref
+                        for _, _, _, link, _ in linked_grants
+                        for ev in (link.get("evidence") or [])
+                        for ref in [f"{ev.get('file')}:{ev.get('line', 0)}"]})
+
+    required_ops = set()
+    for req in reqs:
+        required_ops |= set(req.get("ops") or [])
+
+    if reqs and linked_grants:
+        return _decide_linked(domain, reqs, required_ops,
+                              linked_grants, declared_refs, grant_refs,
+                              link_refs, shadowed,
+                              authoritative=authoritative)
+    if reqs and grant_items:
+        return verdict("<repo>", None, domain_name, "UNVERIFIED_LINK",
+                       declared_refs, grant_refs, [],
+                       PARTIALLY_RESOLVED
+                       if any(u for _, _, u in grant_items) else RESOLVED,
+                       "Declared requirements and IaC grants coexist in "
+                       f"{domain_name} without a static Agent-to-Identity "
+                       "link; the grant may or may not reach this agent.")
+    if reqs and not grant_items:
+        # No grant in this domain. MISMATCH only when the agent is
+        # linked, the evidence is authoritative, and no unresolved
+        # grant in this provider could hide the permission.
+        # Otherwise UNKNOWN — absence alone is never mismatch.
+        shadowed_here = (provider in shadowed or "*" in shadowed)
+        if agent_linked and authoritative and not shadowed_here:
+            names = ", ".join(sorted({k[2] for k in agent_linked}))
+            return verdict(
+                "<repo>", None, domain_name, "AUTHORITY_MISMATCH",
+                declared_refs, [], link_refs_for(agent_linked,
+                                                 links_by_identity),
+                RESOLVED,
+                f"Linked identit{'y' if len(agent_linked) == 1 else 'ies'} "
+                f"{names} show no {domain_name} grant in authoritative "
+                "repository evidence — probable breakage, or the grant "
+                "lives outside this repository.")
+        if agent_linked:
+            return verdict("<repo>", None, domain_name, "UNKNOWN",
+                           declared_refs, [],
+                           link_refs_for(agent_linked, links_by_identity),
+                           UNRESOLVED,
+                           "Requirements exist but unresolved material "
+                           "prevents showing an authoritative absence.")
+        return verdict("<repo>", None, domain_name, "UNKNOWN",
+                       declared_refs, [], [],
+                       PARTIALLY_RESOLVED,
+                       "Requirements exist but no comparable grant is "
+                       "visible and no Agent-to-Identity link establishes "
+                       "where to look.")
+    if grant_items and not reqs:
+        material_unresolved = any(u for _, _, u in grant_items)
+        return verdict("<repo>", None, domain_name, "UNKNOWN",
+                       [], grant_refs, [],
+                       UNRESOLVED if material_unresolved else RESOLVED,
+                       f"IaC grants {domain_name} authority with no declared "
+                       "capability counterpart — recorded, not excess: "
+                       "without a linked requirement there is insufficient "
+                       "evidence of over-privilege.")
+    return None
+
+
+def _decide_linked(domain, reqs, required_ops, linked_grants,
+                   declared_refs, grant_refs, link_refs, shadowed,
+                   authoritative):
+    """Decide a domain with linked identity grants (strict semantics)."""
+    provider, service = domain
+    domain_name = f"{provider}:{service}"
+    material_unresolved = any(u for _, _, u, _, _ in linked_grants)
+    high_link = any(str(link.get("confidence") or "").lower() == "high"
+                    for _, _, _, link, _ in linked_grants)
+    identity_ref = {"kind": linked_grants[0][4][0],
+                    "namespace": linked_grants[0][4][1],
+                    "name": linked_grants[0][4][2]}
+
+    if material_unresolved or not authoritative:
+        return verdict("<repo>", identity_ref, domain_name, "UNKNOWN",
+                       declared_refs, grant_refs, link_refs, UNRESOLVED,
+                       "Unresolved grant content, unparsed IaC, or modules "
+                       "could change the conclusion — UNKNOWN preferred "
+                       "over a false match/mismatch.")
+
+    covered, excess_union, notes = False, set(), []
+    req_like = {"provider": provider, "service": service,
+                "ops": required_ops}
+    for grant, descriptor, _u, _link, _key in linked_grants:
+        grant_cov, grant_excess, grant_notes = semantics.compatible(
+            descriptor, req_like)
+        notes.extend(grant_notes)
+        covered = covered or grant_cov
+        excess_union |= grant_excess
+
+    resolution = RESOLVED if high_link else PARTIALLY_RESOLVED
+    if covered and not excess_union:
+        return verdict("<repo>", identity_ref, domain_name, "MATCH",
+                       declared_refs, grant_refs, link_refs, resolution,
+                       f"Linked grant covers {domain_name} requirements "
+                       f"({', '.join(sorted(required_ops)) or 'none'}) with "
+                       "no excess.")
+    if covered and excess_union:
+        return verdict("<repo>", identity_ref, domain_name,
+                       "EXCESS_AUTHORITY", declared_refs, grant_refs,
+                       link_refs, resolution,
+                       f"Linked grant provides {domain_name} operations "
+                       f"({', '.join(sorted(excess_union))}) beyond what "
+                       "the declared requirements need.")
+    if provider in shadowed or "*" in shadowed:
+        return verdict("<repo>", identity_ref, domain_name, "UNKNOWN",
+                       declared_refs, grant_refs, link_refs, UNRESOLVED,
+                       "Unresolved grants in this provider could hide the "
+                       "required permission — UNKNOWN preferred over a "
+                       "false mismatch.")
+    return verdict("<repo>", identity_ref, domain_name,
+                   "AUTHORITY_MISMATCH", declared_refs, grant_refs,
+                   link_refs, resolution,
+                   f"Linked identity shows no compatible {domain_name} "
+                   "grant for the declared requirements.")
+
+
+def _verdict_finding(verdict_obj):
+    """Build the review-only finding for a verdict (None if silent)."""
+    name = verdict_obj.get("verdict")
+    if name in ("MATCH", "UNKNOWN"):
         return None
-    first = grants[0] if grants else {}
-    location = (first.get("source_file") or "<scan>",
-                int(first.get("line") or 1))
+    refs = verdict_obj.get("grant_evidence_refs") or []
+    link_refs = verdict_obj.get("link_evidence_refs") or []
+    first = (refs + link_refs + ["<scan>:1"])[0]
+    location = first.rsplit(":", 1)
+    reason = verdict_obj.get("reason") or name
     base = {
-        "file": location[0],
-        "line": location[1],
+        "file": location[0] if len(location) == 2 else "<scan>",
+        "line": int(location[1]) if len(location) == 2 and
+        str(location[1]).isdigit() else 1,
         "risk_category": "Integration",
         "affected_framework": "generic",
-        "affected_capability": fam,
+        "affected_capability": verdict_obj.get("domain"),
         "provenance_class": _PROVENANCE,
         "gateability": _GATEABILITY,
-        "iac_family": fam,
-        "iac_verdict": verdict,
-        "evidence": f"verdict={verdict} family={fam} refs={', '.join(refs) or 'none'}",
+        "iac_domain": verdict_obj.get("domain"),
+        "iac_verdict": name,
+        "evidence": (f"verdict={name} domain={verdict_obj.get('domain')} "
+                     f"refs={', '.join(refs) or 'none'}"),
     }
-    if verdict == "EXCESS_AUTHORITY":
+    if name == "EXCESS_AUTHORITY":
         base.update({
             "rule_id": RULE_EXCESS,
             "severity": "medium",
-            "message": "Repository IaC grants authority no declared capability consumes",
+            "message": "Linked IaC grant exceeds the declared requirement",
             "owasp_llm": "LLM06",
-            "reason": (
-                f"Infrastructure-as-code grants {len(grants)} permission(s) in "
-                f"family '{fam}' but no declared tool or capability consumes "
-                "them — excess authority under least privilege. IaC is "
-                "repository evidence, not proof of deployed permission."
-            ),
+            "reason": reason,
             "remediation": (
-                "Remove the unneeded grant, or declare and justify the "
-                "capability that requires it; re-review on every IaC change."
+                "Narrow the grant to the required operations, or declare "
+                "and justify the wider capability; re-review on IaC change."
             ),
-            "confidence": 0.6,
+            "confidence": 0.65,
             "score_contribution": 6,
         })
-    elif verdict == "AUTHORITY_MISMATCH":
+    elif name == "AUTHORITY_MISMATCH":
         base.update({
             "rule_id": RULE_MISMATCH,
             "severity": "low",
-            "message": "Declared capability has no matching IaC grant in this repository",
-            "reason": (
-                f"Tool(s) {', '.join(tools) or 'unknown'} declare '{fam}' "
-                "capability but no IaC grant covers it — probable breakage, "
-                "or the grant lives outside this repository."
-            ),
+            "message": "Linked identity lacks a grant the agent requires",
+            "reason": reason,
             "remediation": (
-                "Confirm where the capability is granted; if it is granted "
-                "outside this repository, record that link explicitly."
+                "Add the missing grant, or confirm it is granted outside "
+                "this repository and record that link explicitly."
             ),
-            "confidence": 0.5,
+            "confidence": 0.55,
             "score_contribution": 3,
         })
     else:  # UNVERIFIED_LINK
         base.update({
             "rule_id": RULE_UNVERIFIED,
             "severity": "low",
-            "message": "Declared capability and IaC grant coexist without a static link",
-            "reason": (
-                f"Both a declared '{fam}' capability "
-                f"({', '.join(tools) or 'unknown'}) and {len(grants)} IaC "
-                "grant(s) exist, but no static Agent-to-Identity link was "
-                "found — the grant may or may not reach this agent."
-            ),
+            "message": "Declared requirement and IaC grant lack a static link",
+            "reason": reason,
             "remediation": (
-                "Establish which identity the agent assumes (service account, "
-                "role) and record it; without that link this stays review-only."
+                "Establish which identity the agent assumes (workload "
+                "service account, role reference) and record it; without "
+                "that link this stays review-only."
             ),
             "confidence": 0.55,
             "score_contribution": 3,

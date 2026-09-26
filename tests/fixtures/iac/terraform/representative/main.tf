@@ -1,10 +1,12 @@
 # Representative Terraform IAM sample for SafeAI v2.5 IaC evidence.
-# Expected Grant triples (ground truth for the benchmark corpus):
-#  1. principal=agent-s3-access action=s3:GetObject,s3:PutObject
-#     resource=arn:aws:s3:::agent-bucket/* provenance=partially-resolved
-#     (jsonencode payload) source=main.tf
-#  2. principal=aws_iam_role.agent_role.name action=attached-policy
-#     resource=attach provenance=repo-iac-observed source=main.tf
+# Expected records (ground truth for the benchmark corpus):
+#  identities: aws_iam_role agent-role @ main.tf
+#  grants: identity (role agent-role), actions [s3:GetObject,
+#    s3:PutObject] (resolved), resources [arn:aws:s3:::agent-bucket/*]
+#    (resolved, wildcard-pattern) @ main.tf (policy agent-s3-access)
+#  grant_bindings: role agent-role -> attachment attach ->
+#    policy agent-s3-access @ main.tf
+#  verdicts (with declared s3 capability, no link): UNVERIFIED_LINK
 
 resource "aws_iam_role" "agent_role" {
   name = "agent-role"

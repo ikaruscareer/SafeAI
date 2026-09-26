@@ -52,17 +52,12 @@ def sanitize_pr_text(value):
     * renders markdown links as plain ``label (url)`` text
     """
     text = str(value or "")
-    text = text.replace("
-", "
-").replace("
-", "
-")
-    text = " ".join(part.strip() for part in text.split("
-"))
+    text = text.replace(chr(13) + chr(10), chr(10)).replace(chr(13), chr(10))
+    text = " ".join(part.strip() for part in text.split(chr(10)))
     text = text.replace("`", "'")
     text = text.replace("<!--", "< !--").replace("-->", "-- >")
-    text = _AT_HANDLE.sub(r"", text)
-    text = _MD_LINK.sub(r" ()", text)
+    text = _AT_HANDLE.sub(r"\1", text)
+    text = _MD_LINK.sub(r"\1 (\2)", text)
     return text
 
 

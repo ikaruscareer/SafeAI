@@ -17,11 +17,14 @@ def _sanitize(value):
 
     Removes ANSI CSI/OSC escape sequences and raw carriage returns so a
     scanned repo with malicious filenames or finding content cannot spoof
-    terminal output. Clean strings pass through byte-identical.
+    terminal output. Any residual ESC byte the pattern does not recognize
+    (charset selection, DECSTR, dangling ESC) is dropped as a backstop, so
+    no ``\\x1b`` can ever reach the terminal. Clean strings pass through
+    byte-identical.
     """
     if not isinstance(value, str):
         return value
-    return _ANSI_OSC_RE.sub("", value)
+    return _ANSI_OSC_RE.sub("", value).replace("\x1b", "")
 
 
 def _first_sentence(text):

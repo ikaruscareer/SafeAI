@@ -41,6 +41,16 @@ def test_sanitize_passes_through_non_str():
     assert _sanitize(123) == 123
 
 
+def test_sanitize_strips_unsupported_escape_forms():
+    # ESC forms the main pattern does not recognize must still not survive:
+    # \x1b!p is DECSTR (soft terminal reset), \x1b(B is charset selection,
+    # and a dangling ESC at end-of-string must not reach the terminal.
+    assert _sanitize("\x1b!p") == "!p"
+    assert _sanitize("\x1b(Blang") == "(Blang"
+    assert _sanitize("abc\x1b") == "abc"
+    assert _sanitize("\x1b text") == " text"
+
+
 def test_print_summary_does_not_clear_screen(tmp_path, monkeypatch):
     report = _clean_report(findings=[{
         "rule_id": "CAP_shell",
@@ -88,9 +98,19 @@ def test_print_summary_clean_report_byte_identical(tmp_path, monkeypatch):
     buf = io.StringIO()
     monkeypatch.setattr(sys, "stdout", buf)
     print_summary(report)
-    expected = buf.getvalue()
-    # Re-run; clean input must produce identical bytes.
-    buf2 = io.StringIO()
-    monkeypatch.setattr(sys, "stdout", buf2)
-    print_summary(report)
-    assert buf2.getvalue() == expected
+    # Pinned literal: clean input must render exactly this, byte for byte.
+    assert buf.getvalue() == (
+        "SafeAI Scan Summary\n"
+        "Files: 3\n"
+        "Frameworks: langchain\n"
+        "MCP assets: 0\n"
+        "Overall AI Risk Score: 12\n"
+        "critical: 0\n"
+        "high: 0\n"
+        "medium: 0\n"
+        "low: 0\n"
+        "info: 0\n"
+        "Findings:\n"
+        "[high] a.py:1 - Capability discovered\n"
+        "  Next: Restrict shell commands\n"
+    )

@@ -2,7 +2,7 @@
 
 Welcome, and thank you for considering contributing to SafeAI!
 
-This document indexes **53 beginner-friendly issues** designed for first-time contributors (22 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
+This document indexes **59 beginner-friendly issues** designed for first-time contributors (28 currently open). Each issue includes the files you'll need to modify, the tests you should write, and the acceptance criteria.
 
 > **For maintainers:** These issues are defined in `.github/good-first-issues/` as YAML templates. Run the [create-good-first-issues workflow](../../actions/workflows/create-good-first-issues.yml) to create them in the GitHub issue tracker with the `good first issue` label. Once created, this file serves as a curated index.
 
@@ -180,6 +180,48 @@ This document indexes **53 beginner-friendly issues** designed for first-time co
 - **Difficulty:** Medium | **Effort:** 4–5 hours
 - **Suggested files:** `safeai/cmd/cli.py`, `safeai/kya/exporter.py`, `tests/test_registry_cli.py`
 - **Description:** Implement `safeai registry import <file>` to complete the portable registry export/import cycle. `registry export` already produces a portable, source-safe JSON inventory (`safeai/kya/exporter.py`); `import` should read that JSON and merge agent records into the local SQLite registry (`SAFEAI_REGISTRY` or `~/.safeai/registry.db`). Import must: skip duplicate agents (match on `agent_id`), merge `agent_metadata` fields (business owner, technical owner, environment), merge `component_snapshots` (dedup by component identity), merge `finding_lifecycle` events (dedup by finding fingerprint), merge `agent_tool_snapshots` (dedup by tool identity), and record the import in the scan history. Add `--dry-run` flag to preview what would be imported without writing. Add `--force` flag to overwrite existing metadata. Write tests covering: import of a valid export, idempotent re-import (no duplicates), metadata merge, dry-run output, and error handling for corrupt/invalid JSON. Maps to CE 2.0 portable registry in `ROADMAP.md`.
+
+---
+
+## Security Reviews & Tests
+
+Newest batch — issue-driven security review and test-hardening tasks for the v2.4.x authority/exception/release surfaces. Each lists exact files, threat cases, and acceptance criteria.
+
+### 54. Security review: exception scope-escape paths (#196)
+- **Difficulty:** Easy | **Effort:** 2 hours
+- **Labels:** good first issue, security
+- **Suggested files:** `safeai/kya/exceptions.py`, `tests/test_exceptions.py`
+- **Description:** Verify traversal-style `target_id` values (`../`, absolute paths, Windows `..\\`), legacy-key ambiguity, and cross-project exceptions can never resolve to `active`. Fail-closed: unknown scope = not applied.
+
+### 55. Security review: authority gate fail-closed guarantees (#197)
+- **Difficulty:** Easy-Medium | **Effort:** 2–3 hours
+- **Labels:** good first issue, security
+- **Suggested files:** `safeai/analysis/capability_diff.py`, `safeai/cmd/postprocess.py`, `tests/test_authority_change.py`, `tests/test_unknown_authority.py`
+- **Description:** Lock non-zero exit for: confirmed authority change with `--fail-on-authority-change`, UNKNOWN authority under `block`, and mixed inferred/confirmed additions (`inferred_only` must not mask confirmed tools).
+
+### 56. Security test: HTML report injection fixtures (#198)
+- **Difficulty:** Easy | **Effort:** 2 hours
+- **Labels:** good first issue, security, test-coverage
+- **Suggested files:** `safeai/report/html.py`, `safeai/report/html_kit.py`, `tests/test_html_report.py`
+- **Description:** Seed `<script>`, attribute-breakout, and table-breakout payloads through findings into rendered HTML; assert every call site escapes (`html_kit` promises call-site escaping — prove it).
+
+### 57. Security test: terminal escape-sequence sanitization (#199)
+- **Difficulty:** Easy | **Effort:** 2 hours
+- **Labels:** good first issue, security, test-coverage
+- **Suggested files:** `safeai/report/terminal.py`, `tests/test_terminal_report.py` (new)
+- **Description:** ANSI/OSC sequences in file paths and finding messages print raw today. Add `_sanitize()` at print sites; payloads must not clear the screen or set terminal titles; clean input stays byte-identical.
+
+### 58. Security test: PR comment markdown injection (#200)
+- **Difficulty:** Easy | **Effort:** 2 hours
+- **Labels:** good first issue, security, test-coverage
+- **Suggested files:** `safeai/report/pr_comment.py`, `tests/test_pr_comment.py`
+- **Description:** Composed comment bodies must not allow code-fence breakouts, markdown links from finding paths, or `@mention` spam originating from scanned content; 60-line cap must hold under injection attempts.
+
+### 59. Security review: release workflow supply-chain posture tests (#201)
+- **Difficulty:** Easy | **Effort:** 2 hours
+- **Labels:** good first issue, security, test-coverage
+- **Suggested files:** `.github/workflows/release.yml`, `tests/test_release_workflow.py`
+- **Description:** Extend the existing posture suite across all jobs: every `uses:` SHA-pinned, no `continue-on-error`/`|| true` on the signing path, no post-sign artifact re-fetch, `id-token: write` scoped to sign/publish only.
 
 ---
 

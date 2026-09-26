@@ -93,12 +93,12 @@ the core team.
 
 This document describes the roadmap across **two editions**: the open-source **Community Edition (Apache 2.0, offline, local-first)** and the commercial **Corporate Edition (evidence and governance plane)**. The binding edition commitments live in [docs/GOVERNANCE_AND_EDITIONS.md](./docs/GOVERNANCE_AND_EDITIONS.md); this roadmap plans work, it does not renegotiate them. Milestones are not strictly sequential; work may proceed in parallel where dependencies allow.
 
-> **Current state:** v2.4.0 tagged; release pipeline blocked on a
-> Cosign installer regression (fix: PR #192, explicit `cosign-release`
-> pin + fail-closed verify stage). v2.4.x hardening in progress:
-> governable UNKNOWN authority, authority dimension blocks, manifest
-> exception/change evidence, PR lane sections.
-> Next milestone: v2.5.0 (Static IaC).
+> **Current state:** v2.4.0 shipped (ChangeGuard lanes, change
+> classification, provenance/gateability, exceptions, manifest evidence,
+> PR Lane-B sections) plus v2.4.x hardening (release sign+verify,
+> governable UNKNOWN, terminal/PR-comment sanitization). Next milestone:
+> **v2.5.0 — IaC Authority Evidence (Lane B)**. See "v2.5" below and
+> ADRs 0006–0008.
 
 ---
 
@@ -181,7 +181,7 @@ uncertainty. Trend dashboards must not precede stable artefacts.*
   agent surfaces beats a broad but fragile compatibility table. Breadth
   arrives via the community plugin SDK (CE 2.3), not the core team.
 
-### 4. Static declared-versus-granted authority — the moat (CE 2.4, planned)
+### 4. Static declared-versus-granted authority — the moat (v2.5, in progress)
 
 *Outcome: flag where repository IaC grants more — or less — authority than
 the agent declares. Local, source-based, inspectable, auditable; live
@@ -300,7 +300,7 @@ evidence out to existing GRC / SIEM / ticketing / incident platforms).
 | True Capability Surface | Env inventory, dep correlation, tool↔impl map, target taxonomy, dataflow | — | Proven deployment authority |
 | AI component records | Registry schema v6, impact queries, component diffs/graph, lockfile integrity | — | Central component registry SaaS |
 | Ecosystem / plugin SDK | `@register_parser`/`@register_analyzer`, entry-point groups, `safeai rules check`, `safeai init` pack scaffold | Curated signed packs (process) | Hosted marketplace |
-| Static IaC authority correlation | — | Terraform-first, then CFN/K8s/Helm/serverless; confidence labels (**CE 2.4, regulatory-readiness**) | Live cloud/K8s API reads |
+| Static IaC authority correlation | Terraform + K8s RBAC collectors, verdicts, manifest block, PR section (v2.5) | Lane-A graduation, CFN/Helm/serverless (v2.6) | Live cloud/K8s API reads |
 | Pre-deployment validation packs | — | Capability-informed offline test plans + regulatory-profile corpus (**CE-V**) | Runtime red-team engine, sandboxing |
 | Corporate evidence plane | — | Aggregation, SSO/RBAC, retention, reconciliation (**EE0–EE4**) | Second scanner, observability product |
 
@@ -312,7 +312,7 @@ evidence out to existing GRC / SIEM / ticketing / incident platforms).
 |---|---|---|
 | **Phase 1** — What can this AI application do? | Capability, tool, MCP, prompt discovery | ✅ Shipped |
 | **Phase 2** — What changed since the last approved version? | Tool-centric escalation diffs, PR review, governed waivers, lifecycle | ✅ Shipped |
-| **Phase 3** — Does declared capability match deployed authority? | Static IaC correlation (CE); live IAM reconciliation (Corporate) | 🔄 CE 2.4 / EE3 |
+| **Phase 3** — Does declared capability match deployed authority? | Static IaC correlation (CE); live IAM reconciliation (Corporate) | 🔄 v2.5 (CE evidence) / EE3 |
 | **Phase 4** — Does the agent resist manipulation at its risk surfaces? | Capability-informed validation packs, adversarial regression | ⏳ CE-V (planned) |
 | **Phase 5** — Is the CI gate enforcing quality and are developers getting feedback? | Quality gates, PR decoration, IDE integration | ✅ Shipped (v2.1) |
 | **Phase 6** — Can evidence be exchanged, verified, and trusted? | Manifest contract, integrity, remediation, benchmarks | 🔄 CE 2.2 (this release) |
@@ -447,8 +447,8 @@ These are the items that go deeper on your existing capabilities, but are not ye
 - ✅ **Portable registry export/import** — `registry export` produces source- and secret-safe KYA inventory JSON, while `registry import <file>` performs an atomic, idempotent merge with `--dry-run` and metadata-only `--force` controls.
 - ✅/⏳ **Opt-in usage telemetry** — anonymous, opt-in, local-first usage signal (SafeAI version, Python version, OS family, invocation context). Disabled by default; CI auto-disable; `DO_NOT_TRACK` respected; never transmits scan content. Two-phase: Phase 1 (documentation + PRIVACY.md) ✅ shipped; Phase 2 (client implementation) ⏳ blocked — `safeai/telemetry/client.py` exists but the endpoint URL is an unprovisioned placeholder and the module refuses to send until it is confirmed.
 
-### Static authority correlation *(the community's Phase 3, offline)*
-- ⏳ Parse in-repo IaC — Terraform, CloudFormation, Helm, Kubernetes manifests, serverless configs.
+### Static authority correlation *(the community's Phase 3, offline — moved to v2.5, see above for the Lane-B scope)*
+- ⏳ Parse in-repo IaC — Terraform, CloudFormation, Helm, Kubernetes manifests, serverless configs. (v2.5 ships Terraform + Kubernetes RBAC YAML; CFN/Helm/serverless deferred to v2.6.)
 - ⏳ Compare declared capability against granted authority and report both directions: capability without grant (probable breakage), and grant without capability (excess authority).
 - ⏳ Report confidence honestly — IaC in the repo is not proof of what is deployed, and the assurance boundary block must say so.
 
@@ -547,16 +547,60 @@ packs on this SDK, not as core-team shallow adapters.*
 - ✅ **CLI integration-namespace review** — decided: no namespace yet
   (ADR 0005); `--pr-comment-post` stays the single explicit network path.
 
-## CE 2.4 — Static IaC Authority Correlation *(planned)*
+## CE 2.4 — Authority Lanes & Evidence Hardening *(shipped as v2.4.0)*
 
-*Goal: answer the authority question without leaving the repository (community Phase 3, offline half). Explicit regulatory-readiness milestone for least-privilege evidence.*
+*Note: CE 2.4 was originally scoped as "Static IaC Authority
+Correlation". During v2.4 planning the authority-lane, change-classification,
+and evidence-hardening work proved prerequisite, shipped as v2.4.0, and
+kept the number. IaC correlation moves to **v2.5** below with tighter
+Lane-B scope (ADRs 0006–0008). The old IaC bullets are superseded by the
+v2.5 section; nothing is lost, only re-sequenced.*
 
-- Parse in-repo IaC incrementally: Terraform first, then CloudFormation, Kubernetes manifests, Helm, serverless configs.
-- Normalised authority vocabulary emitted by both code scanning and IaC parsers, with confidence labels (`declared | repo-IaC-observed | partially-resolved | unverified-runtime`).
-- Compare declared capability against granted authority, both directions: capability without grant (probable breakage), grant without capability (excess authority); rules cover semantic authority classes (excessive wildcards, privileged production paths, mismatched authority).
-- Planned correlation verdicts: `MATCH | EXCESS_AUTHORITY | AUTHORITY_MISMATCH | UNKNOWN` (Terraform first; the normalized authority model later extends to Kubernetes, Helm, CloudFormation, serverless).
-- Report confidence honestly: repository IaC is not proof of deployed state; the assurance boundary must say so. IaC-derived grants enrich the Agent System Card.
-- Exit criterion: SafeAI shows which permissions an agent appears able to use, which permissions repository IaC grants, where they disagree, and what remains unknowable statically.
+*Shipped in v2.4.0 + v2.4.x hardening: Lane A/B review decision lanes,
+material-change classification (`NO/LOW/MATERIAL/HIGH_RISK/UNKNOWN`),
+per-finding provenance/gateability, file-backed exceptions with scope
+states, manifest `authority_changes`/`exception_evaluations`, PR Lane-B
+sections, release sign+verify, governable UNKNOWN authority.*
+
+---
+
+## v2.5 — IaC Authority Evidence, Lane B *(in progress)*
+
+*Goal: show repo-granted authority next to declared capability with
+honest confidence — least-privilege evidence for agents, review-only.
+Decisions: ADR-0006 (Terraform + K8s YAML collectors only, stdlib-only
+parsers), ADR-0007 (canonical authority model: Identity + Grant triple,
+`MATCH | EXCESS_AUTHORITY | AUTHORITY_MISMATCH | UNVERIFIED_LINK |
+UNKNOWN`, `UNVERIFIED_LINK` default), ADR-0008 (all IaC output starts
+Lane B; graduation needs published precision + explicit opt-in).*
+
+- **Collectors** (`safeai/iac/`): Terraform brace-block scanner →
+  Grant triples (actions/resources/attachments; interpolation, modules,
+  dynamic blocks, and external payloads yield `partially-resolved`,
+  never guessed); Kubernetes RBAC YAML reader (Role/ClusterRole,
+  bindings, ServiceAccounts; best-effort lines). Each documents its
+  fidelity ceiling. CloudFormation/Helm/serverless deferred to v2.6.
+- **Correlation** (`safeai/analysis/iac_correlation.py`): declared
+  families (cloud, kubernetes) vs grant families; Agent→Identity links
+  only on exact static evidence (default `UNVERIFIED_LINK`); findings
+  `IAC_EXCESS_AUTHORITY` / `IAC_AUTHORITY_MISMATCH` /
+  `IAC_UNVERIFIED_LINK` pre-set `provenance_class=repo-iac-observed`,
+  `gateability=review-only`.
+- **Evidence**: manifest `iac_correlations` block + summary counts
+  (additive, Contract v1 + JSON schema); PR "Infrastructure authority"
+  Lane-B section inside the 60-line cap; invariant suite extended
+  (IaC never gates; verdicts cite both sides; links default
+  unverified; review-only stays Lane B).
+- **Measurement**: annotated Terraform/K8s fixture corpus
+  (`tests/fixtures/iac/`, seeds issue #167) with expected Grant
+  triples and verdicts — precision is tracked before any gate
+  graduation is even proposed.
+- **Explicitly not in v2.5**: variable/module resolution, live IAM
+  reads, new CI gates on IaC output, runtime reconciliation (EE3),
+  CloudFormation/Helm/serverless.
+- Exit criterion: a reviewer sees which permissions repository IaC
+  grants, which the agent declares, where they disagree, what link is
+  missing — and nothing in that output can fail the build.
 
 ---
 

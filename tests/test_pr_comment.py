@@ -467,3 +467,67 @@ def test_dataflow_evidence_is_sanitized():
     assert "@admin" not in text
     assert "```" not in text
     assert "[p](https://evil.example)" not in text
+
+
+# --- IaC authority section (v2.5, Lane B) -----------------------------------
+
+
+def _iac_report(n_verdicts=2):
+    report = report_with([
+        tool_entry(
+            "tool:x", "tool", "x", "critical",
+            escalations=[escalation("ESC_SHELL_ADDED", "critical")],
+        ),
+    ])
+    families = ["cloud", "kubernetes", "cloud", "kubernetes", "cloud",
+                "kubernetes"][:n_verdicts]
+    verdict_names = ["EXCESS_AUTHORITY", "UNVERIFIED_LINK",
+                     "AUTHORITY_MISMATCH", "MATCH", "UNKNOWN",
+                     "EXCESS_AUTHORITY"][:n_verdicts]
+    report["iac_correlations"] = {
+        "schema_version": 1,
+        "lane": "B",
+        "verdicts": [
+            {"family": fam, "verdict": name,
+             "declared_tools": ["tool:x"] if name != "EXCESS_AUTHORITY" else [],
+             "grants": [], "linked": name == "MATCH",
+             "link_evidence": None,
+             "evidence_refs": [f"infra{i}.tf:{10 + i}"]}
+            for i, (fam, name) in enumerate(zip(families, verdict_names))
+        ],
+        "counts": {"grants": n_verdicts, "verdicts": n_verdicts},
+    }
+    return report
+
+
+def test_iac_section_renders_review_only_verdicts():
+    text = render_pr_comment(_iac_report())
+    assert "**Infrastructure authority**" in text
+    assert "review-only" in text
+    assert "EXCESS_AUTHORITY" in text
+    assert "UNVERIFIED_LINK" in text
+    assert "infra0.tf:10" in text
+
+
+def test_iac_section_absent_without_verdicts():
+    text = render_pr_comment(report_with([
+        tool_entry("tool:x", "tool", "x", "critical"),
+    ]))
+    assert "**Infrastructure authority**" not in text
+
+
+def test_iac_section_holds_line_cap():
+    text = render_pr_comment(_iac_report(n_verdicts=6))
+    assert len(text.splitlines()) <= MAX_LINES
+    assert render_pr_comment(_iac_report(n_verdicts=6)) == text
+
+
+def test_iac_section_sanitizes_injection():
+    report = _iac_report(n_verdicts=1)
+    verdict = report["iac_correlations"]["verdicts"][0]
+    verdict["family"] = "cl`oud @team"
+    verdict["evidence_refs"] = ["[x](https://evil.example)"]
+    text = render_pr_comment(report)
+    assert "@team" not in text
+    assert "[x](https://evil.example)" not in text
+    assert "cl'oud team" in text

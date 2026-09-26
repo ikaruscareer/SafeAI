@@ -279,6 +279,39 @@ def _dataflow_paths(report, budget=7):
     return lines[:budget]
 
 
+def _iac_authority(report, budget=5):
+    """IaC authority correlation verdicts as compact review-only lines.
+
+    Lane B by construction (ADR-0008): verdicts inform human review and
+    never gate. Returns at most ``budget`` lines including the heading
+    and overflow line. Empty when the scan carries no IaC verdicts.
+    """
+    iac = report.get("iac_correlations") or {}
+    verdicts = [v for v in iac.get("verdicts") or [] if isinstance(v, dict)]
+    if not verdicts:
+        return []
+    order = {"EXCESS_AUTHORITY": 0, "AUTHORITY_MISMATCH": 1,
+             "UNVERIFIED_LINK": 2, "MATCH": 3, "UNKNOWN": 4}
+    ranked = sorted(
+        verdicts,
+        key=lambda v: (order.get(str(v.get("verdict")), 5),
+                       str(v.get("family") or "")),
+    )
+    lines = ["**Infrastructure authority** (IaC evidence — review-only, never a gate):", ""]
+    for verdict in ranked[: max(0, budget - 3)]:
+        family = sanitize_pr_text(verdict.get("family") or "unknown")
+        label = sanitize_pr_text(str(verdict.get("verdict") or "UNKNOWN"))
+        refs = verdict.get("evidence_refs") or []
+        where = sanitize_pr_text(refs[0]) if refs else "repo IaC"
+        tools = verdict.get("declared_tools") or []
+        who = sanitize_pr_text(tools[0]) if tools else "no declared tool"
+        lines.append(f"- `{family}`: {label} — {who} (`{where}`)")
+    hidden = len(ranked) - len(lines) + 2
+    if hidden > 0:
+        lines.append(f"- +{hidden} more {_plural(hidden, 'verdict')}")
+    return lines[:budget]
+
+
 def _review_questions(report, budget=7):
     """Lane-B policy matches as reviewer questions (never CI gates).
 
@@ -408,9 +441,14 @@ def render_pr_comment(report, ci_context=None):
         sections = _dataflow_paths(report, budget=remaining)
         questions = _review_questions(
             report, budget=max(0, remaining - len(sections)))
-        if sections and questions:
+        iac_lines = _iac_authority(
+            report, budget=max(0, remaining - len(sections) - len(questions)))
+        if sections and (questions or iac_lines):
             sections.append("")
         sections.extend(questions)
+        if questions and iac_lines:
+            sections.append("")
+        sections.extend(iac_lines)
         if sections:
             lines.extend(sections)
             lines.append("")

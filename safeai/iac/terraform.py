@@ -42,10 +42,13 @@ _WATCHED_TYPES = _IAM_POLICY_TYPES | _IAM_ROLE_TYPES | _IAM_ATTACHMENT_TYPES
 _UNRESOLVED_MARKERS = ("${", "for_each", "dynamic", "count", "jsonencode(",
                        "file(", "templatefile(")
 
-#: String-list statements inside policy documents.
+#: String-list statements inside policy documents. The optional closing
+#: quote covers JSON-style keys (``"Action" = [...]``) as well as HCL
+#: bare keys (``actions = [...]``); ``:`` covers JSON payloads embedded
+#: as strings (``"Action": [...]``). Matching is case-insensitive.
 _STATEMENT_RES = (
-    re.compile(r'''(?i)\bactions?\s*=\s*\[(?P<body>[^\]]*)\]'''),
-    re.compile(r'''(?i)\bresources?\s*=\s*\[(?P<body>[^\]]*)\]'''),
+    re.compile(r'''(?i)\bactions?"?\s*[:=]\s*\[(?P<body>[^\]]*)\]'''),
+    re.compile(r'''(?i)\bresources?"?\s*[:=]\s*\[(?P<body>[^\]]*)\]'''),
 )
 
 _QUOTED = re.compile(r'''"([^"\\]*(?:\\.[^"\\]*)*)"''')
@@ -180,8 +183,19 @@ def parse_terraform_file(rel_path, text):
         if rtype in _IAM_POLICY_TYPES:
             actions, resources = [], []
             action_pos, resource_pos = None, None
+            # Prefer the declared AWS object name over the Terraform
+            # resource label — it is what linkage matches against.
+            display = name
+            name_match = _NAME_RES[0].search(body)
+            if name_match:
+                display = name_match.group(1)
+            # JSON documents embedded as HCL strings carry backslash-
+            # escaped quotes (\"Action\": ...). De-escape for statement
+            # search only: newline counts are unchanged, so line numbers
+            # computed from these positions stay correct.
+            scan = body.replace('\\"', '"')
             for pattern, slot in ((_STATEMENT_RES[0], "a"), (_STATEMENT_RES[1], "r")):
-                for match in pattern.finditer(body):
+                for match in pattern.finditer(scan):
                     quoted = _quoted_list(match.group("body"))
                     if slot == "a":
                         actions.extend(quoted)
@@ -194,10 +208,10 @@ def parse_terraform_file(rel_path, text):
             if not actions and not resources:
                 continue
             stmt_line = _line_of(
-                body, action_pos if action_pos is not None else resource_pos,
+                scan, action_pos if action_pos is not None else resource_pos,
                 start_line)
             grants.append({
-                "principal": name,
+                "principal": display,
                 "action": ",".join(actions) if actions else "*",
                 "resource": ",".join(resources) if resources else "*",
                 "source": "terraform",

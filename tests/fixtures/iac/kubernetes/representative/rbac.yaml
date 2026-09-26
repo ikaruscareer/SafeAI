@@ -1,0 +1,36 @@
+# Representative Kubernetes RBAC sample for SafeAI v2.5 IaC evidence.
+# Expected records (ground truth for the benchmark corpus):
+#  grants: principal=Role/agent-reader action=get,list
+#    resource=pods,configmaps scope=prod source=rbac.yaml
+#  bindings: ServiceAccount/agent-sa -> agent-reader via
+#    RoleBinding/agent-binding source=rbac.yaml
+#  identities: ServiceAccount agent-sa (namespace prod) source=rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-sa
+  namespace: prod
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-reader
+  namespace: prod
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "configmaps"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-binding
+  namespace: prod
+subjects:
+  - kind: ServiceAccount
+    name: agent-sa
+    namespace: prod
+roleRef:
+  kind: Role
+  name: agent-reader
+  apiGroup: rbac.authorization.k8s.io

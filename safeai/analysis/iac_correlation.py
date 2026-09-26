@@ -172,9 +172,13 @@ def correlate_iac_authority(report, grants, bindings, identities, meta=None):
         elif family_grants:
             verdict = "EXCESS_AUTHORITY"
         elif family_tools and has_iac:
-            verdict = "AUTHORITY_MISMATCH"
-        elif family_tools or family_grants:
-            verdict = "UNKNOWN"
+            # IaC exists but this family is uncovered — except when the
+            # IaC itself failed to parse, in which case claiming absence
+            # would be dishonest: UNKNOWN, recorded but silent.
+            if meta.get("unparsed_files"):
+                verdict = "UNKNOWN"
+            else:
+                verdict = "AUTHORITY_MISMATCH"
         else:
             continue
 

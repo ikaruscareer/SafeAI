@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — v2.5 IaC Authority Evidence (Lane B)
+
+- IaC evidence collectors (`safeai/iac/`): Terraform brace-block
+  scanner → Grant triples (policies, attachments, role references;
+  interpolation/modules/dynamic blocks/external payloads degrade to
+  `partially-resolved`, never guessed) and Kubernetes RBAC YAML reader
+  (Role/ClusterRole, bindings, ServiceAccounts; best-effort lines).
+  ADRs 0006–0008 scope the work: collectors only, Lane B, no new gates.
+- Authority correlation (`safeai/analysis/iac_correlation.py`):
+  declared families (cloud, kubernetes) vs grant families with verdicts
+  `MATCH | EXCESS_AUTHORITY | AUTHORITY_MISMATCH | UNVERIFIED_LINK |
+  UNKNOWN` (`UNVERIFIED_LINK` default; `MATCH` needs a statically
+  evidenced Agent→Identity link). Findings `IAC_EXCESS_AUTHORITY` /
+  `IAC_AUTHORITY_MISMATCH` / `IAC_UNVERIFIED_LINK` pre-set
+  `provenance_class=repo-iac-observed`, `gateability=review-only`.
+- Manifest `iac_correlations` block + `summary.iac_grant_count` /
+  `iac_verdict_counts` (additive; Contract v1 + JSON schema validate the
+  new enums; `lane` pinned to `"B"`); PR "Infrastructure authority"
+  Lane-B section inside the 60-line cap; invariant suite extended
+  (IaC never gates; verdicts cite evidence; links default unverified).
+- Annotated Terraform/Kubernetes fixture corpus
+  (`tests/fixtures/iac/`, seeds issue #167) with expected Grant
+  triples and verdicts.
+
 ### Added — v2.4.x Security Architecture Hardening
 
 - Release pipeline signs *and* verifies: `cosign verify-blob` against

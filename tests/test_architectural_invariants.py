@@ -3,7 +3,9 @@
 Each test maps to one invariant: authority removal, UNKNOWN handling,
 inferred-only gating, determinism, severity/class separation, vocabulary
 separation, exception evidence, scope honesty, baseline honesty, output
-caps, and the static-only boundary.
+caps, the static-only boundary, and (13-16) the v2.5 IaC evidence
+discipline: IaC never gates, verdicts cite evidence, links default
+unverified, and review-only findings stay Lane B.
 """
 
 import json
@@ -13,7 +15,9 @@ from safeai.analysis.capability_diff import (
     change_class_for,
     compute_capability_diff,
 )
+from safeai.analysis.iac_correlation import correlate_iac_authority
 from safeai.kya import policy as kya_policy
+from safeai.kya.enrich import gateability_for
 from safeai.kya.exceptions import evaluate_exceptions
 
 
@@ -234,3 +238,76 @@ def test_12_static_evidence_never_claims_runtime_proof():
     for phrase in ("certified safe", "guaranteed secure", "is compliant",
                    "proof of deployed", "verified runtime permission"):
         assert phrase not in blob
+
+
+def _iac_grant(family="cloud", provenance="repo-iac-observed"):
+    return {
+        "principal": "agent-s3-access", "action": "s3:GetObject",
+        "resource": "*", "source": "terraform", "source_file": "main.tf",
+        "line": 10, "provenance": provenance, "fidelity_notes": [],
+        "family": family,
+    }
+
+
+def _iac_report(tool_caps=()):
+    return {
+        "tool_surface": [
+            {"tool_key": f"tool:{name}",
+             "capabilities": [{"name": cap}]}
+            for name, cap in tool_caps
+        ],
+        "findings": [],
+    }
+
+
+def test_13_iac_evidence_never_gates():
+    # repo-iac-observed provenance maps to review-only gateability, and
+    # every finding the correlator emits is pre-set review-only.
+    assert gateability_for({}, "repo-iac-observed") == "review-only"
+    findings, _ = correlate_iac_authority(
+        _iac_report(), [_iac_grant()], [], [],
+        {"tf_files": ["main.tf"], "rbac_files": [], "unparsed_files": []})
+    assert findings, "EXCESS_AUTHORITY finding expected"
+    for finding in findings:
+        assert finding["gateability"] == "review-only"
+        assert finding["provenance_class"] == "repo-iac-observed"
+        assert kya_policy.lane_of_finding(finding) == "B"
+    # IaC verdicts never touch the authority gate: no tool changes, no trip.
+    assert authority_gate_tripped([], "material") is False
+
+
+def test_14_verdicts_cite_evidence_or_are_unknown():
+    _, summary = correlate_iac_authority(
+        _iac_report(tool_caps=[("x", "s3")]), [_iac_grant()], [], [],
+        {"tf_files": ["main.tf"], "rbac_files": [], "unparsed_files": []})
+    assert summary["verdicts"], "expected an UNVERIFIED_LINK verdict"
+    for verdict in summary["verdicts"]:
+        if verdict["verdict"] == "UNKNOWN":
+            continue
+        assert verdict["declared_tools"] or verdict["grants"], \
+            "non-UNKNOWN verdicts must cite declared tools or grants"
+        for grant in verdict["grants"]:
+            assert grant["source_file"], "grants must carry evidence refs"
+
+
+def test_15_agent_identity_links_default_unverified():
+    # Grants + declared capability with no static link: UNVERIFIED_LINK,
+    # never MATCH. MATCH requires an evidenced Agent-to-Identity edge.
+    _, summary = correlate_iac_authority(
+        _iac_report(tool_caps=[("x", "s3")]), [_iac_grant()], [], [],
+        {"tf_files": ["main.tf"], "rbac_files": [], "unparsed_files": []})
+    assert [v["verdict"] for v in summary["verdicts"]] == ["UNVERIFIED_LINK"]
+    assert summary["verdicts"][0]["linked"] is False
+
+
+def test_16_review_only_findings_stay_lane_b():
+    iac_finding = {
+        "rule_id": "IAC_EXCESS_AUTHORITY", "severity": "medium",
+        "gateability": "review-only",
+        "provenance_class": "repo-iac-observed",
+    }
+    assert kya_policy.lane_of_finding(iac_finding) == "B"
+    # Severity does not promote it: medium severity, review-only
+    # gateability, Lane B — three separate dimensions, never blended.
+    assert iac_finding["severity"] == "medium"
+    assert iac_finding["gateability"] == "review-only"

@@ -15,6 +15,7 @@ from safeai.kya import MANIFEST_SCHEMA_VERSION
 from safeai.kya.contract import (
     CONTRACT_NAME,
     CONTRACT_VERSION,
+    CORRELATION_VERDICTS,
     validate_manifest,
 )
 from safeai.kya.manifest import serialize_manifest
@@ -154,3 +155,72 @@ def test_cli_validate_rejects_bad_file(tmp_path, capsys):
 
 def test_legacy_schema_version_constant_unchanged():
     assert MANIFEST_SCHEMA_VERSION == "1.2"
+
+
+def test_schema_provenance_enum_includes_iac():
+    path = os.path.join("schemas", "safeai-manifest", "v1.0.0.json")
+    with open(path, encoding="utf-8") as fh:
+        schema = json.load(fh)
+    finding_props = schema["properties"]["findings"]["items"]["properties"]
+    assert "repo-iac-observed" in finding_props["provenance_class"]["enum"]
+    assert "iac_correlations" in schema["properties"]
+    verdict_enum = (schema["properties"]["iac_correlations"]["properties"]
+                    ["verdicts"]["items"]["properties"]["verdict"]["enum"])
+    assert set(verdict_enum) == set(CORRELATION_VERDICTS)
+
+
+def _minimal_manifest():
+    return {
+        "schema_version": "1.2",
+        "manifest_type": "safeai.kya",
+        "contract": {"name": CONTRACT_NAME, "version": CONTRACT_VERSION},
+        "safeai": {"version": "2.5.0"},
+        "project": {"project_id": "p"},
+        "agents": [],
+        "findings": [{
+            "rule_id": "IAC_EXCESS_AUTHORITY",
+            "severity": "medium",
+            "provenance_class": "repo-iac-observed",
+            "gateability": "review-only",
+        }],
+        "summary": {"policy_decision": {"outcome": "warn"}},
+        "assurance_boundary": {},
+        "limitations": ["static analysis only"],
+        "iac_correlations": {
+            "schema_version": 1,
+            "lane": "B",
+            "grants": [{"source_file": "main.tf"}],
+            "verdicts": [{"family": "cloud", "verdict": "EXCESS_AUTHORITY"}],
+        },
+    }
+
+
+def test_iac_block_and_provenance_validate():
+    errors, _ = validate_manifest(_minimal_manifest())
+    assert errors == []
+
+
+def test_iac_bad_verdict_rejected():
+    bad = copy.deepcopy(_minimal_manifest())
+    bad["iac_correlations"]["verdicts"][0]["verdict"] = "MAYBE"
+    errors, _ = validate_manifest(bad)
+    assert any("verdict" in e for e in errors)
+
+
+def test_scan_with_terraform_emits_valid_iac_manifest(tmp_path):
+    root = tmp_path / "proj"
+    root.mkdir()
+    (root / "main.tf").write_text(
+        'resource "aws_iam_policy" "p" {\n'
+        '  statement {\n'
+        '    actions = ["s3:GetObject"]\n'
+        '    resources = ["*"]\n'
+        '  }\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    manifest, _ = _scan_manifest(str(root), tmp_path)
+    assert manifest["iac_correlations"]["counts"]["grants"] == 1
+    assert manifest["summary"]["iac_grant_count"] == 1
+    errors, _ = validate_manifest(manifest)
+    assert errors == []

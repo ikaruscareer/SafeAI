@@ -5,10 +5,28 @@ detected frameworks, MCP asset count, overall risk score, finding
 severity counts, and a per-finding list.
 """
 
+import re
+
+# ANSI escape (CSI, e.g. \x1b[2J) and OSC (\x1b]...\x07 / \x1b]...\x1b\\)
+# sequences, plus raw carriage-return control characters.
+_ANSI_OSC_RE = re.compile(r"\x1b(\[[0-9;?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)?|[0-9;]*[@-~])|\r")
+
+
+def _sanitize(value):
+    """Strip terminal control sequences from a value before printing.
+
+    Removes ANSI CSI/OSC escape sequences and raw carriage returns so a
+    scanned repo with malicious filenames or finding content cannot spoof
+    terminal output. Clean strings pass through byte-identical.
+    """
+    if not isinstance(value, str):
+        return value
+    return _ANSI_OSC_RE.sub("", value)
+
 
 def _first_sentence(text):
     """First sentence of a remediation string (single-line, capped)."""
-    sentence = str(text).strip().split(". ")[0].rstrip(".")
+    sentence = str(_sanitize(text)).strip().split(". ")[0].rstrip(".")
     if len(sentence) > 160:
         sentence = sentence[:157] + "..."
     return sentence
@@ -16,15 +34,15 @@ def _first_sentence(text):
 
 def print_summary(report):
     print("SafeAI Scan Summary")
-    print("Files:", report["files_scanned"])
+    print("Files:", _sanitize(report["files_scanned"]))
     if report.get("detected_frameworks"):
-        print("Frameworks:", ", ".join(report["detected_frameworks"]))
+        print("Frameworks:", ", ".join(_sanitize(f) for f in report["detected_frameworks"]))
     if report.get("mcp_assets") is not None:
         print("MCP assets:", len(report.get("mcp_assets", [])))
     if report.get("components") is not None:
         component_counts = {}
         for component in report.get("components", []):
-            kind = component.get("type", "unknown")
+            kind = _sanitize(component.get("type", "unknown"))
             component_counts[kind] = component_counts.get(kind, 0) + 1
         print("Components:", ", ".join(f"{k}={v}" for k, v in sorted(component_counts.items())) or "none")
     inventory = report.get("dependency_inventory")
@@ -57,9 +75,9 @@ def print_summary(report):
                 )
             highest = capability_diff.get("highest_escalation")
             if highest:
-                print("Highest escalation:", highest)
+                print("Highest escalation:", _sanitize(highest))
     if report.get("trust_score"):
-        print("Overall AI Risk Score:", report["trust_score"].get("overall_ai_risk_score"))
+        print("Overall AI Risk Score:", _sanitize(report["trust_score"].get("overall_ai_risk_score")))
 
     # --- KYA (Know Your Agent) summary ---
     kya_agents = report.get("kya_agents")
@@ -67,8 +85,8 @@ def print_summary(report):
         print("Agents/workflows detected:", len(kya_agents))
     registry = report.get("registry")
     if registry:
-        state = registry.get("state", "skipped")
-        path = registry.get("path")
+        state = _sanitize(registry.get("state", "skipped"))
+        path = _sanitize(registry.get("path"))
         stats = registry.get("stats") or {}
         line = f"Registry: {state}"
         if path:
@@ -83,7 +101,7 @@ def print_summary(report):
                 f"{stats.get('regressed_findings', 0)} regressed",
             )
         elif registry.get("reason"):
-            print("Registry note:", registry["reason"])
+            print("Registry note:", _sanitize(registry["reason"]))
 
     baseline = report.get("baseline")
     if baseline:
@@ -97,31 +115,31 @@ def print_summary(report):
 
     policy = report.get("policy_decision")
     if policy:
-        print("Policy outcome:", policy.get("outcome"))
-        profile = report.get("policy_profile")
+        print("Policy outcome:", _sanitize(policy.get("outcome")))
+        profile = _sanitize(report.get("policy_profile"))
         if profile:
             print("Policy profile:", profile)
         for reason in (policy.get("reasons") or [])[:5]:
-            print(f"  - {reason}")
+            print(f"  - {_sanitize(reason)}")
         # Lane B prints questions for a human; Lane A prints verdicts.
         questions = [
             m for m in (policy.get("matches") or [])
             if m.get("lane") == "B"
         ]
         for match in questions[:5]:
-            print(f"  ? [{match.get('policy_id')}] {match.get('message') or 'requires human review'}")
+            print(f"  ? [{_sanitize(match.get('policy_id'))}] {_sanitize(match.get('message') or 'requires human review')}")
 
     suppressions = report.get("suppressions")
     if suppressions and suppressions.get("suppressed"):
         print("Suppressed findings:", suppressions["suppressed"], "(visible in reports, excluded from gating)")
 
     for k, v in report["counts"].items():
-        print(f"{k}: {v}")
+        print(f"{_sanitize(k)}: {v}")
     print("Findings:")
     for f in report["findings"]:
         status = f.get("status")
-        tag = f" [{status}]" if status and status != "new" else ""
-        print(f"[{f['severity']}] {f['file']}:{f['line']} - {f['message']}{tag}")
+        tag = f" [{_sanitize(status)}]" if status and status != "new" else ""
+        print(f"[{_sanitize(f['severity'])}] {_sanitize(f['file'])}:{_sanitize(f['line'])} - {_sanitize(f['message'])}{tag}")
         # Concise next action for high/critical findings only; the full
         # remediation text lives in JSON/HTML/SARIF reports.
         if str(f.get("severity", "")).lower() in ("high", "critical") and f.get("remediation"):
@@ -139,4 +157,4 @@ def print_summary(report):
         print()
         print("Coverage:")
         for note in boundary["coverage_notes"]:
-            print(f"  - {note}")
+            print(f"  - {_sanitize(note)}")

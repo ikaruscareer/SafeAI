@@ -294,7 +294,7 @@ evidence out to existing GRC / SIEM / ticketing / incident platforms).
 
 | Theme | Shipped | Remaining | Explicitly not in Community core |
 |---|---|---|---|
-| KYA scanner core & capability discovery | 19 adapters, 79 rules, 13 analyzers, AST+regex evidence | Adapter depth, precision tuning | Live IAM reads, runtime monitoring |
+| KYA scanner core & capability discovery | 19 adapters, 82 rules, 13 analyzers, AST+regex evidence | Adapter depth, precision tuning | Live IAM reads, runtime monitoring |
 | Reviewable Change / ChangeGuard | 14 `ESC_*` rules, diffs, PR comments, remediation catalog (CE 2.2) | Review decision lanes (accepted direction) | Auto-fix, auto-created PRs |
 | Governance, lifecycle, suppressions | `GOV_*` family, failure matrix, lifecycle, policy profiles, waivers | Portable exception schema (owner, expiry, scope) | Compliance certification |
 | True Capability Surface | Env inventory, dep correlation, tool↔impl map, target taxonomy, dataflow | — | Proven deployment authority |

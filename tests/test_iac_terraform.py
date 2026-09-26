@@ -24,10 +24,38 @@ def test_representative_fixture_yields_expected_grants():
     assert policy["family"] == "cloud"
     assert policy["source_file"] == "main.tf"
     assert policy["line"] >= 1
-    attach = by_principal["aws_iam_role.agent_role.name"]
+    attach = by_principal["agent-role"]
     assert attach["action"] == "attached-policy"
     assert attach["resource"] == "attach"
     assert attach["provenance"] == "repo-iac-observed"
+
+
+def test_role_reference_resolves_to_aws_name():
+    text = '''
+resource "aws_iam_role" "app" {
+  name = "app-role"
+}
+resource "aws_iam_role_policy_attachment" "a" {
+  role       = aws_iam_role.app.name
+  policy_arn = aws_iam_policy.p.arn
+}
+'''
+    grants = parse_terraform_file("r.tf", text)
+    assert [g["principal"] for g in grants] == ["app-role"]
+
+
+def test_interpolated_role_name_stays_unresolved():
+    text = '''
+resource "aws_iam_role" "app" {
+  name = "app-${var.env}"
+}
+resource "aws_iam_role_policy_attachment" "a" {
+  role       = aws_iam_role.app.name
+  policy_arn = aws_iam_policy.p.arn
+}
+'''
+    grants = parse_terraform_file("r.tf", text)
+    assert [g["principal"] for g in grants] == ["aws_iam_role.app.name"]
 
 
 def test_hcl_bare_keys_and_quoted_json_keys():

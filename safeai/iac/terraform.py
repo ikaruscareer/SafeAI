@@ -174,7 +174,12 @@ def parse_terraform_file(rel_path, text):
     roles = {}
     for _kind, rtype, name, body, _line in blocks:
         if rtype in _IAM_ROLE_TYPES:
-            roles[name] = name
+            # Literal `name = "..."` attributes resolve Terraform
+            # references (`aws_iam_role.<label>.name`) to the real AWS
+            # object name for linkage. Interpolated names stay unresolved.
+            match = _NAME_RES[0].search(body)
+            if match and "${" not in match.group(1):
+                roles[name] = match.group(1)
 
     for kind, rtype, name, body, start_line in blocks:
         if rtype not in _WATCHED_TYPES:
@@ -235,8 +240,13 @@ def parse_terraform_file(rel_path, text):
                     notes = notes + ["unattached-policy"]
                     provenance = "partially-resolved"
             for role in attached_roles:
+                resolved = role
+                ref_match = re.fullmatch(
+                    r"aws_iam_role\.([A-Za-z0-9_-]+)\.name", role)
+                if ref_match and ref_match.group(1) in roles:
+                    resolved = roles[ref_match.group(1)]
                 grants.append({
-                    "principal": role,
+                    "principal": resolved,
                     "action": "attached-policy",
                     "resource": name,
                     "source": "terraform",

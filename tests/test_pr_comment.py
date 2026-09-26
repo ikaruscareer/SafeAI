@@ -360,9 +360,7 @@ def test_finding_backticks_and_fences_cannot_break_out_of_the_section():
             "tool:x", "tool", "x", "critical",
             escalations=[escalation(
                 "ESC_SHELL_ADDED", "critical",
-                "gained ```
-# spoofed heading
-@security-team ignore this `break`",
+                "gained ```\n# spoofed heading\n@security-team ignore this `break`",
                 "src/tool.py", 3,
             )],
         ),
@@ -402,8 +400,7 @@ def test_html_comments_in_finding_text_are_neutralized():
         ),
     ])
     text = render_pr_comment(report)
-    body = text.split("
-", 1)[1]
+    body = text.split("\n", 1)[1]
     assert "<!--" not in body
     assert "< !--" in body
 
@@ -426,10 +423,7 @@ def test_markdown_links_in_file_paths_render_as_literal_text():
 
 
 def test_injection_payloads_do_not_break_the_line_cap():
-    payload = "```
-@everyone
-" + "line
-" * 80 + "<!-- -->"
+    payload = "```\n@everyone\n" + "line\n" * 80 + "<!-- -->"
     tools = [
         tool_entry(
             f"tool:t{index:02d}", "tool", f"t{index:02d}", "critical",
@@ -439,6 +433,22 @@ def test_injection_payloads_do_not_break_the_line_cap():
     ]
     lines = render_pr_comment(report_with(tools)).splitlines()
     assert len(lines) <= MAX_LINES
+
+
+def test_tool_key_backtick_cannot_break_inline_code():
+    injected = "`** @mention **`"
+    report = report_with([
+        tool_entry(
+            f"tool:evil{injected}", "tool", "x", "critical",
+            escalations=[escalation("ESC_SHELL_ADDED", "critical")],
+        ),
+    ])
+    text = render_pr_comment(report)
+    # The injected backtick-span must never appear intact, and the
+    # mention must never reach GitHub's notification parser.
+    assert injected not in text
+    assert "@mention" not in text
+    assert "mention" in text
 
 
 def test_dataflow_evidence_is_sanitized():

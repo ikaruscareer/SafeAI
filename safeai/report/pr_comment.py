@@ -194,7 +194,7 @@ def _recommended_action(escalation):
 def _render_block(block):
     """Two lines per tool: what it is, then why it matters."""
     mark = _SEVERITY_MARK.get(block["severity"], block["severity"])
-    lines = [f"**`{block['tool_key']}`** — {_access_phrase(block)}  ⚠️ {mark}"]
+    lines = [f"**`{sanitize_pr_text(block['tool_key'])}`** — {_access_phrase(block)}  ⚠️ {mark}"]
     primary = block["escalations"][0]
     detail = sanitize_pr_text(primary.get("summary") or primary.get("id") or "").strip()
     evidence = _evidence_label(primary.get("evidence"))
@@ -235,7 +235,9 @@ def _first_scan_summary(report):
         lines.append("")
         lines.append("Highest-authority capabilities found:")
         for name, mode, tool_key in capabilities:
-            lines.append(f"- `{tool_key}` — {name} ({mode})")
+            lines.append(
+                f"- `{sanitize_pr_text(tool_key)}` — {sanitize_pr_text(name)} ({mode})"
+            )
     return lines
 
 
